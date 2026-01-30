@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
-import { View } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import HomeScreen from './src/screens/HomeScreen';
-import LibraryScreen from './src/screens/LibraryScreen';
-
-type Screen = 'home' | 'library';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
-
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <StatusBar style="light" />
-      {currentScreen === 'home' ? (
-        <HomeScreen onNavigateToLibrary={() => setCurrentScreen('library')} />
-      ) : (
-        <LibraryScreen onNavigateBack={() => setCurrentScreen('home')} />
-      )}
+      <Text style={styles.text}>GamePalette Test</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0d0d1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  text: {
+    color: '#fff',
+    fontSize: 24,
+  },
+});
