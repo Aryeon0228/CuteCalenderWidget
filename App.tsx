@@ -1,33 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import HomeScreen from './src/screens/HomeScreen';
+import LibraryScreen from './src/screens/LibraryScreen';
 
-// Test 1: Basic app with just View/Text - WORKS
-// Test 2: Add Zustand store
-import { usePaletteStore } from './src/store/paletteStore';
+type Screen = 'home' | 'library';
 
 export default function App() {
-  const { colorCount } = usePaletteStore();
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
       <StatusBar style="light" />
-      <Text style={styles.text}>GamePalette Test</Text>
-      <Text style={styles.text}>Color count: {colorCount}</Text>
+      {currentScreen === 'home' ? (
+        <HomeScreen onNavigateToLibrary={() => setCurrentScreen('library')} />
+      ) : (
+        <LibraryScreen onNavigateBack={() => setCurrentScreen('home')} />
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0d0d1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    color: '#fff',
-    fontSize: 24,
-    marginBottom: 10,
-  },
-});
