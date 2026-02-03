@@ -24,6 +24,24 @@ import { extractColorsFromImage, ExtractionMethod } from '../lib/colorExtractor'
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLOR_CARD_SIZE = (SCREEN_WIDTH - 64) / 4 - 8;
 
+// Style filter presets
+type StyleFilter = 'original' | 'hypercasual' | 'stylized' | 'realistic' | 'custom';
+
+interface StylePreset {
+  name: string;
+  saturation: number;
+  brightness: number;
+  icon: string;
+}
+
+const STYLE_PRESETS: Record<StyleFilter, StylePreset> = {
+  original: { name: 'Original', saturation: 1.0, brightness: 1.0, icon: 'ellipse-outline' },
+  hypercasual: { name: 'Hyper', saturation: 1.3, brightness: 1.1, icon: 'sparkles-outline' },
+  stylized: { name: 'Stylized', saturation: 1.15, brightness: 1.05, icon: 'brush-outline' },
+  realistic: { name: 'Realistic', saturation: 0.9, brightness: 0.95, icon: 'camera-outline' },
+  custom: { name: 'Custom', saturation: 1.0, brightness: 1.0, icon: 'settings-outline' },
+};
+
 interface HomeScreenProps {
   onNavigateToLibrary: () => void;
 }
@@ -32,7 +50,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [isExtracting, setIsExtracting] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showColorDetail, setShowColorDetail] = useState(false);
   const [paletteName, setPaletteName] = useState('');
+  const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
+  const [showGrayscale, setShowGrayscale] = useState(false);
 
   const {
     currentColors,
@@ -47,6 +68,15 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     setExtractionMethod,
     savePalette,
   } = usePaletteStore();
+
+  // Apply style filter to colors
+  const processedColors = currentColors.map((hex) => {
+    if (showGrayscale) {
+      return toGrayscale(hex);
+    }
+    const preset = STYLE_PRESETS[styleFilter];
+    return adjustColor(hex, preset.saturation, preset.brightness);
+  });
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -101,12 +131,16 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   const handleColorPress = async (hex: string, index: number) => {
     setSelectedColorIndex(index);
-    await Clipboard.setStringAsync(hex);
-    Alert.alert('Copied!', `${hex} copied to clipboard`);
+    setShowColorDetail(true);
+  };
+
+  const copyColor = async (value: string) => {
+    await Clipboard.setStringAsync(value);
+    Alert.alert('Copied!', `${value} copied to clipboard`);
   };
 
   const handleSave = () => {
-    if (currentColors.length === 0) {
+    if (processedColors.length === 0) {
       Alert.alert('No Colors', 'Please extract colors from an image first.');
       return;
     }
@@ -115,14 +149,18 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   };
 
   const confirmSave = () => {
+    // Save the processed colors (with filters applied)
+    const originalColors = currentColors;
+    setCurrentColors(processedColors);
     savePalette(paletteName || `Palette ${Date.now()}`);
+    setCurrentColors(originalColors);
     setShowSaveModal(false);
     setPaletteName('');
     Alert.alert('Saved!', 'Palette saved to library.');
   };
 
   const handleExport = () => {
-    if (currentColors.length === 0) {
+    if (processedColors.length === 0) {
       Alert.alert('No Colors', 'Please extract colors from an image first.');
       return;
     }
@@ -132,11 +170,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const exportAs = async (format: string) => {
     let content = '';
     let filename = 'palette';
+    const colors = processedColors;
 
     switch (format) {
       case 'json':
         content = JSON.stringify({
-          colors: currentColors.map((hex, i) => ({
+          colors: colors.map((hex, i) => ({
             index: i,
             hex,
             rgb: hexToRgb(hex),
@@ -146,25 +185,25 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         filename = 'palette.json';
         break;
       case 'css':
-        content = `:root {\n${currentColors.map((hex, i) => `  --color-${i + 1}: ${hex};`).join('\n')}\n}`;
+        content = `:root {\n${colors.map((hex, i) => `  --color-${i + 1}: ${hex};`).join('\n')}\n}`;
         filename = 'palette.css';
         break;
       case 'unity':
-        content = `using UnityEngine;\n\n[CreateAssetMenu(fileName = "Palette", menuName = "Colors/Palette")]\npublic class Palette : ScriptableObject\n{\n    public Color[] colors = new Color[] {\n${currentColors.map(hex => {
+        content = `using UnityEngine;\n\n[CreateAssetMenu(fileName = "Palette", menuName = "Colors/Palette")]\npublic class Palette : ScriptableObject\n{\n    public Color[] colors = new Color[] {\n${colors.map(hex => {
           const rgb = hexToRgb(hex);
           return `        new Color(${(rgb.r / 255).toFixed(3)}f, ${(rgb.g / 255).toFixed(3)}f, ${(rgb.b / 255).toFixed(3)}f)`;
         }).join(',\n')}\n    };\n}`;
         filename = 'Palette.cs';
         break;
       case 'unreal':
-        content = `Name,Color\n${currentColors.map((hex, i) => {
+        content = `Name,Color\n${colors.map((hex, i) => {
           const rgb = hexToRgb(hex);
           return `Color${i + 1},"(R=${rgb.r},G=${rgb.g},B=${rgb.b},A=255)"`;
         }).join('\n')}`;
         filename = 'palette.csv';
         break;
       default: // png/text
-        content = currentColors.join('\n');
+        content = colors.join('\n');
         filename = 'palette.txt';
     }
 
@@ -182,16 +221,17 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   const copyToClipboard = async (format: string) => {
     let content = '';
+    const colors = processedColors;
 
     switch (format) {
       case 'json':
-        content = JSON.stringify(currentColors);
+        content = JSON.stringify(colors);
         break;
       case 'css':
-        content = currentColors.map((hex, i) => `--color-${i + 1}: ${hex};`).join('\n');
+        content = colors.map((hex, i) => `--color-${i + 1}: ${hex};`).join('\n');
         break;
       default:
-        content = currentColors.join('\n');
+        content = colors.join('\n');
     }
 
     await Clipboard.setStringAsync(content);
@@ -199,6 +239,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     setShowExportModal(false);
   };
 
+  // Color conversion utilities
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -208,13 +249,93 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     } : { r: 0, g: 0, b: 0 };
   };
 
+  const rgbToHex = (r: number, g: number, b: number) => {
+    return '#' + [r, g, b].map(x => {
+      const hex = Math.max(0, Math.min(255, Math.round(x))).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  };
+
+  const rgbToHsl = (r: number, g: number, b: number) => {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+
+    return {
+      h: Math.round(h * 360),
+      s: Math.round(s * 100),
+      l: Math.round(l * 100),
+    };
+  };
+
+  const toGrayscale = (hex: string) => {
+    const rgb = hexToRgb(hex);
+    const gray = Math.round(0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
+    return rgbToHex(gray, gray, gray);
+  };
+
+  const adjustColor = (hex: string, satMult: number, brightMult: number) => {
+    if (satMult === 1 && brightMult === 1) return hex;
+
+    const rgb = hexToRgb(hex);
+    let { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+    s = Math.min(100, Math.max(0, s * satMult));
+    l = Math.min(100, Math.max(0, l * brightMult));
+
+    // HSL to RGB
+    const hslToRgb = (h: number, s: number, l: number) => {
+      s /= 100;
+      l /= 100;
+      const k = (n: number) => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+      return { r: Math.round(f(0) * 255), g: Math.round(f(8) * 255), b: Math.round(f(4) * 255) };
+    };
+
+    const newRgb = hslToRgb(h, s, l);
+    return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+  };
+
+  // Get color info for detail panel
+  const getSelectedColorInfo = () => {
+    if (selectedColorIndex === null || !processedColors[selectedColorIndex]) return null;
+    const hex = processedColors[selectedColorIndex];
+    const rgb = hexToRgb(hex);
+    const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    return { hex, rgb, hsl };
+  };
+
+  const colorInfo = getSelectedColorInfo();
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Game Palette</Text>
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
+        <TouchableOpacity
+          style={styles.grayscaleButton}
+          onPress={() => setShowGrayscale(!showGrayscale)}
+        >
+          <Ionicons
+            name={showGrayscale ? 'contrast' : 'contrast-outline'}
+            size={24}
+            color={showGrayscale ? '#6366f1' : '#fff'}
+          />
         </TouchableOpacity>
       </View>
 
@@ -223,7 +344,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         <TouchableOpacity style={styles.imageCard} onPress={pickImage}>
           {currentImageUri ? (
             <>
-              <Image source={{ uri: currentImageUri }} style={styles.image} />
+              <Image
+                source={{ uri: currentImageUri }}
+                style={[styles.image, showGrayscale && { opacity: 0.8 }]}
+              />
               <View style={styles.sourceImageBadge}>
                 <Text style={styles.sourceImageText}>Source Image</Text>
               </View>
@@ -242,14 +366,48 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           )}
         </TouchableOpacity>
 
+        {/* Style Filters */}
+        {processedColors.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.styleFiltersContainer}
+          >
+            {(Object.keys(STYLE_PRESETS) as StyleFilter[]).map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  styles.styleFilterButton,
+                  styleFilter === filter && styles.styleFilterButtonActive,
+                ]}
+                onPress={() => setStyleFilter(filter)}
+              >
+                <Ionicons
+                  name={STYLE_PRESETS[filter].icon as any}
+                  size={18}
+                  color={styleFilter === filter ? '#fff' : '#666'}
+                />
+                <Text
+                  style={[
+                    styles.styleFilterText,
+                    styleFilter === filter && styles.styleFilterTextActive,
+                  ]}
+                >
+                  {STYLE_PRESETS[filter].name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
         {/* Color Cards */}
-        {currentColors.length > 0 && (
+        {processedColors.length > 0 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.colorCardsContainer}
           >
-            {currentColors.map((color, index) => (
+            {processedColors.map((color, index) => (
               <TouchableOpacity
                 key={index}
                 style={[
@@ -368,6 +526,73 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         </TouchableOpacity>
       </View>
 
+      {/* Color Detail Modal */}
+      <Modal
+        visible={showColorDetail && colorInfo !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowColorDetail(false)}
+      >
+        <View style={styles.colorDetailOverlay}>
+          <TouchableOpacity
+            style={styles.colorDetailBackground}
+            onPress={() => setShowColorDetail(false)}
+          />
+          <View style={styles.colorDetailContent}>
+            <View style={styles.colorDetailHandle} />
+
+            {colorInfo && (
+              <>
+                {/* Color Preview */}
+                <View style={styles.colorDetailPreview}>
+                  <View
+                    style={[styles.colorDetailSwatch, { backgroundColor: colorInfo.hex }]}
+                  />
+                  <View style={styles.colorDetailInfo}>
+                    <Text style={styles.colorDetailTitle}>Color Details</Text>
+                    <Text style={styles.colorDetailIndex}>
+                      Color {(selectedColorIndex ?? 0) + 1} of {processedColors.length}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Color Values */}
+                <View style={styles.colorValueSection}>
+                  <ColorValueRow
+                    label="HEX"
+                    value={colorInfo.hex}
+                    onCopy={() => copyColor(colorInfo.hex)}
+                  />
+                  <ColorValueRow
+                    label="RGB"
+                    value={`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`}
+                    onCopy={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}
+                  />
+                  <ColorValueRow
+                    label="HSL"
+                    value={`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`}
+                    onCopy={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}
+                  />
+                </View>
+
+                {/* Grayscale Preview */}
+                <View style={styles.grayscaleSection}>
+                  <Text style={styles.grayscaleSectionTitle}>Value Check</Text>
+                  <View style={styles.grayscaleRow}>
+                    <View style={[styles.grayscaleSwatch, { backgroundColor: colorInfo.hex }]} />
+                    <Ionicons name="arrow-forward" size={16} color="#666" />
+                    <View style={[styles.grayscaleSwatch, { backgroundColor: toGrayscale(colorInfo.hex) }]} />
+                    <Text style={styles.grayscaleValue}>
+                      {Math.round(0.299 * colorInfo.rgb.r + 0.587 * colorInfo.rgb.g + 0.114 * colorInfo.rgb.b)}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* Save Modal */}
       <Modal
         visible={showSaveModal}
@@ -473,6 +698,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   );
 }
 
+// Color Value Row Component
+function ColorValueRow({
+  label,
+  value,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  onCopy: () => void;
+}) {
+  return (
+    <View style={styles.colorValueRow}>
+      <Text style={styles.colorValueLabel}>{label}</Text>
+      <Text style={styles.colorValueText}>{value}</Text>
+      <TouchableOpacity style={styles.colorValueCopy} onPress={onCopy}>
+        <Ionicons name="copy-outline" size={18} color="#888" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // Export Option Component
 function ExportOption({
   icon,
@@ -526,8 +772,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  menuButton: {
+  grayscaleButton: {
     padding: 8,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
   },
   content: {
     flex: 1,
@@ -578,9 +826,36 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 12,
   },
+  styleFiltersContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  styleFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+    marginRight: 8,
+    gap: 6,
+  },
+  styleFilterButtonActive: {
+    backgroundColor: '#6366f1',
+  },
+  styleFilterText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
+  },
+  styleFilterTextActive: {
+    color: '#fff',
+  },
   colorCardsContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 12,
   },
   colorCard: {
@@ -759,6 +1034,115 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  // Color Detail Modal
+  colorDetailOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  colorDetailBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  colorDetailContent: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  colorDetailHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#444',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  colorDetailPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  colorDetailSwatch: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#333',
+  },
+  colorDetailInfo: {
+    marginLeft: 16,
+  },
+  colorDetailTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  colorDetailIndex: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  colorValueSection: {
+    backgroundColor: '#0d0d0d',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  colorValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1a1a1a',
+  },
+  colorValueLabel: {
+    width: 48,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  colorValueText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#fff',
+    fontFamily: 'monospace',
+  },
+  colorValueCopy: {
+    padding: 8,
+  },
+  grayscaleSection: {
+    backgroundColor: '#0d0d0d',
+    borderRadius: 12,
+    padding: 16,
+  },
+  grayscaleSectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+  },
+  grayscaleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  grayscaleSwatch: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  grayscaleValue: {
+    fontSize: 14,
+    color: '#888',
+    marginLeft: 'auto',
+    fontFamily: 'monospace',
+  },
+  // Save Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -809,6 +1193,7 @@ const styles = StyleSheet.create({
   modalButtonTextPrimary: {
     color: '#fff',
   },
+  // Export Modal
   exportModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
