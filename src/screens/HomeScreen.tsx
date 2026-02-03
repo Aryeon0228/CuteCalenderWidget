@@ -274,11 +274,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   const extractColors = async (imageUri: string) => {
     setCurrentImageUri(imageUri);
-    // Extract colors and analyze histogram in parallel
-    await Promise.all([
-      doExtract(imageUri, colorCount, extractionMethod),
-      analyzeHistogram(imageUri),
-    ]);
+    // Extract colors first (user sees result quickly)
+    await doExtract(imageUri, colorCount, extractionMethod);
+    // Then analyze histogram in background (non-blocking)
+    analyzeHistogram(imageUri);
   };
 
   const analyzeHistogram = async (imageUri: string) => {
