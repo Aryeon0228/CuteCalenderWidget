@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,19 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  Dimensions,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { usePaletteStore } from '../store/paletteStore';
-import ColorStrip from '../components/ColorStrip';
-import ColorDetailPanel from '../components/ColorDetailPanel';
 import { extractColorsFromImage, ExtractionMethod } from '../lib/colorExtractor';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const COLOR_CARD_SIZE = (SCREEN_WIDTH - 64) / 4 - 8;
 
 interface HomeScreenProps {
   onNavigateToLibrary: () => void;
@@ -28,6 +31,7 @@ interface HomeScreenProps {
 export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [isExtracting, setIsExtracting] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [paletteName, setPaletteName] = useState('');
 
   const {
@@ -63,7 +67,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
   };
 
-  // Core extraction function - takes explicit values to avoid stale closures
   const doExtract = async (
     imageUri: string,
     count: number,
@@ -81,26 +84,25 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
   };
 
-  // Called when picking a new image
   const extractColors = async (imageUri: string) => {
     setCurrentImageUri(imageUri);
     await doExtract(imageUri, colorCount, extractionMethod);
   };
 
-  // Handle color count change - directly call with new value
-  const handleColorCountChange = async (count: number) => {
-    setColorCount(count);
+  const handleMethodChange = async (method: ExtractionMethod) => {
+    setExtractionMethod(method);
+  };
+
+  const handleReExtract = async () => {
     if (currentImageUri) {
-      await doExtract(currentImageUri, count, extractionMethod);
+      await doExtract(currentImageUri, colorCount, extractionMethod);
     }
   };
 
-  // Handle extraction method change - directly call with new value
-  const handleMethodChange = async (method: ExtractionMethod) => {
-    setExtractionMethod(method);
-    if (currentImageUri) {
-      await doExtract(currentImageUri, colorCount, method);
-    }
+  const handleColorPress = async (hex: string, index: number) => {
+    setSelectedColorIndex(index);
+    await Clipboard.setStringAsync(hex);
+    Alert.alert('Copied!', `${hex} copied to clipboard`);
   };
 
   const handleSave = () => {
@@ -124,132 +126,108 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       Alert.alert('No Colors', 'Please extract colors from an image first.');
       return;
     }
-
-    const hexColors = currentColors.map(c => c.toUpperCase()).join('\n');
-
-    Alert.alert(
-      'Export Colors',
-      'Choose export format:',
-      [
-        {
-          text: 'Copy to Clipboard',
-          onPress: async () => {
-            await Clipboard.setStringAsync(hexColors);
-            Alert.alert('Copied!', 'Colors copied to clipboard.');
-          },
-        },
-        {
-          text: 'Share as File',
-          onPress: async () => {
-            try {
-              const fileUri = FileSystem.cacheDirectory + 'palette.txt';
-              await FileSystem.writeAsStringAsync(fileUri, hexColors);
-
-              if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri);
-              } else {
-                Alert.alert('Error', 'Sharing is not available on this device.');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'Failed to share palette.');
-            }
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    setShowExportModal(true);
   };
 
-  const colorCountOptions = [3, 4, 5, 6, 7, 8];
+  const exportAs = async (format: string) => {
+    let content = '';
+    let filename = 'palette';
+
+    switch (format) {
+      case 'json':
+        content = JSON.stringify({
+          colors: currentColors.map((hex, i) => ({
+            index: i,
+            hex,
+            rgb: hexToRgb(hex),
+          })),
+          exportedAt: new Date().toISOString(),
+        }, null, 2);
+        filename = 'palette.json';
+        break;
+      case 'css':
+        content = `:root {\n${currentColors.map((hex, i) => `  --color-${i + 1}: ${hex};`).join('\n')}\n}`;
+        filename = 'palette.css';
+        break;
+      case 'unity':
+        content = `using UnityEngine;\n\n[CreateAssetMenu(fileName = "Palette", menuName = "Colors/Palette")]\npublic class Palette : ScriptableObject\n{\n    public Color[] colors = new Color[] {\n${currentColors.map(hex => {
+          const rgb = hexToRgb(hex);
+          return `        new Color(${(rgb.r / 255).toFixed(3)}f, ${(rgb.g / 255).toFixed(3)}f, ${(rgb.b / 255).toFixed(3)}f)`;
+        }).join(',\n')}\n    };\n}`;
+        filename = 'Palette.cs';
+        break;
+      case 'unreal':
+        content = `Name,Color\n${currentColors.map((hex, i) => {
+          const rgb = hexToRgb(hex);
+          return `Color${i + 1},"(R=${rgb.r},G=${rgb.g},B=${rgb.b},A=255)"`;
+        }).join('\n')}`;
+        filename = 'palette.csv';
+        break;
+      default: // png/text
+        content = currentColors.join('\n');
+        filename = 'palette.txt';
+    }
+
+    try {
+      const fileUri = FileSystem.cacheDirectory + filename;
+      await FileSystem.writeAsStringAsync(fileUri, content);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to export palette.');
+    }
+    setShowExportModal(false);
+  };
+
+  const copyToClipboard = async (format: string) => {
+    let content = '';
+
+    switch (format) {
+      case 'json':
+        content = JSON.stringify(currentColors);
+        break;
+      case 'css':
+        content = currentColors.map((hex, i) => `--color-${i + 1}: ${hex};`).join('\n');
+        break;
+      default:
+        content = currentColors.join('\n');
+    }
+
+    await Clipboard.setStringAsync(content);
+    Alert.alert('Copied!', `${format.toUpperCase()} copied to clipboard`);
+    setShowExportModal(false);
+  };
+
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    } : { r: 0, g: 0, b: 0 };
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>GamePalette</Text>
-        <Text style={styles.subtitle}>Extract colors for game dev</Text>
-      </View>
-
-      {/* Color count selector */}
-      <View style={styles.colorCountSection}>
-        <Text style={styles.sectionLabel}>Color Count</Text>
-        <View style={styles.colorCountSelector}>
-          {colorCountOptions.map((count) => (
-            <TouchableOpacity
-              key={count}
-              style={[
-                styles.countButton,
-                colorCount === count && styles.countButtonActive,
-              ]}
-              onPress={() => handleColorCountChange(count)}
-            >
-              <Text
-                style={[
-                  styles.countButtonText,
-                  colorCount === count && styles.countButtonTextActive,
-                ]}
-              >
-                {count}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Extraction method selector */}
-      <View style={styles.colorCountSection}>
-        <Text style={styles.sectionLabel}>Extraction Method</Text>
-        <View style={styles.methodSelector}>
-          <TouchableOpacity
-            style={[
-              styles.methodButton,
-              extractionMethod === 'histogram' && styles.methodButtonActive,
-            ]}
-            onPress={() => handleMethodChange('histogram')}
-          >
-            <Ionicons
-              name="bar-chart-outline"
-              size={16}
-              color={extractionMethod === 'histogram' ? '#fff' : '#666'}
-            />
-            <Text
-              style={[
-                styles.methodButtonText,
-                extractionMethod === 'histogram' && styles.methodButtonTextActive,
-              ]}
-            >
-              Histogram
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.methodButton,
-              extractionMethod === 'kmeans' && styles.methodButtonActive,
-            ]}
-            onPress={() => handleMethodChange('kmeans')}
-          >
-            <Ionicons
-              name="git-network-outline"
-              size={16}
-              color={extractionMethod === 'kmeans' ? '#fff' : '#666'}
-            />
-            <Text
-              style={[
-                styles.methodButtonText,
-                extractionMethod === 'kmeans' && styles.methodButtonTextActive,
-              ]}
-            >
-              K-Means
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.title}>Game Palette</Text>
+        <TouchableOpacity style={styles.menuButton}>
+          <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Image area */}
-        <TouchableOpacity style={styles.imageArea} onPress={pickImage}>
+        {/* Image Card */}
+        <TouchableOpacity style={styles.imageCard} onPress={pickImage}>
           {currentImageUri ? (
-            <Image source={{ uri: currentImageUri }} style={styles.image} />
+            <>
+              <Image source={{ uri: currentImageUri }} style={styles.image} />
+              <View style={styles.sourceImageBadge}>
+                <Text style={styles.sourceImageText}>Source Image</Text>
+              </View>
+            </>
           ) : (
             <View style={styles.placeholder}>
               <Ionicons name="image-outline" size={48} color="#4a4a6a" />
@@ -264,45 +242,129 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           )}
         </TouchableOpacity>
 
-        {/* Color strip */}
+        {/* Color Cards */}
         {currentColors.length > 0 && (
-          <ColorStrip
-            colors={currentColors}
-            selectedIndex={selectedColorIndex}
-            onColorSelect={setSelectedColorIndex}
-          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.colorCardsContainer}
+          >
+            {currentColors.map((color, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.colorCard,
+                  selectedColorIndex === index && styles.colorCardSelected,
+                ]}
+                onPress={() => handleColorPress(color, index)}
+              >
+                <View style={[styles.colorSwatch, { backgroundColor: color }]} />
+                <Text style={styles.colorHex}>{color}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
 
-        {/* Color detail panel */}
-        {selectedColorIndex !== null && currentColors[selectedColorIndex] && (
-          <ColorDetailPanel
-            color={currentColors[selectedColorIndex]}
-            onClose={() => setSelectedColorIndex(null)}
-          />
-        )}
+        {/* Main Extraction Card */}
+        <View style={styles.extractionCard}>
+          <View style={styles.extractionHeader}>
+            <Text style={styles.extractionTitle}>MAIN EXTRACTION</Text>
+            <TouchableOpacity>
+              <Ionicons name="options-outline" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
 
-        {/* Spacer for bottom action bar */}
+          {/* Method Toggle */}
+          <View style={styles.methodToggle}>
+            <TouchableOpacity
+              style={[
+                styles.methodOption,
+                extractionMethod === 'histogram' && styles.methodOptionActive,
+              ]}
+              onPress={() => handleMethodChange('histogram')}
+            >
+              <Text
+                style={[
+                  styles.methodOptionText,
+                  extractionMethod === 'histogram' && styles.methodOptionTextActive,
+                ]}
+              >
+                Hue Histogram
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.methodOption,
+                extractionMethod === 'kmeans' && styles.methodOptionActive,
+              ]}
+              onPress={() => handleMethodChange('kmeans')}
+            >
+              <Text
+                style={[
+                  styles.methodOptionText,
+                  extractionMethod === 'kmeans' && styles.methodOptionTextActive,
+                ]}
+              >
+                K-Means
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Color Count Slider */}
+          <View style={styles.sliderSection}>
+            <View style={styles.sliderHeader}>
+              <Text style={styles.sliderLabel}>Color Count</Text>
+              <View style={styles.countBadge}>
+                <Text style={styles.countBadgeText}>{colorCount}</Text>
+              </View>
+            </View>
+            <View style={styles.sliderContainer}>
+              <Text style={styles.sliderMin}>3</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={3}
+                maximumValue={8}
+                step={1}
+                value={colorCount}
+                onValueChange={(value) => setColorCount(Math.round(value))}
+                minimumTrackTintColor="#6366f1"
+                maximumTrackTintColor="#333"
+                thumbTintColor="#fff"
+              />
+              <Text style={styles.sliderMax}>8</Text>
+            </View>
+          </View>
+
+          {/* Re-extract Button */}
+          <TouchableOpacity
+            style={[styles.reExtractButton, !currentImageUri && styles.reExtractButtonDisabled]}
+            onPress={handleReExtract}
+            disabled={!currentImageUri || isExtracting}
+          >
+            <Ionicons name="refresh-outline" size={20} color="#fff" />
+            <Text style={styles.reExtractButtonText}>Re-extract Palette</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Spacer for bottom bar */}
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Bottom action bar */}
+      {/* Bottom Action Bar */}
       <View style={styles.actionBar}>
         <TouchableOpacity style={styles.actionButton} onPress={onNavigateToLibrary}>
-          <Ionicons name="library-outline" size={24} color="#fff" />
+          <Ionicons name="library-outline" size={22} color="#888" />
           <Text style={styles.actionButtonText}>Library</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionButton, styles.primaryAction]}
-          onPress={handleSave}
-        >
-          <Ionicons name="bookmark-outline" size={24} color="#fff" />
-          <Text style={styles.actionButtonText}>Save</Text>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Ionicons name="download-outline" size={22} color="#000" />
+          <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleExport}>
-          <Ionicons name="share-outline" size={24} color="#fff" />
-          <Text style={styles.actionButtonText}>Export</Text>
+        <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
+          <Ionicons name="share-outline" size={22} color="#6366f1" />
+          <Text style={styles.exportButtonText}>Export</Text>
         </TouchableOpacity>
       </View>
 
@@ -341,6 +403,107 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         </View>
       </Modal>
+
+      {/* Export Modal (Bottom Sheet) */}
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <View style={styles.exportModalOverlay}>
+          <TouchableOpacity
+            style={styles.exportModalBackground}
+            onPress={() => setShowExportModal(false)}
+          />
+          <View style={styles.exportModalContent}>
+            <View style={styles.exportModalHandle} />
+            <View style={styles.exportModalHeader}>
+              <Text style={styles.exportModalTitle}>Export Palette</Text>
+              <TouchableOpacity onPress={() => setShowExportModal(false)}>
+                <Ionicons name="close" size={24} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Export Options */}
+            <ExportOption
+              icon="image-outline"
+              iconColor="#f472b6"
+              title="PNG Image"
+              subtitle="High-res preview"
+              onCopy={() => copyToClipboard('text')}
+              onDownload={() => exportAs('text')}
+            />
+            <ExportOption
+              icon="code-slash-outline"
+              iconColor="#fbbf24"
+              title="JSON Data"
+              subtitle="Raw color arrays"
+              onCopy={() => copyToClipboard('json')}
+              onDownload={() => exportAs('json')}
+            />
+            <ExportOption
+              icon="logo-css3"
+              iconColor="#3b82f6"
+              title="CSS Variables"
+              subtitle=":root variables"
+              onCopy={() => copyToClipboard('css')}
+              onDownload={() => exportAs('css')}
+            />
+            <ExportOption
+              icon="cube-outline"
+              iconColor="#9ca3af"
+              title="Unity Asset"
+              subtitle=".asset file"
+              onCopy={() => copyToClipboard('text')}
+              onDownload={() => exportAs('unity')}
+            />
+            <ExportOption
+              icon="game-controller-outline"
+              iconColor="#6366f1"
+              title="Unreal Engine"
+              subtitle="Curve atlas"
+              onCopy={() => copyToClipboard('text')}
+              onDownload={() => exportAs('unreal')}
+            />
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+// Export Option Component
+function ExportOption({
+  icon,
+  iconColor,
+  title,
+  subtitle,
+  onCopy,
+  onDownload,
+}: {
+  icon: string;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+  onCopy: () => void;
+  onDownload: () => void;
+}) {
+  return (
+    <View style={styles.exportOption}>
+      <View style={[styles.exportOptionIcon, { backgroundColor: iconColor + '20' }]}>
+        <Ionicons name={icon as any} size={24} color={iconColor} />
+      </View>
+      <View style={styles.exportOptionInfo}>
+        <Text style={styles.exportOptionTitle}>{title}</Text>
+        <Text style={styles.exportOptionSubtitle}>{subtitle}</Text>
+      </View>
+      <TouchableOpacity style={styles.exportActionButton} onPress={onCopy}>
+        <Ionicons name="copy-outline" size={20} color="#888" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.exportActionButton} onPress={onDownload}>
+        <Ionicons name="download-outline" size={20} color="#888" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -348,9 +511,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0d1a',
+    backgroundColor: '#000',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -360,84 +526,37 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  colorCountSection: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  colorCountSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#1a1a2e',
-    borderRadius: 10,
-    padding: 4,
-  },
-  countButton: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  countButtonActive: {
-    backgroundColor: '#3a3a5c',
-  },
-  countButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  countButtonTextActive: {
-    color: '#fff',
-  },
-  methodSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#1a1a2e',
-    borderRadius: 10,
-    padding: 4,
-    gap: 4,
-  },
-  methodButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
-  },
-  methodButtonActive: {
-    backgroundColor: '#3a3a5c',
-  },
-  methodButtonText: {
-    color: '#666',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  methodButtonTextActive: {
-    color: '#fff',
+  menuButton: {
+    padding: 8,
   },
   content: {
     flex: 1,
   },
-  imageArea: {
+  imageCard: {
     marginHorizontal: 16,
-    height: 250,
+    height: 220,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#1a1a1a',
   },
   image: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  sourceImageBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  sourceImageText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
   },
   placeholder: {
     flex: 1,
@@ -459,29 +578,186 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 12,
   },
+  colorCardsContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  colorCard: {
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  colorCardSelected: {
+    transform: [{ scale: 1.05 }],
+  },
+  colorSwatch: {
+    width: COLOR_CARD_SIZE,
+    height: COLOR_CARD_SIZE,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#333',
+  },
+  colorHex: {
+    color: '#888',
+    fontSize: 11,
+    marginTop: 8,
+    fontFamily: 'monospace',
+  },
+  extractionCard: {
+    marginHorizontal: 16,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 20,
+  },
+  extractionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  extractionTitle: {
+    color: '#888',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  methodToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  methodOption: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  methodOptionActive: {
+    backgroundColor: '#3a3a3a',
+  },
+  methodOptionText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  methodOptionTextActive: {
+    color: '#fff',
+  },
+  sliderSection: {
+    marginBottom: 20,
+  },
+  sliderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sliderLabel: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  countBadge: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  countBadgeText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  sliderMin: {
+    color: '#666',
+    fontSize: 12,
+    marginRight: 8,
+  },
+  sliderMax: {
+    color: '#666',
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  reExtractButton: {
+    flexDirection: 'row',
+    backgroundColor: '#6366f1',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  reExtractButtonDisabled: {
+    backgroundColor: '#333',
+  },
+  reExtractButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   actionBar: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     paddingBottom: 36,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#111',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    gap: 12,
   },
   actionButton: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingVertical: 14,
     borderRadius: 12,
-  },
-  primaryAction: {
-    backgroundColor: '#4a4a6a',
-    marginHorizontal: 8,
+    backgroundColor: '#1a1a1a',
+    gap: 6,
   },
   actionButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    marginTop: 4,
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    gap: 6,
+  },
+  saveButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  exportButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#1a1a1a',
+    gap: 6,
+  },
+  exportButtonText: {
+    color: '#6366f1',
+    fontSize: 14,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
@@ -490,7 +766,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#1a1a1a',
     borderRadius: 16,
     padding: 24,
     width: '85%',
@@ -504,7 +780,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   modalInput: {
-    backgroundColor: '#0d0d1a',
+    backgroundColor: '#000',
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
@@ -519,11 +795,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#3a3a5c',
+    backgroundColor: '#333',
     alignItems: 'center',
   },
   modalButtonPrimary: {
-    backgroundColor: '#4a6a4a',
+    backgroundColor: '#6366f1',
   },
   modalButtonText: {
     color: '#aaa',
@@ -532,5 +808,71 @@ const styles = StyleSheet.create({
   },
   modalButtonTextPrimary: {
     color: '#fff',
+  },
+  exportModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  exportModalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  exportModalContent: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  exportModalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#444',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  exportModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  exportModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  exportOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a2a',
+  },
+  exportOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  exportOptionInfo: {
+    flex: 1,
+  },
+  exportOptionTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  exportOptionSubtitle: {
+    color: '#666',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  exportActionButton: {
+    padding: 10,
   },
 });
