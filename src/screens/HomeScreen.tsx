@@ -211,7 +211,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [variationHueShift, setVariationHueShift] = useState(true); // For Value Variations
   const [histogram, setHistogram] = useState<LuminosityHistogram | null>(null);
   const [showHistogram, setShowHistogram] = useState(true);
-  const [exportFormat, setExportFormat] = useState<'png' | 'json' | 'css' | 'unity' | 'unreal'>('png');
+  const [exportFormat, setExportFormat] = useState<'png' | 'json' | 'css'>('png');
   const [isExporting, setIsExporting] = useState(false);
   const paletteCardRef = useRef<ViewShot>(null);
 
@@ -1035,6 +1035,26 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
                 {/* Watermark */}
                 <Text style={styles.paletteCardWatermark}>GamePalette</Text>
+
+                {/* Histogram Info */}
+                {histogram && (
+                  <View style={styles.paletteCardHistogram}>
+                    <View style={styles.paletteCardHistogramRow}>
+                      <Text style={styles.paletteCardHistogramLabel}>Contrast</Text>
+                      <Text style={styles.paletteCardHistogramValue}>{histogram.contrast}%</Text>
+                    </View>
+                    <View style={styles.paletteCardHistogramRow}>
+                      <Text style={styles.paletteCardHistogramLabel}>Dark / Mid / Bright</Text>
+                      <Text style={styles.paletteCardHistogramValue}>
+                        {histogram.darkPercent}% / {histogram.midPercent}% / {histogram.brightPercent}%
+                      </Text>
+                    </View>
+                    <View style={styles.paletteCardHistogramRow}>
+                      <Text style={styles.paletteCardHistogramLabel}>Avg Luminosity</Text>
+                      <Text style={styles.paletteCardHistogramValue}>{histogram.average}</Text>
+                    </View>
+                  </View>
+                )}
               </ViewShot>
 
               {/* Format Selection */}
@@ -1045,8 +1065,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     { id: 'png', label: 'PNG', icon: 'image-outline' },
                     { id: 'json', label: 'JSON', icon: 'code-slash-outline' },
                     { id: 'css', label: 'CSS', icon: 'logo-css3' },
-                    { id: 'unity', label: 'Unity', icon: 'cube-outline' },
-                    { id: 'unreal', label: 'Unreal', icon: 'game-controller-outline' },
                   ].map((format) => (
                     <TouchableOpacity
                       key={format.id}
@@ -1893,6 +1911,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#444',
     marginTop: 12,
+  },
+  paletteCardHistogram: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#2a2a34',
+  },
+  paletteCardHistogramRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  paletteCardHistogramLabel: {
+    fontSize: 11,
+    color: '#666',
+  },
+  paletteCardHistogramValue: {
+    fontSize: 11,
+    color: '#888',
+    fontFamily: 'monospace',
   },
   // Format selection
   formatSection: {
