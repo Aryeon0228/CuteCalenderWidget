@@ -61,9 +61,35 @@ export const usePaletteStore = create<PaletteState>()(
         const { currentColors, currentImageUri, savedPalettes } = get();
         if (currentColors.length === 0) return;
 
+        // Generate unique name with date and sequence number
+        let finalName = name;
+        if (!name || name.trim() === '') {
+          const today = new Date();
+          const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+          const baseName = `Palette ${dateStr}`;
+
+          // Count existing palettes with same date prefix
+          const sameDatePalettes = savedPalettes.filter(p =>
+            p.name.startsWith(baseName)
+          );
+
+          // Find the next sequence number
+          let maxNum = 0;
+          for (const p of sameDatePalettes) {
+            const match = p.name.match(/_(\d+)$/);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > maxNum) maxNum = num;
+            }
+          }
+
+          const nextNum = maxNum + 1;
+          finalName = `${baseName}_${String(nextNum).padStart(3, '0')}`;
+        }
+
         const newPalette: SavedPalette = {
           id: Date.now().toString(),
-          name: name || `Palette ${savedPalettes.length + 1}`,
+          name: finalName,
           colors: [...currentColors],
           imageUri: currentImageUri,
           createdAt: Date.now(),
