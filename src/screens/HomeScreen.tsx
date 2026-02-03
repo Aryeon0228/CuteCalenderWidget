@@ -574,6 +574,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </TouchableOpacity>
           </View>
 
+          {/* Method Description */}
+          <Text style={styles.methodDescription}>
+            {extractionMethod === 'histogram'
+              ? '색상 분포 기반으로 주요 색조를 추출합니다. 빠르고 안정적.'
+              : '클러스터링으로 대표 색상을 계산합니다. 정확하지만 느림.'}
+          </Text>
+
           {/* Color Count Slider */}
           <View style={styles.sliderSection}>
             <View style={styles.sliderHeader}>
@@ -1131,7 +1138,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#24242e',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 20,
+    marginBottom: 8,
+  },
+  methodDescription: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   methodOption: {
     flex: 1,
