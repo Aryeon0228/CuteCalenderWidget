@@ -54,6 +54,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [paletteName, setPaletteName] = useState('');
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
   const [showGrayscale, setShowGrayscale] = useState(false);
+  const [hueShift, setHueShift] = useState(0);
 
   const {
     currentColors,
@@ -69,13 +70,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     savePalette,
   } = usePaletteStore();
 
-  // Apply style filter to colors
+  // Apply style filter and hue shift to colors
   const processedColors = currentColors.map((hex) => {
     if (showGrayscale) {
       return toGrayscale(hex);
     }
+    let color = hex;
+    // Apply hue shift first
+    if (hueShift !== 0) {
+      color = shiftHue(color, hueShift);
+    }
+    // Then apply style preset
     const preset = STYLE_PRESETS[styleFilter];
-    return adjustColor(hex, preset.saturation, preset.brightness);
+    return adjustColor(color, preset.saturation, preset.brightness);
   });
 
   const pickImage = async () => {
@@ -311,6 +318,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
   };
 
+  const shiftHue = (hex: string, shift: number) => {
+    const rgb = hexToRgb(hex);
+    let { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+    // Shift hue and wrap around
+    h = (h + shift + 360) % 360;
+
+    // HSL to RGB
+    const hslToRgb = (h: number, s: number, l: number) => {
+      s /= 100;
+      l /= 100;
+      const k = (n: number) => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+      return { r: Math.round(f(0) * 255), g: Math.round(f(8) * 255), b: Math.round(f(4) * 255) };
+    };
+
+    const newRgb = hslToRgb(h, s, l);
+    return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+  };
+
   // Get color info for detail panel
   const getSelectedColorInfo = () => {
     if (selectedColorIndex === null || !processedColors[selectedColorIndex]) return null;
@@ -493,6 +521,43 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
           </View>
 
+          {/* Hue Shift Slider */}
+          <View style={styles.sliderSection}>
+            <View style={styles.sliderHeader}>
+              <Text style={styles.sliderLabel}>Hue Shift</Text>
+              <View style={[styles.countBadge, { backgroundColor: hueShift === 0 ? '#333' : '#6366f1' }]}>
+                <Text style={styles.countBadgeText}>{hueShift}°</Text>
+              </View>
+            </View>
+            <View style={styles.hueBarContainer}>
+              {/* Hue spectrum bar */}
+              <View style={styles.hueSpectrumBar}>
+                {['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ff00', '#00ff80', '#00ffff', '#0080ff', '#0000ff', '#8000ff', '#ff00ff', '#ff0080'].map((color, i) => (
+                  <View key={i} style={[styles.hueSegment, { backgroundColor: color }]} />
+                ))}
+              </View>
+              <Slider
+                style={styles.hueSlider}
+                minimumValue={-180}
+                maximumValue={180}
+                step={1}
+                value={hueShift}
+                onValueChange={(value) => setHueShift(Math.round(value))}
+                minimumTrackTintColor="transparent"
+                maximumTrackTintColor="transparent"
+                thumbTintColor="#fff"
+              />
+            </View>
+            {hueShift !== 0 && (
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={() => setHueShift(0)}
+              >
+                <Text style={styles.resetButtonText}>Reset</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Re-extract Button */}
           <TouchableOpacity
             style={[styles.reExtractButton, !currentImageUri && styles.reExtractButtonDisabled]}
@@ -556,23 +621,42 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   </View>
                 </View>
 
-                {/* Color Values */}
+                {/* Color Values with Visual Bars */}
                 <View style={styles.colorValueSection}>
-                  <ColorValueRow
-                    label="HEX"
-                    value={colorInfo.hex}
-                    onCopy={() => copyColor(colorInfo.hex)}
-                  />
-                  <ColorValueRow
-                    label="RGB"
-                    value={`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`}
-                    onCopy={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}
-                  />
-                  <ColorValueRow
-                    label="HSL"
-                    value={`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`}
-                    onCopy={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}
-                  />
+                  {/* HEX */}
+                  <View style={styles.colorValueRow}>
+                    <Text style={styles.colorValueLabel}>HEX</Text>
+                    <Text style={styles.colorValueText}>{colorInfo.hex}</Text>
+                    <TouchableOpacity style={styles.colorValueCopy} onPress={() => copyColor(colorInfo.hex)}>
+                      <Ionicons name="copy-outline" size={18} color="#888" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* RGB with bars */}
+                  <View style={styles.colorChannelSection}>
+                    <View style={styles.channelHeader}>
+                      <Text style={styles.colorValueLabel}>RGB</Text>
+                      <TouchableOpacity onPress={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}>
+                        <Ionicons name="copy-outline" size={16} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                    <ColorChannelBar label="R" value={colorInfo.rgb.r} max={255} color="#ef4444" />
+                    <ColorChannelBar label="G" value={colorInfo.rgb.g} max={255} color="#22c55e" />
+                    <ColorChannelBar label="B" value={colorInfo.rgb.b} max={255} color="#3b82f6" />
+                  </View>
+
+                  {/* HSL with bars */}
+                  <View style={styles.colorChannelSection}>
+                    <View style={styles.channelHeader}>
+                      <Text style={styles.colorValueLabel}>HSL</Text>
+                      <TouchableOpacity onPress={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}>
+                        <Ionicons name="copy-outline" size={16} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                    <ColorChannelBar label="H" value={colorInfo.hsl.h} max={360} color={colorInfo.hex} isHue />
+                    <ColorChannelBar label="S" value={colorInfo.hsl.s} max={100} color="#a855f7" />
+                    <ColorChannelBar label="L" value={colorInfo.hsl.l} max={100} color="#888" />
+                  </View>
                 </View>
 
                 {/* Grayscale Preview */}
@@ -698,23 +782,37 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   );
 }
 
-// Color Value Row Component
-function ColorValueRow({
+// Color Channel Bar Component
+function ColorChannelBar({
   label,
   value,
-  onCopy,
+  max,
+  color,
+  isHue,
 }: {
   label: string;
-  value: string;
-  onCopy: () => void;
+  value: number;
+  max: number;
+  color: string;
+  isHue?: boolean;
 }) {
+  const percentage = (value / max) * 100;
+
   return (
-    <View style={styles.colorValueRow}>
-      <Text style={styles.colorValueLabel}>{label}</Text>
-      <Text style={styles.colorValueText}>{value}</Text>
-      <TouchableOpacity style={styles.colorValueCopy} onPress={onCopy}>
-        <Ionicons name="copy-outline" size={18} color="#888" />
-      </TouchableOpacity>
+    <View style={styles.channelRow}>
+      <Text style={styles.channelLabel}>{label}</Text>
+      <View style={styles.channelBarContainer}>
+        {isHue ? (
+          <View style={styles.hueGradientBar}>
+            <View style={[styles.channelBarFill, { width: `${percentage}%`, backgroundColor: color }]} />
+          </View>
+        ) : (
+          <View style={styles.channelBarBg}>
+            <View style={[styles.channelBarFill, { width: `${percentage}%`, backgroundColor: color }]} />
+          </View>
+        )}
+      </View>
+      <Text style={styles.channelValue}>{value}</Text>
     </View>
   );
 }
@@ -1140,6 +1238,96 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#888',
     marginLeft: 'auto',
+    fontFamily: 'monospace',
+  },
+  // Hue Shift styles
+  hueBarContainer: {
+    position: 'relative',
+    height: 40,
+    justifyContent: 'center',
+  },
+  hueSpectrumBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  hueSegment: {
+    flex: 1,
+    height: '100%',
+  },
+  hueSlider: {
+    position: 'absolute',
+    left: -8,
+    right: -8,
+    height: 40,
+  },
+  resetButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  resetButtonText: {
+    color: '#6366f1',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Color Channel styles
+  colorChannelSection: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1a1a1a',
+  },
+  channelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  channelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  channelLabel: {
+    width: 20,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+  },
+  channelBarContainer: {
+    flex: 1,
+    marginHorizontal: 10,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  channelBarBg: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  hueGradientBar: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  channelBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  channelValue: {
+    width: 36,
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'right',
     fontFamily: 'monospace',
   },
   // Save Modal
