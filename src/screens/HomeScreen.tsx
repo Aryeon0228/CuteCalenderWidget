@@ -1089,8 +1089,8 @@ const styles = StyleSheet.create({
   },
   colorSwatch: {
     width: '100%',
-    aspectRatio: 1,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#2d2d38',
   },
