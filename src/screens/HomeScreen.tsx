@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePaletteStore } from '../store/paletteStore';
 import ColorStrip from '../components/ColorStrip';
 import ColorDetailPanel from '../components/ColorDetailPanel';
-import { extractColorsFromImage } from '../lib/colorExtractor';
+import { extractColorsFromImage, ExtractionMethod } from '../lib/colorExtractor';
 
 interface HomeScreenProps {
   onNavigateToLibrary: () => void;
@@ -35,10 +35,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     currentImageUri,
     selectedColorIndex,
     colorCount,
+    extractionMethod,
     setCurrentColors,
     setCurrentImageUri,
     setSelectedColorIndex,
     setColorCount,
+    setExtractionMethod,
     savePalette,
   } = usePaletteStore();
 
@@ -66,7 +68,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     setCurrentImageUri(imageUri);
 
     try {
-      const colors = await extractColorsFromImage(imageUri, colorCount);
+      const colors = await extractColorsFromImage(imageUri, colorCount, extractionMethod);
       setCurrentColors(colors);
     } catch (error) {
       console.error('Error extracting colors:', error);
@@ -166,6 +168,55 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+      </View>
+
+      {/* Extraction method selector */}
+      <View style={styles.colorCountSection}>
+        <Text style={styles.sectionLabel}>Extraction Method</Text>
+        <View style={styles.methodSelector}>
+          <TouchableOpacity
+            style={[
+              styles.methodButton,
+              extractionMethod === 'histogram' && styles.methodButtonActive,
+            ]}
+            onPress={() => setExtractionMethod('histogram')}
+          >
+            <Ionicons
+              name="bar-chart-outline"
+              size={16}
+              color={extractionMethod === 'histogram' ? '#fff' : '#666'}
+            />
+            <Text
+              style={[
+                styles.methodButtonText,
+                extractionMethod === 'histogram' && styles.methodButtonTextActive,
+              ]}
+            >
+              Histogram
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.methodButton,
+              extractionMethod === 'kmeans' && styles.methodButtonActive,
+            ]}
+            onPress={() => setExtractionMethod('kmeans')}
+          >
+            <Ionicons
+              name="git-network-outline"
+              size={16}
+              color={extractionMethod === 'kmeans' ? '#fff' : '#666'}
+            />
+            <Text
+              style={[
+                styles.methodButtonText,
+                extractionMethod === 'kmeans' && styles.methodButtonTextActive,
+              ]}
+            >
+              K-Means
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -319,6 +370,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   countButtonTextActive: {
+    color: '#fff',
+  },
+  methodSelector: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1a2e',
+    borderRadius: 10,
+    padding: 4,
+    gap: 4,
+  },
+  methodButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  methodButtonActive: {
+    backgroundColor: '#3a3a5c',
+  },
+  methodButtonText: {
+    color: '#666',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  methodButtonTextActive: {
     color: '#fff',
   },
   content: {

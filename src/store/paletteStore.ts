@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ExtractionMethod } from '../lib/colorExtractor';
 
 export interface SavedPalette {
   id: string;
@@ -16,6 +17,7 @@ interface PaletteState {
   currentImageUri: string | null;
   selectedColorIndex: number | null;
   colorCount: number;
+  extractionMethod: ExtractionMethod;
 
   // Library
   savedPalettes: SavedPalette[];
@@ -25,6 +27,7 @@ interface PaletteState {
   setCurrentImageUri: (uri: string | null) => void;
   setSelectedColorIndex: (index: number | null) => void;
   setColorCount: (count: number) => void;
+  setExtractionMethod: (method: ExtractionMethod) => void;
 
   savePalette: (name: string) => void;
   deletePalette: (id: string) => void;
@@ -40,6 +43,7 @@ export const usePaletteStore = create<PaletteState>()(
       currentImageUri: null,
       selectedColorIndex: null,
       colorCount: 5,
+      extractionMethod: 'histogram',
       savedPalettes: [],
 
       // Actions
@@ -50,6 +54,8 @@ export const usePaletteStore = create<PaletteState>()(
       setSelectedColorIndex: (index) => set({ selectedColorIndex: index }),
 
       setColorCount: (count) => set({ colorCount: count }),
+
+      setExtractionMethod: (method) => set({ extractionMethod: method }),
 
       savePalette: (name) => {
         const { currentColors, currentImageUri, savedPalettes } = get();
@@ -93,6 +99,7 @@ export const usePaletteStore = create<PaletteState>()(
       partialize: (state) => ({
         savedPalettes: state.savedPalettes,
         colorCount: state.colorCount,
+        extractionMethod: state.extractionMethod,
       }),
     }
   )
