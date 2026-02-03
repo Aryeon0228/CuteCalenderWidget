@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePaletteStore } from '../store/paletteStore';
 import ColorStrip from '../components/ColorStrip';
 import ColorDetailPanel from '../components/ColorDetailPanel';
+import { extractColorsFromImage } from '../lib/colorExtractor';
 
 interface HomeScreenProps {
   onNavigateToLibrary: () => void;
@@ -65,40 +66,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     setCurrentImageUri(imageUri);
 
     try {
-      // Dynamic import to avoid crash on load
-      const { getColors } = await import('react-native-image-colors');
-
-      const result = await getColors(imageUri, {
-        fallback: '#000000',
-        cache: false,
-        key: imageUri,
-      });
-
-      let extractedColors: string[] = [];
-
-      if (result.platform === 'android') {
-        extractedColors = [
-          result.dominant,
-          result.vibrant,
-          result.darkVibrant,
-          result.lightVibrant,
-          result.darkMuted,
-          result.lightMuted,
-          result.muted,
-          result.average,
-        ].filter((c): c is string => !!c);
-      } else if (result.platform === 'ios') {
-        extractedColors = [
-          result.primary,
-          result.secondary,
-          result.background,
-          result.detail,
-        ].filter((c): c is string => !!c);
-      }
-
-      // Ensure unique colors and limit to colorCount
-      const uniqueColors = [...new Set(extractedColors)].slice(0, colorCount);
-      setCurrentColors(uniqueColors);
+      const colors = await extractColorsFromImage(imageUri, colorCount);
+      setCurrentColors(colors);
     } catch (error) {
       console.error('Error extracting colors:', error);
       Alert.alert('Error', 'Failed to extract colors from image.');
