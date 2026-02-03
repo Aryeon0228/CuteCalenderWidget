@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
+import ViewShot from 'react-native-view-shot';
 import { usePaletteStore } from '../store/paletteStore';
 import { useThemeStore } from '../store/themeStore';
 import { extractColorsFromImage, ExtractionMethod, analyzeLuminosityHistogram, LuminosityHistogram } from '../lib/colorExtractor';
@@ -210,6 +211,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [variationHueShift, setVariationHueShift] = useState(true); // For Value Variations
   const [histogram, setHistogram] = useState<LuminosityHistogram | null>(null);
   const [showHistogram, setShowHistogram] = useState(true);
+  const [exportFormat, setExportFormat] = useState<'png' | 'json' | 'css' | 'unity' | 'unreal'>('png');
+  const [isExporting, setIsExporting] = useState(false);
+  const paletteCardRef = useRef<ViewShot>(null);
 
   const { mode, colors: theme, toggleTheme } = useThemeStore();
 
@@ -341,7 +345,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     setShowExportModal(true);
   };
 
-  const exportAs = async (format: string) => {
+  const exportAsPng = async () => {
+    if (!paletteCardRef.current) return;
+
+    setIsExporting(true);
+    try {
+      const uri = await paletteCardRef.current.capture?.();
+      if (uri && await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share Palette',
+        });
+      }
+    } catch (error) {
+      console.error('PNG export error:', error);
+      Alert.alert('Error', 'Failed to export as PNG.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportAsText = async (format: string) => {
     let content = '';
     let filename = 'palette';
     const colors = processedColors;
@@ -349,10 +373,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     switch (format) {
       case 'json':
         content = JSON.stringify({
+          name: paletteName || 'Untitled Palette',
           colors: colors.map((hex, i) => ({
             index: i,
             hex,
             rgb: hexToRgb(hex),
+            hsl: rgbToHsl(hexToRgb(hex).r, hexToRgb(hex).g, hexToRgb(hex).b),
           })),
           exportedAt: new Date().toISOString(),
         }, null, 2);
@@ -376,11 +402,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         }).join('\n')}`;
         filename = 'palette.csv';
         break;
-      default: // png/text
+      default:
         content = colors.join('\n');
         filename = 'palette.txt';
     }
 
+    setIsExporting(true);
     try {
       const fileUri = FileSystem.cacheDirectory + filename;
       await FileSystem.writeAsStringAsync(fileUri, content);
@@ -389,6 +416,16 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to export palette.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportConfirm = async () => {
+    if (exportFormat === 'png') {
+      await exportAsPng();
+    } else {
+      await exportAsText(exportFormat);
     }
     setShowExportModal(false);
   };
@@ -949,47 +986,139 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </TouchableOpacity>
             </View>
 
-            {/* Export Options */}
-            <ExportOption
-              icon="image-outline"
-              iconColor="#f472b6"
-              title="PNG Image"
-              subtitle="High-res preview"
-              onCopy={() => copyToClipboard('text')}
-              onDownload={() => exportAs('text')}
-            />
-            <ExportOption
-              icon="code-slash-outline"
-              iconColor="#fbbf24"
-              title="JSON Data"
-              subtitle="Raw color arrays"
-              onCopy={() => copyToClipboard('json')}
-              onDownload={() => exportAs('json')}
-            />
-            <ExportOption
-              icon="logo-css3"
-              iconColor="#3b82f6"
-              title="CSS Variables"
-              subtitle=":root variables"
-              onCopy={() => copyToClipboard('css')}
-              onDownload={() => exportAs('css')}
-            />
-            <ExportOption
-              icon="cube-outline"
-              iconColor="#9ca3af"
-              title="Unity Asset"
-              subtitle=".asset file"
-              onCopy={() => copyToClipboard('text')}
-              onDownload={() => exportAs('unity')}
-            />
-            <ExportOption
-              icon="game-controller-outline"
-              iconColor="#6366f1"
-              title="Unreal Engine"
-              subtitle="Curve atlas"
-              onCopy={() => copyToClipboard('text')}
-              onDownload={() => exportAs('unreal')}
-            />
+            {/* Palette Preview Card - Capturable */}
+            <ScrollView style={styles.exportPreviewScroll} showsVerticalScrollIndicator={false}>
+              <ViewShot
+                ref={paletteCardRef}
+                options={{ format: 'png', quality: 1.0 }}
+                style={styles.paletteCard}
+              >
+                {/* Image Preview */}
+                {currentImageUri && (
+                  <Image
+                    source={{ uri: currentImageUri }}
+                    style={styles.paletteCardImage}
+                    contentFit="cover"
+                  />
+                )}
+
+                {/* Color Swatches */}
+                <View style={styles.paletteCardSwatches}>
+                  {processedColors.map((color, index) => (
+                    <View key={index} style={[styles.paletteCardSwatch, { backgroundColor: color }]} />
+                  ))}
+                </View>
+
+                {/* Palette Info */}
+                <Text style={styles.paletteCardName}>
+                  {paletteName || 'Untitled Palette'}
+                </Text>
+                <Text style={styles.paletteCardLabel}>PALETTE</Text>
+
+                {/* Color Values */}
+                <View style={styles.paletteCardColors}>
+                  {processedColors.map((hex, index) => {
+                    const rgb = hexToRgb(hex);
+                    return (
+                      <View key={index} style={styles.paletteCardColorRow}>
+                        <View style={[styles.paletteCardColorDot, { backgroundColor: hex }]} />
+                        <View style={styles.paletteCardColorInfo}>
+                          <Text style={styles.paletteCardHex}>{hex}</Text>
+                          <Text style={styles.paletteCardRgb}>
+                            RGB({rgb.r}, {rgb.g}, {rgb.b})
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Watermark */}
+                <Text style={styles.paletteCardWatermark}>GamePalette</Text>
+              </ViewShot>
+
+              {/* Format Selection */}
+              <View style={styles.formatSection}>
+                <Text style={styles.formatSectionTitle}>Export Format</Text>
+                <View style={styles.formatOptions}>
+                  {[
+                    { id: 'png', label: 'PNG', icon: 'image-outline' },
+                    { id: 'json', label: 'JSON', icon: 'code-slash-outline' },
+                    { id: 'css', label: 'CSS', icon: 'logo-css3' },
+                    { id: 'unity', label: 'Unity', icon: 'cube-outline' },
+                    { id: 'unreal', label: 'Unreal', icon: 'game-controller-outline' },
+                  ].map((format) => (
+                    <TouchableOpacity
+                      key={format.id}
+                      style={[
+                        styles.formatOption,
+                        exportFormat === format.id && styles.formatOptionActive,
+                      ]}
+                      onPress={() => setExportFormat(format.id as typeof exportFormat)}
+                    >
+                      <Ionicons
+                        name={format.icon as any}
+                        size={18}
+                        color={exportFormat === format.id ? '#fff' : '#888'}
+                      />
+                      <Text
+                        style={[
+                          styles.formatOptionText,
+                          exportFormat === format.id && styles.formatOptionTextActive,
+                        ]}
+                      >
+                        {format.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Export Button */}
+              <TouchableOpacity
+                style={styles.exportConfirmButton}
+                onPress={handleExportConfirm}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="share-outline" size={20} color="#fff" />
+                    <Text style={styles.exportConfirmButtonText}>
+                      Export as {exportFormat.toUpperCase()}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* Quick Copy Options */}
+              <View style={styles.quickCopySection}>
+                <Text style={styles.quickCopyTitle}>Quick Copy</Text>
+                <View style={styles.quickCopyButtons}>
+                  <TouchableOpacity
+                    style={styles.quickCopyButton}
+                    onPress={() => copyToClipboard('text')}
+                  >
+                    <Text style={styles.quickCopyButtonText}>HEX</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quickCopyButton}
+                    onPress={() => copyToClipboard('json')}
+                  >
+                    <Text style={styles.quickCopyButtonText}>JSON</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quickCopyButton}
+                    onPress={() => copyToClipboard('css')}
+                  >
+                    <Text style={styles.quickCopyButtonText}>CSS</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={{ height: 20 }} />
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1028,41 +1157,6 @@ function ColorChannelBar({
         )}
       </View>
       <Text style={styles.channelValue}>{value}</Text>
-    </View>
-  );
-}
-
-// Export Option Component
-function ExportOption({
-  icon,
-  iconColor,
-  title,
-  subtitle,
-  onCopy,
-  onDownload,
-}: {
-  icon: string;
-  iconColor: string;
-  title: string;
-  subtitle: string;
-  onCopy: () => void;
-  onDownload: () => void;
-}) {
-  return (
-    <View style={styles.exportOption}>
-      <View style={[styles.exportOptionIcon, { backgroundColor: iconColor + '20' }]}>
-        <Ionicons name={icon as any} size={24} color={iconColor} />
-      </View>
-      <View style={styles.exportOptionInfo}>
-        <Text style={styles.exportOptionTitle}>{title}</Text>
-        <Text style={styles.exportOptionSubtitle}>{subtitle}</Text>
-      </View>
-      <TouchableOpacity style={styles.exportActionButton} onPress={onCopy}>
-        <Ionicons name="copy-outline" size={20} color="#888" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.exportActionButton} onPress={onDownload}>
-        <Ionicons name="download-outline" size={20} color="#888" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -1728,6 +1822,153 @@ const styles = StyleSheet.create({
   },
   exportActionButton: {
     padding: 10,
+  },
+  exportPreviewScroll: {
+    maxHeight: 500,
+  },
+  // Palette Card for export
+  paletteCard: {
+    backgroundColor: '#1a1a24',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  paletteCardImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  paletteCardSwatches: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+  },
+  paletteCardSwatch: {
+    flex: 1,
+    height: 40,
+    borderRadius: 8,
+  },
+  paletteCardName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  paletteCardLabel: {
+    fontSize: 11,
+    color: '#666',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  paletteCardColors: {
+    gap: 8,
+  },
+  paletteCardColorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  paletteCardColorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+  },
+  paletteCardColorInfo: {
+    flex: 1,
+  },
+  paletteCardHex: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+    fontFamily: 'monospace',
+  },
+  paletteCardRgb: {
+    fontSize: 11,
+    color: '#888',
+    fontFamily: 'monospace',
+  },
+  paletteCardWatermark: {
+    textAlign: 'center',
+    fontSize: 10,
+    color: '#444',
+    marginTop: 12,
+  },
+  // Format selection
+  formatSection: {
+    marginBottom: 16,
+  },
+  formatSectionTitle: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '600',
+    marginBottom: 10,
+    letterSpacing: 0.5,
+  },
+  formatOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  formatOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#24242e',
+    gap: 6,
+  },
+  formatOptionActive: {
+    backgroundColor: '#6366f1',
+  },
+  formatOptionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#888',
+  },
+  formatOptionTextActive: {
+    color: '#fff',
+  },
+  exportConfirmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6366f1',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 16,
+  },
+  exportConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  quickCopySection: {
+    marginBottom: 8,
+  },
+  quickCopyTitle: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  quickCopyButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  quickCopyButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#24242e',
+  },
+  quickCopyButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#888',
   },
   // Histogram styles
   histogramCard: {
