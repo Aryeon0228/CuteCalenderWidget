@@ -277,6 +277,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   const handleMethodChange = async (method: ExtractionMethod) => {
     setExtractionMethod(method);
+    if (currentImageUri) {
+      await doExtract(currentImageUri, colorCount, method);
+    }
   };
 
   const handleReExtract = async () => {
@@ -422,28 +425,16 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, dynamicStyles.title]}>Game Palette</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
-            onPress={() => setShowGrayscale(!showGrayscale)}
-          >
-            <Ionicons
-              name={showGrayscale ? 'contrast' : 'contrast-outline'}
-              size={22}
-              color={showGrayscale ? theme.accent : theme.textPrimary}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
-            onPress={toggleTheme}
-          >
-            <Ionicons
-              name={mode === 'dark' ? 'sunny-outline' : 'moon-outline'}
-              size={22}
-              color={theme.textPrimary}
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
+          onPress={toggleTheme}
+        >
+          <Ionicons
+            name={mode === 'dark' ? 'sunny-outline' : 'moon-outline'}
+            size={22}
+            color={theme.textPrimary}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -453,10 +444,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <>
               <Image
                 source={{ uri: currentImageUri }}
-                style={[styles.image, showGrayscale && { opacity: 0.8 }]}
+                style={styles.image}
               />
+              {showGrayscale && <View style={styles.grayscaleOverlay} />}
               <View style={styles.sourceImageBadge}>
-                <Text style={styles.sourceImageText}>Source Image</Text>
+                <Text style={styles.sourceImageText}>
+                  {showGrayscale ? 'Value Check' : 'Source Image'}
+                </Text>
               </View>
             </>
           ) : (
@@ -526,8 +520,22 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         <View style={styles.extractionCard}>
           <View style={styles.extractionHeader}>
             <Text style={styles.extractionTitle}>MAIN EXTRACTION</Text>
-            <TouchableOpacity>
-              <Ionicons name="options-outline" size={20} color="#666" />
+            <TouchableOpacity
+              style={[
+                styles.valueToggleButton,
+                showGrayscale && styles.valueToggleButtonActive,
+              ]}
+              onPress={() => setShowGrayscale(!showGrayscale)}
+            >
+              <Ionicons
+                name="contrast-outline"
+                size={14}
+                color={showGrayscale ? '#fff' : '#888'}
+              />
+              <Text style={[
+                styles.valueToggleText,
+                showGrayscale && styles.valueToggleTextActive,
+              ]}>Value</Text>
             </TouchableOpacity>
           </View>
 
@@ -992,6 +1000,11 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  grayscaleOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#808080',
+    opacity: 0.9,
+  },
   sourceImageBadge: {
     position: 'absolute',
     top: 12,
@@ -1100,6 +1113,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 1,
+  },
+  valueToggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#24242e',
+    gap: 4,
+  },
+  valueToggleButtonActive: {
+    backgroundColor: '#6366f1',
+  },
+  valueToggleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#888',
+  },
+  valueToggleTextActive: {
+    color: '#fff',
   },
   methodToggle: {
     flexDirection: 'row',
