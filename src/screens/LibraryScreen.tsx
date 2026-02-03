@@ -365,7 +365,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#0a0a10',
   },
   header: {
     flexDirection: 'row',
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderRadius: 16,
     marginBottom: 16,
     overflow: 'hidden',
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     height: 140,
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#0c0c12',
   },
   thumbnailImage: {
     width: '100%',
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#0c0c12',
   },
   menuButton: {
     position: 'absolute',
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tag: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#24242e',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#333',
+    backgroundColor: '#2d2d38',
     paddingVertical: 10,
     borderRadius: 8,
     gap: 6,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   menuModal: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 20,
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
+    borderBottomColor: '#24242e',
   },
   menuItem: {
     flexDirection: 'row',
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   },
   menuItemDanger: {
     borderTopWidth: 1,
-    borderTopColor: '#2a2a2a',
+    borderTopColor: '#24242e',
     marginTop: 8,
     paddingTop: 20,
   },
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     color: '#ff4444',
   },
   exportModal: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 12,
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   exportHandle: {
     width: 36,
     height: 4,
-    backgroundColor: '#444',
+    backgroundColor: '#3e3e50',
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 16,
