@@ -63,12 +63,15 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
   };
 
-  const extractColors = async (imageUri: string) => {
+  // Core extraction function - takes explicit values to avoid stale closures
+  const doExtract = async (
+    imageUri: string,
+    count: number,
+    method: ExtractionMethod
+  ) => {
     setIsExtracting(true);
-    setCurrentImageUri(imageUri);
-
     try {
-      const colors = await extractColorsFromImage(imageUri, colorCount, extractionMethod);
+      const colors = await extractColorsFromImage(imageUri, count, method);
       setCurrentColors(colors);
     } catch (error) {
       console.error('Error extracting colors:', error);
@@ -78,36 +81,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
   };
 
-  // Re-extract colors when settings change
-  useEffect(() => {
-    let cancelled = false;
+  // Called when picking a new image
+  const extractColors = async (imageUri: string) => {
+    setCurrentImageUri(imageUri);
+    await doExtract(imageUri, colorCount, extractionMethod);
+  };
 
-    const reExtract = async () => {
-      if (!currentImageUri) return;
+  // Handle color count change - directly call with new value
+  const handleColorCountChange = async (count: number) => {
+    setColorCount(count);
+    if (currentImageUri) {
+      await doExtract(currentImageUri, count, extractionMethod);
+    }
+  };
 
-      setIsExtracting(true);
-      try {
-        const colors = await extractColorsFromImage(currentImageUri, colorCount, extractionMethod);
-        if (!cancelled) {
-          setCurrentColors(colors);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Error re-extracting colors:', error);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsExtracting(false);
-        }
-      }
-    };
-
-    reExtract();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [colorCount, extractionMethod, currentImageUri]);
+  // Handle extraction method change - directly call with new value
+  const handleMethodChange = async (method: ExtractionMethod) => {
+    setExtractionMethod(method);
+    if (currentImageUri) {
+      await doExtract(currentImageUri, colorCount, method);
+    }
+  };
 
   const handleSave = () => {
     if (currentColors.length === 0) {
@@ -187,7 +181,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 styles.countButton,
                 colorCount === count && styles.countButtonActive,
               ]}
-              onPress={() => setColorCount(count)}
+              onPress={() => handleColorCountChange(count)}
             >
               <Text
                 style={[
@@ -211,7 +205,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               styles.methodButton,
               extractionMethod === 'histogram' && styles.methodButtonActive,
             ]}
-            onPress={() => setExtractionMethod('histogram')}
+            onPress={() => handleMethodChange('histogram')}
           >
             <Ionicons
               name="bar-chart-outline"
@@ -232,7 +226,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               styles.methodButton,
               extractionMethod === 'kmeans' && styles.methodButtonActive,
             ]}
-            onPress={() => setExtractionMethod('kmeans')}
+            onPress={() => handleMethodChange('kmeans')}
           >
             <Ionicons
               name="git-network-outline"
