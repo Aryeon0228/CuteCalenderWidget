@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   ScrollView,
   Alert,
@@ -12,6 +11,7 @@ import {
   TextInput,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -444,9 +444,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <>
               <Image
                 source={{ uri: currentImageUri }}
-                style={styles.image}
+                style={[
+                  styles.image,
+                  showGrayscale && { filter: 'grayscale(1)' },
+                ]}
+                contentFit="cover"
               />
-              {showGrayscale && <View style={styles.grayscaleOverlay} />}
               <View style={styles.sourceImageBadge}>
                 <Text style={styles.sourceImageText}>
                   {showGrayscale ? 'Value Check' : 'Source Image'}
@@ -573,6 +576,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Method Description */}
+          <Text style={styles.methodDescription}>
+            {extractionMethod === 'histogram'
+              ? '색상 분포 기반으로 주요 색조를 추출합니다. 빠르고 안정적.'
+              : '클러스터링으로 대표 색상을 계산합니다. 정확하지만 느림.'}
+          </Text>
 
           {/* Color Count Slider */}
           <View style={styles.sliderSection}>
@@ -997,12 +1007,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
-  },
-  grayscaleOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#808080',
-    opacity: 0.9,
   },
   sourceImageBadge: {
     position: 'absolute',
@@ -1082,8 +1086,8 @@ const styles = StyleSheet.create({
   },
   colorSwatch: {
     width: '100%',
-    aspectRatio: 1,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#2d2d38',
   },
@@ -1131,7 +1135,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#24242e',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 20,
+    marginBottom: 8,
+  },
+  methodDescription: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   methodOption: {
     flex: 1,
