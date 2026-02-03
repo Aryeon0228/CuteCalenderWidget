@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -77,6 +77,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       setIsExtracting(false);
     }
   };
+
+  // Re-extract colors when settings change
+  useEffect(() => {
+    if (currentImageUri && !isExtracting) {
+      extractColors(currentImageUri);
+    }
+  }, [colorCount, extractionMethod]);
 
   const handleSave = () => {
     if (currentColors.length === 0) {
