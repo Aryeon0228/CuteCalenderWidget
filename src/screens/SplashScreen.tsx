@@ -77,14 +77,6 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           </View>
         </View>
 
-        {/* Color dots around logo */}
-        <View style={styles.colorDots}>
-          <View style={[styles.dot, styles.dot1, { backgroundColor: '#FF6B6B' }]} />
-          <View style={[styles.dot, styles.dot2, { backgroundColor: '#4ECDC4' }]} />
-          <View style={[styles.dot, styles.dot3, { backgroundColor: '#FFE66D' }]} />
-          <View style={[styles.dot, styles.dot4, { backgroundColor: '#95E1D3' }]} />
-          <View style={[styles.dot, styles.dot5, { backgroundColor: '#F38181' }]} />
-        </View>
       </Animated.View>
 
       {/* Title */}
@@ -154,38 +146,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  colorDots: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  dot: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  dot1: {
-    top: 10,
-    left: '50%',
-    marginLeft: -6,
-  },
-  dot2: {
-    top: 30,
-    right: 10,
-  },
-  dot3: {
-    bottom: 30,
-    right: 15,
-  },
-  dot4: {
-    bottom: 30,
-    left: 15,
-  },
-  dot5: {
-    top: 30,
-    left: 10,
   },
   textContainer: {
     marginTop: 32,
