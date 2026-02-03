@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   ScrollView,
   Alert,
@@ -12,6 +11,7 @@ import {
   TextInput,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -444,9 +444,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <>
               <Image
                 source={{ uri: currentImageUri }}
-                style={styles.image}
+                style={[
+                  styles.image,
+                  showGrayscale && { filter: 'grayscale(1)' },
+                ]}
+                contentFit="cover"
               />
-              {showGrayscale && <View style={styles.grayscaleOverlay} />}
               <View style={styles.sourceImageBadge}>
                 <Text style={styles.sourceImageText}>
                   {showGrayscale ? 'Value Check' : 'Source Image'}
@@ -1004,12 +1007,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
-  },
-  grayscaleOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#808080',
-    opacity: 0.9,
   },
   sourceImageBadge: {
     position: 'absolute',
