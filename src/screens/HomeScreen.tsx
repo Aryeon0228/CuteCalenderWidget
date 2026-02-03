@@ -20,7 +20,7 @@ import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { usePaletteStore } from '../store/paletteStore';
 import { useThemeStore } from '../store/themeStore';
-import { extractColorsFromImage, ExtractionMethod } from '../lib/colorExtractor';
+import { extractColorsFromImage, ExtractionMethod, analyzeLuminosityHistogram, LuminosityHistogram } from '../lib/colorExtractor';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLOR_CARD_SIZE = (SCREEN_WIDTH - 64) / 4 - 8;
@@ -208,6 +208,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
   const [showGrayscale, setShowGrayscale] = useState(false);
   const [variationHueShift, setVariationHueShift] = useState(true); // For Value Variations
+  const [histogram, setHistogram] = useState<LuminosityHistogram | null>(null);
+  const [showHistogram, setShowHistogram] = useState(true);
 
   const { mode, colors: theme, toggleTheme } = useThemeStore();
 
@@ -272,7 +274,21 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   const extractColors = async (imageUri: string) => {
     setCurrentImageUri(imageUri);
-    await doExtract(imageUri, colorCount, extractionMethod);
+    // Extract colors and analyze histogram in parallel
+    await Promise.all([
+      doExtract(imageUri, colorCount, extractionMethod),
+      analyzeHistogram(imageUri),
+    ]);
+  };
+
+  const analyzeHistogram = async (imageUri: string) => {
+    try {
+      const histogramData = await analyzeLuminosityHistogram(imageUri);
+      setHistogram(histogramData);
+    } catch (error) {
+      console.error('Histogram analysis error:', error);
+      setHistogram(null);
+    }
   };
 
   const handleMethodChange = async (method: ExtractionMethod) => {
@@ -497,6 +513,91 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+        )}
+
+        {/* Luminosity Histogram */}
+        {histogram && currentImageUri && (
+          <View style={styles.histogramCard}>
+            <TouchableOpacity
+              style={styles.histogramHeader}
+              onPress={() => setShowHistogram(!showHistogram)}
+            >
+              <View style={styles.histogramTitleRow}>
+                <Ionicons name="bar-chart-outline" size={16} color="#888" />
+                <Text style={styles.histogramTitle}>LUMINOSITY</Text>
+              </View>
+              <View style={styles.histogramStats}>
+                <Text style={styles.histogramStatText}>
+                  Contrast: {histogram.contrast}%
+                </Text>
+                <Ionicons
+                  name={showHistogram ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color="#666"
+                />
+              </View>
+            </TouchableOpacity>
+
+            {showHistogram && (
+              <>
+                {/* Histogram Bars */}
+                <View style={styles.histogramBars}>
+                  {histogram.bins.map((value, index) => (
+                    <View key={index} style={styles.histogramBarWrapper}>
+                      <View
+                        style={[
+                          styles.histogramBar,
+                          {
+                            height: `${Math.max(value, 2)}%`,
+                            backgroundColor: index < 11 ? '#4a4a5a' : index < 21 ? '#6a6a7a' : '#9a9aaa',
+                          },
+                        ]}
+                      />
+                    </View>
+                  ))}
+                </View>
+
+                {/* Gradient Scale */}
+                <View style={styles.histogramScale}>
+                  <View style={styles.histogramGradient}>
+                    {Array.from({ length: 16 }).map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.histogramGradientStep,
+                          { backgroundColor: `rgb(${i * 17}, ${i * 17}, ${i * 17})` },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                  <View style={styles.histogramLabels}>
+                    <Text style={styles.histogramLabel}>Dark</Text>
+                    <Text style={styles.histogramLabel}>Bright</Text>
+                  </View>
+                </View>
+
+                {/* Statistics Row */}
+                <View style={styles.histogramStatsRow}>
+                  <View style={styles.histogramStatItem}>
+                    <Text style={styles.histogramStatLabel}>Dark</Text>
+                    <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
+                  </View>
+                  <View style={styles.histogramStatItem}>
+                    <Text style={styles.histogramStatLabel}>Mid</Text>
+                    <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
+                  </View>
+                  <View style={styles.histogramStatItem}>
+                    <Text style={styles.histogramStatLabel}>Bright</Text>
+                    <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
+                  </View>
+                  <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
+                    <Text style={styles.histogramStatLabel}>Avg</Text>
+                    <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         )}
 
@@ -1628,5 +1729,107 @@ const styles = StyleSheet.create({
   },
   exportActionButton: {
     padding: 10,
+  },
+  // Histogram styles
+  histogramCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#16161e',
+    borderRadius: 16,
+    padding: 16,
+  },
+  histogramHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  histogramTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  histogramTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#888',
+    letterSpacing: 1,
+  },
+  histogramStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  histogramStatText: {
+    fontSize: 12,
+    color: '#6366f1',
+    fontWeight: '600',
+  },
+  histogramBars: {
+    flexDirection: 'row',
+    height: 80,
+    alignItems: 'flex-end',
+    marginTop: 16,
+    gap: 1,
+  },
+  histogramBarWrapper: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  histogramBar: {
+    width: '100%',
+    borderRadius: 2,
+    minHeight: 2,
+  },
+  histogramScale: {
+    marginTop: 8,
+  },
+  histogramGradient: {
+    flexDirection: 'row',
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  histogramGradientStep: {
+    flex: 1,
+  },
+  histogramLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  histogramLabel: {
+    fontSize: 10,
+    color: '#666',
+  },
+  histogramStatsRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 8,
+  },
+  histogramStatItem: {
+    flex: 1,
+    backgroundColor: '#0c0c12',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  histogramStatItemAvg: {
+    backgroundColor: '#1a1a2e',
+  },
+  histogramStatLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginBottom: 2,
+  },
+  histogramStatValue: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  histogramStatValueAvg: {
+    fontSize: 14,
+    color: '#6366f1',
+    fontWeight: '700',
   },
 });
