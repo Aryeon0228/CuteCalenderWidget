@@ -80,21 +80,34 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   // Re-extract colors when settings change
   useEffect(() => {
+    let cancelled = false;
+
     const reExtract = async () => {
-      if (currentImageUri && !isExtracting) {
-        setIsExtracting(true);
-        try {
-          const colors = await extractColorsFromImage(currentImageUri, colorCount, extractionMethod);
+      if (!currentImageUri) return;
+
+      setIsExtracting(true);
+      try {
+        const colors = await extractColorsFromImage(currentImageUri, colorCount, extractionMethod);
+        if (!cancelled) {
           setCurrentColors(colors);
-        } catch (error) {
+        }
+      } catch (error) {
+        if (!cancelled) {
           console.error('Error re-extracting colors:', error);
-        } finally {
+        }
+      } finally {
+        if (!cancelled) {
           setIsExtracting(false);
         }
       }
     };
+
     reExtract();
-  }, [colorCount, extractionMethod]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [colorCount, extractionMethod, currentImageUri]);
 
   const handleSave = () => {
     if (currentColors.length === 0) {
