@@ -124,6 +124,77 @@ const shiftHue = (hex: string, shift: number) => {
   return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
 };
 
+// Generate color variations (Shadow/Highlight with optional hue shift)
+interface ColorVariation {
+  hex: string;
+  label: string;
+  fullLabel: string;
+  hsl: { h: number; s: number; l: number };
+}
+
+const generateColorVariations = (hex: string, useHueShift: boolean): ColorVariation[] => {
+  const rgb = hexToRgb(hex);
+  const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  // Calculate optimal hue shift amount based on saturation
+  const saturationFactor = Math.min(s / 100, 1);
+  const baseHueShift = useHueShift ? Math.round(15 * saturationFactor) : 0;
+
+  // Get shortest direction to Blue (240°) for shadows, Yellow (60°) for highlights
+  const getDirection = (fromH: number, toH: number) => {
+    let diff = toH - fromH;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    return diff >= 0 ? 1 : -1;
+  };
+
+  const shadowDir = getDirection(h, 240);  // toward Blue
+  const highlightDir = getDirection(h, 60); // toward Yellow
+
+  // Create variation with proportional lightness distribution
+  const createVar = (lightnessOffset: number, hueOffset: number): { hex: string; hsl: { h: number; s: number; l: number } } => {
+    const MIN_L = 5, MAX_L = 95, MAX_OFFSET = 30, SPACE_USAGE = 0.5;
+
+    let newL: number;
+    if (lightnessOffset < 0) {
+      const availableSpace = l - MIN_L;
+      const ratio = Math.abs(lightnessOffset) / MAX_OFFSET;
+      newL = l - (availableSpace * ratio * SPACE_USAGE);
+    } else if (lightnessOffset > 0) {
+      const availableSpace = MAX_L - l;
+      const ratio = lightnessOffset / MAX_OFFSET;
+      newL = l + (availableSpace * ratio * SPACE_USAGE);
+    } else {
+      newL = l;
+    }
+    newL = Math.min(Math.max(newL, MIN_L), MAX_L);
+
+    const newH = (h + hueOffset + 360) % 360;
+    let newS = s;
+    if (lightnessOffset < 0) newS = Math.min(s * 1.1, 100);
+    else if (lightnessOffset > 0) newS = s * 0.9;
+
+    const newRgb = hslToRgb(newH, newS, newL);
+    return {
+      hex: rgbToHex(newRgb.r, newRgb.g, newRgb.b),
+      hsl: { h: Math.round(newH), s: Math.round(newS), l: Math.round(newL) },
+    };
+  };
+
+  const shadow2 = createVar(-30, useHueShift ? shadowDir * baseHueShift * 1.5 : 0);
+  const shadow1 = createVar(-15, useHueShift ? shadowDir * baseHueShift * 0.75 : 0);
+  const highlight1 = createVar(15, useHueShift ? highlightDir * baseHueShift * 0.75 : 0);
+  const highlight2 = createVar(30, useHueShift ? highlightDir * baseHueShift * 1.5 : 0);
+
+  return [
+    { ...shadow2, label: 'S2', fullLabel: 'Shadow 2' },
+    { ...shadow1, label: 'S1', fullLabel: 'Shadow 1' },
+    { hex, label: 'Base', fullLabel: 'Base', hsl: { h, s, l } },
+    { ...highlight1, label: 'L1', fullLabel: 'Light 1' },
+    { ...highlight2, label: 'L2', fullLabel: 'Light 2' },
+  ];
+};
+
 interface HomeScreenProps {
   onNavigateToLibrary: () => void;
 }
@@ -136,7 +207,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [paletteName, setPaletteName] = useState('');
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
   const [showGrayscale, setShowGrayscale] = useState(false);
-  const [hueShift, setHueShift] = useState(0);
+  const [variationHueShift, setVariationHueShift] = useState(true); // For Value Variations
 
   const {
     currentColors,
@@ -152,19 +223,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     savePalette,
   } = usePaletteStore();
 
-  // Apply style filter and hue shift to colors
+  // Apply style filter to colors
   const processedColors = currentColors.map((hex) => {
     if (showGrayscale) {
       return toGrayscale(hex);
     }
-    let color = hex;
-    // Apply hue shift first
-    if (hueShift !== 0) {
-      color = shiftHue(color, hueShift);
-    }
-    // Then apply style preset
     const preset = STYLE_PRESETS[styleFilter];
-    return adjustColor(color, preset.saturation, preset.brightness);
+    return adjustColor(hex, preset.saturation, preset.brightness);
   });
 
   const pickImage = async () => {
@@ -510,43 +575,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
           </View>
 
-          {/* Hue Shift Slider */}
-          <View style={styles.sliderSection}>
-            <View style={styles.sliderHeader}>
-              <Text style={styles.sliderLabel}>Hue Shift</Text>
-              <View style={[styles.countBadge, { backgroundColor: hueShift === 0 ? '#333' : '#6366f1' }]}>
-                <Text style={styles.countBadgeText}>{hueShift}°</Text>
-              </View>
-            </View>
-            <View style={styles.hueBarContainer}>
-              {/* Hue spectrum bar */}
-              <View style={styles.hueSpectrumBar}>
-                {['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ff00', '#00ff80', '#00ffff', '#0080ff', '#0000ff', '#8000ff', '#ff00ff', '#ff0080'].map((color, i) => (
-                  <View key={i} style={[styles.hueSegment, { backgroundColor: color }]} />
-                ))}
-              </View>
-              <Slider
-                style={styles.hueSlider}
-                minimumValue={-180}
-                maximumValue={180}
-                step={1}
-                value={hueShift}
-                onValueChange={(value) => setHueShift(Math.round(value))}
-                minimumTrackTintColor="transparent"
-                maximumTrackTintColor="transparent"
-                thumbTintColor="#fff"
-              />
-            </View>
-            {hueShift !== 0 && (
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => setHueShift(0)}
-              >
-                <Text style={styles.resetButtonText}>Reset</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
           {/* Re-extract Button */}
           <TouchableOpacity
             style={[styles.reExtractButton, !currentImageUri && styles.reExtractButtonDisabled]}
@@ -646,6 +674,63 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     <ColorChannelBar label="S" value={colorInfo.hsl.s} max={100} color="#a855f7" />
                     <ColorChannelBar label="L" value={colorInfo.hsl.l} max={100} color="#888" />
                   </View>
+                </View>
+
+                {/* Value Variations */}
+                <View style={styles.variationsSection}>
+                  <View style={styles.variationsHeader}>
+                    <Text style={styles.variationsSectionTitle}>Value Variations</Text>
+                    <View style={styles.hueShiftToggle}>
+                      <TouchableOpacity
+                        style={[
+                          styles.hueShiftOption,
+                          variationHueShift && styles.hueShiftOptionActive,
+                        ]}
+                        onPress={() => setVariationHueShift(true)}
+                      >
+                        <Text style={[
+                          styles.hueShiftOptionText,
+                          variationHueShift && styles.hueShiftOptionTextActive,
+                        ]}>Hue Shift</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.hueShiftOption,
+                          !variationHueShift && styles.hueShiftOptionActive,
+                        ]}
+                        onPress={() => setVariationHueShift(false)}
+                      >
+                        <Text style={[
+                          styles.hueShiftOptionText,
+                          !variationHueShift && styles.hueShiftOptionTextActive,
+                        ]}>OFF</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Color strip */}
+                  <View style={styles.variationStrip}>
+                    {generateColorVariations(colorInfo.hex, variationHueShift).map((v, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[
+                          styles.variationCell,
+                          v.label === 'Base' && styles.variationCellBase,
+                        ]}
+                        onPress={() => copyColor(v.hex)}
+                      >
+                        <View style={[styles.variationColor, { backgroundColor: v.hex }]} />
+                        <Text style={styles.variationHex}>{v.hex}</Text>
+                        <Text style={styles.variationLabel}>L:{v.hsl.l}%</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={styles.variationsHint}>
+                    {variationHueShift
+                      ? 'Shadows → Blue, Highlights → Yellow'
+                      : 'Pure lightness changes only'}
+                  </Text>
                 </View>
 
                 {/* Grayscale Preview */}
@@ -967,6 +1052,7 @@ const styles = StyleSheet.create({
   },
   extractionCard: {
     marginHorizontal: 16,
+    marginTop: 8,
     backgroundColor: '#1a1a1a',
     borderRadius: 16,
     padding: 20,
@@ -1200,6 +1286,81 @@ const styles = StyleSheet.create({
   colorValueCopy: {
     padding: 8,
   },
+  // Value Variations styles
+  variationsSection: {
+    backgroundColor: '#0d0d0d',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  variationsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  variationsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  hueShiftToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 2,
+  },
+  hueShiftOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  hueShiftOptionActive: {
+    backgroundColor: '#6366f1',
+  },
+  hueShiftOptionText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+  },
+  hueShiftOptionTextActive: {
+    color: '#fff',
+  },
+  variationStrip: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  variationCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  variationCellBase: {
+    borderWidth: 2,
+    borderColor: '#6366f1',
+    borderRadius: 4,
+  },
+  variationColor: {
+    width: '100%',
+    height: 48,
+  },
+  variationHex: {
+    fontSize: 8,
+    color: '#888',
+    fontFamily: 'monospace',
+    marginTop: 4,
+  },
+  variationLabel: {
+    fontSize: 8,
+    color: '#555',
+  },
+  variationsHint: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+  },
   grayscaleSection: {
     backgroundColor: '#0d0d0d',
     borderRadius: 12,
@@ -1228,42 +1389,6 @@ const styles = StyleSheet.create({
     color: '#888',
     marginLeft: 'auto',
     fontFamily: 'monospace',
-  },
-  // Hue Shift styles
-  hueBarContainer: {
-    position: 'relative',
-    height: 40,
-    justifyContent: 'center',
-  },
-  hueSpectrumBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    flexDirection: 'row',
-  },
-  hueSegment: {
-    flex: 1,
-    height: '100%',
-  },
-  hueSlider: {
-    position: 'absolute',
-    left: -8,
-    right: -8,
-    height: 40,
-  },
-  resetButton: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginTop: 8,
-  },
-  resetButtonText: {
-    color: '#6366f1',
-    fontSize: 12,
-    fontWeight: '600',
   },
   // Color Channel styles
   colorChannelSection: {
