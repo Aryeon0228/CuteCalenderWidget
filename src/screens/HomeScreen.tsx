@@ -510,7 +510,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 onPress={() => handleColorPress(color, index)}
               >
                 <View style={[styles.colorSwatch, { backgroundColor: color }]} />
-                <Text style={styles.colorHex}>{color}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -1070,30 +1069,23 @@ const styles = StyleSheet.create({
   },
   colorCardsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 10,
+    gap: 8,
   },
   colorCard: {
+    flex: 1,
     alignItems: 'center',
   },
   colorCardSelected: {
     transform: [{ scale: 1.05 }],
   },
   colorSwatch: {
-    width: 56,
-    height: 56,
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#2d2d38',
-  },
-  colorHex: {
-    color: '#888',
-    fontSize: 9,
-    marginTop: 6,
-    fontFamily: 'monospace',
   },
   extractionCard: {
     marginHorizontal: 16,
