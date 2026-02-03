@@ -38,6 +38,18 @@ interface HueBin {
 
 export type ExtractionMethod = 'histogram' | 'kmeans';
 
+// Luminosity histogram result
+export interface LuminosityHistogram {
+  bins: number[];           // 32 bins (0-255 mapped to 0-31)
+  average: number;          // Average luminosity (0-255)
+  contrast: number;         // Contrast percentage (0-100)
+  darkPercent: number;      // Percentage of dark pixels
+  midPercent: number;       // Percentage of mid-tone pixels
+  brightPercent: number;    // Percentage of bright pixels
+  minValue: number;         // Minimum luminosity
+  maxValue: number;         // Maximum luminosity
+}
+
 // ============================================
 // MAIN EXTRACTION FUNCTION
 // ============================================
@@ -91,6 +103,145 @@ export async function extractColorsFromImage(
   } catch (error) {
     console.error('Color extraction error:', error);
     return generateFallbackColors(colorCount);
+  }
+}
+
+// ============================================
+// LUMINOSITY HISTOGRAM ANALYSIS
+// ============================================
+
+/**
+ * Analyze luminosity distribution of an image
+ * @param imageUri - URI of the image
+ * @returns Luminosity histogram data
+ */
+export async function analyzeLuminosityHistogram(
+  imageUri: string
+): Promise<LuminosityHistogram | null> {
+  try {
+    // Resize image for performance (max 150x150 for better accuracy)
+    const manipulated = await ImageManipulator.manipulateAsync(
+      imageUri,
+      [{ resize: { width: 150, height: 150 } }],
+      { format: ImageManipulator.SaveFormat.PNG, base64: true }
+    );
+
+    if (!manipulated.base64) {
+      return null;
+    }
+
+    // Decode PNG to get pixel data
+    const pixels = await decodeImageForHistogram(manipulated.base64);
+
+    if (pixels.length === 0) {
+      return null;
+    }
+
+    // Calculate luminosity for each pixel
+    const luminosities = pixels.map(({ r, g, b }) =>
+      Math.round(0.299 * r + 0.587 * g + 0.114 * b)
+    );
+
+    // Create 32-bin histogram (each bin covers 8 values: 0-7, 8-15, etc.)
+    const binCount = 32;
+    const bins: number[] = new Array(binCount).fill(0);
+
+    for (const lum of luminosities) {
+      const binIndex = Math.min(Math.floor(lum / 8), binCount - 1);
+      bins[binIndex]++;
+    }
+
+    // Normalize bins to max = 100
+    const maxBinCount = Math.max(...bins);
+    const normalizedBins = bins.map(count =>
+      maxBinCount > 0 ? Math.round((count / maxBinCount) * 100) : 0
+    );
+
+    // Calculate statistics
+    const totalPixels = luminosities.length;
+    const sum = luminosities.reduce((a, b) => a + b, 0);
+    const average = Math.round(sum / totalPixels);
+
+    // Sort for percentile calculations
+    const sorted = [...luminosities].sort((a, b) => a - b);
+    const minValue = sorted[0];
+    const maxValue = sorted[sorted.length - 1];
+
+    // Calculate contrast as range / 255 (simplified)
+    // Also consider standard deviation for more accurate contrast
+    const variance = luminosities.reduce((acc, lum) =>
+      acc + Math.pow(lum - average, 2), 0
+    ) / totalPixels;
+    const stdDev = Math.sqrt(variance);
+
+    // Contrast: combination of range and std deviation
+    const rangeContrast = (maxValue - minValue) / 255;
+    const stdContrast = stdDev / 128; // Normalize std dev
+    const contrast = Math.round(Math.min(100, ((rangeContrast + stdContrast) / 2) * 100));
+
+    // Calculate tone distribution (dark/mid/bright)
+    let darkCount = 0;
+    let midCount = 0;
+    let brightCount = 0;
+
+    for (const lum of luminosities) {
+      if (lum < 85) {
+        darkCount++;
+      } else if (lum < 170) {
+        midCount++;
+      } else {
+        brightCount++;
+      }
+    }
+
+    const darkPercent = Math.round((darkCount / totalPixels) * 100);
+    const midPercent = Math.round((midCount / totalPixels) * 100);
+    const brightPercent = Math.round((brightCount / totalPixels) * 100);
+
+    return {
+      bins: normalizedBins,
+      average,
+      contrast,
+      darkPercent,
+      midPercent,
+      brightPercent,
+      minValue,
+      maxValue,
+    };
+  } catch (error) {
+    console.error('Luminosity histogram error:', error);
+    return null;
+  }
+}
+
+// Decode image without sampling (for more accurate histogram)
+async function decodeImageForHistogram(base64: string): Promise<RgbColor[]> {
+  try {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const png = UPNG.decode(bytes.buffer);
+    const rgbaData = new Uint8Array(UPNG.toRGBA8(png)[0]);
+
+    // Sample every 2nd pixel for balance between accuracy and performance
+    const pixels: RgbColor[] = [];
+    for (let i = 0; i < rgbaData.length; i += 8) { // Every 2nd pixel
+      const r = rgbaData[i];
+      const g = rgbaData[i + 1];
+      const b = rgbaData[i + 2];
+      const a = rgbaData[i + 3];
+
+      if (a < 128) continue;
+      pixels.push({ r, g, b });
+    }
+
+    return pixels;
+  } catch (error) {
+    console.error('Image decode for histogram error:', error);
+    return [];
   }
 }
 
