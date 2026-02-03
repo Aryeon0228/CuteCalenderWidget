@@ -19,6 +19,7 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { usePaletteStore } from '../store/paletteStore';
+import { useThemeStore } from '../store/themeStore';
 import { extractColorsFromImage, ExtractionMethod } from '../lib/colorExtractor';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -207,6 +208,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
   const [showGrayscale, setShowGrayscale] = useState(false);
   const [variationHueShift, setVariationHueShift] = useState(true); // For Value Variations
+
+  const { mode, colors: theme, toggleTheme } = useThemeStore();
 
   const {
     currentColors,
@@ -403,21 +406,44 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   const colorInfo = getSelectedColorInfo();
 
+  // Dynamic styles based on theme
+  const dynamicStyles = {
+    container: { backgroundColor: theme.background },
+    header: { backgroundColor: theme.background },
+    title: { color: theme.textPrimary },
+    card: { backgroundColor: theme.backgroundSecondary },
+    text: { color: theme.textPrimary },
+    textSecondary: { color: theme.textSecondary },
+    border: { borderColor: theme.border },
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, dynamicStyles.container]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Game Palette</Text>
-        <TouchableOpacity
-          style={styles.grayscaleButton}
-          onPress={() => setShowGrayscale(!showGrayscale)}
-        >
-          <Ionicons
-            name={showGrayscale ? 'contrast' : 'contrast-outline'}
-            size={24}
-            color={showGrayscale ? '#6366f1' : '#fff'}
-          />
-        </TouchableOpacity>
+        <Text style={[styles.title, dynamicStyles.title]}>Game Palette</Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
+            onPress={() => setShowGrayscale(!showGrayscale)}
+          >
+            <Ionicons
+              name={showGrayscale ? 'contrast' : 'contrast-outline'}
+              size={22}
+              color={showGrayscale ? theme.accent : theme.textPrimary}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
+            onPress={toggleTheme}
+          >
+            <Ionicons
+              name={mode === 'dark' ? 'sunny-outline' : 'moon-outline'}
+              size={22}
+              color={theme.textPrimary}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -942,7 +968,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  grayscaleButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerButton: {
     padding: 8,
     backgroundColor: '#16161e',
     borderRadius: 12,

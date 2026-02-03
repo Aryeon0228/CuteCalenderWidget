@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePaletteStore, SavedPalette } from '../store/paletteStore';
+import { useThemeStore } from '../store/themeStore';
 
 interface LibraryScreenProps {
   onNavigateBack: () => void;
@@ -21,7 +22,17 @@ interface LibraryScreenProps {
 
 export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
   const { savedPalettes, deletePalette, loadPalette } = usePaletteStore();
+  const { colors: theme } = useThemeStore();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Dynamic styles based on theme
+  const dynamicStyles = {
+    container: { backgroundColor: theme.background },
+    card: { backgroundColor: theme.backgroundSecondary },
+    text: { color: theme.textPrimary },
+    textSecondary: { color: theme.textSecondary },
+    border: { borderColor: theme.border },
+  };
   const [menuPalette, setMenuPalette] = useState<SavedPalette | null>(null);
   const [exportPalette, setExportPalette] = useState<SavedPalette | null>(null);
 
@@ -109,7 +120,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
   };
 
   const renderPaletteCard = ({ item }: { item: SavedPalette }) => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.backgroundSecondary }]}>
       {/* Header with thumbnail and menu */}
       <View style={styles.cardHeader}>
         <TouchableOpacity
@@ -117,12 +128,12 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
           onPress={() => handleLoadPalette(item)}
           activeOpacity={0.8}
         >
-          <View style={styles.thumbnail}>
+          <View style={[styles.thumbnail, { backgroundColor: theme.backgroundTertiary }]}>
             {item.imageUri ? (
               <Image source={{ uri: item.imageUri }} style={styles.thumbnailImage} />
             ) : (
-              <View style={styles.thumbnailPlaceholder}>
-                <Ionicons name="color-palette" size={20} color="#666" />
+              <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.backgroundTertiary }]}>
+                <Ionicons name="color-palette" size={20} color={theme.textMuted} />
               </View>
             )}
           </View>
@@ -131,7 +142,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
           style={styles.menuButton}
           onPress={() => setMenuPalette(item)}
         >
-          <Ionicons name="ellipsis-horizontal" size={18} color="#888" />
+          <Ionicons name="ellipsis-horizontal" size={18} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -152,56 +163,56 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
       {/* Info section */}
       <View style={styles.cardInfo}>
         <View style={styles.cardTitleRow}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.paletteLabel}>PALETTE</Text>
+          <Text style={[styles.paletteLabel, { color: theme.textMuted }]}>PALETTE</Text>
         </View>
 
         {/* Tags */}
         <View style={styles.tagsRow}>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>HEX</Text>
+          <View style={[styles.tag, { backgroundColor: theme.borderLight }]}>
+            <Text style={[styles.tagText, { color: theme.textSecondary }]}>HEX</Text>
           </View>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>{item.colors.length} colors</Text>
+          <View style={[styles.tag, { backgroundColor: theme.borderLight }]}>
+            <Text style={[styles.tagText, { color: theme.textSecondary }]}>{item.colors.length} colors</Text>
           </View>
-          <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+          <Text style={[styles.dateText, { color: theme.textMuted }]}>{formatDate(item.createdAt)}</Text>
         </View>
 
         {/* Export button */}
         <TouchableOpacity
-          style={styles.exportButton}
+          style={[styles.exportButton, { backgroundColor: theme.buttonBg }]}
           onPress={() => setExportPalette(item)}
         >
-          <Ionicons name="share-outline" size={14} color="#fff" />
-          <Text style={styles.exportButtonText}>Export</Text>
+          <Ionicons name="share-outline" size={14} color={theme.textPrimary} />
+          <Text style={[styles.exportButtonText, { color: theme.textPrimary }]}>Export</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, dynamicStyles.container]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onNavigateBack}>
-          <Ionicons name="chevron-back" size={24} color="#fff" />
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: theme.backgroundSecondary }]} onPress={onNavigateBack}>
+          <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>GamePalette</Text>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>GamePalette</Text>
         <View style={styles.profileButton}>
-          <Ionicons name="person-circle-outline" size={28} color="#888" />
+          <Ionicons name="person-circle-outline" size={28} color={theme.textSecondary} />
         </View>
       </View>
 
       {/* Search bar */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color="#666" />
+        <View style={[styles.searchBar, { backgroundColor: theme.backgroundSecondary }]}>
+          <Ionicons name="search" size={18} color={theme.textMuted} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.textPrimary }]}
             placeholder="Search palettes, colors..."
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
