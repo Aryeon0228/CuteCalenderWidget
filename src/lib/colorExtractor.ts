@@ -1,21 +1,17 @@
 /**
- * JavaScript-based color extraction utility
- * Uses image sampling to extract dominant colors
+ * Native color extraction using react-native-image-colors
+ * Provides high-quality color extraction using platform-native algorithms
+ * - iOS: Uses UIImage color analysis
+ * - Android: Uses Palette API (Material Design)
  */
 
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
-
-interface RGB {
-  r: number;
-  g: number;
-  b: number;
-}
+import { getColors, IOSImageColors, AndroidImageColors } from 'react-native-image-colors';
+import { Platform } from 'react-native';
 
 /**
- * Extract colors from an image using JS-based analysis
+ * Extract colors from an image using native color extraction
  * @param imageUri - URI of the image to analyze
- * @param colorCount - Number of colors to extract
+ * @param colorCount - Number of colors to extract (3-8)
  * @returns Array of hex color strings
  */
 export async function extractColorsFromImage(
@@ -23,213 +19,135 @@ export async function extractColorsFromImage(
   colorCount: number = 5
 ): Promise<string[]> {
   try {
-    // Resize image to small size for faster processing
-    const manipResult = await ImageManipulator.manipulateAsync(
-      imageUri,
-      [{ resize: { width: 100, height: 100 } }],
-      { format: ImageManipulator.SaveFormat.PNG, base64: true }
-    );
+    const result = await getColors(imageUri, {
+      fallback: '#4ECDC4',
+      cache: true,
+      key: imageUri,
+    });
 
-    if (!manipResult.base64) {
-      throw new Error('Failed to get base64 data');
+    let extractedColors: string[] = [];
+
+    if (result.platform === 'android') {
+      extractedColors = extractAndroidColors(result);
+    } else if (result.platform === 'ios') {
+      extractedColors = extractIOSColors(result);
+    } else {
+      // Web fallback
+      extractedColors = generateFallbackColors(colorCount);
     }
 
-    // Parse PNG and extract colors
-    const colors = await extractColorsFromBase64(manipResult.base64, colorCount);
-    return colors;
+    // Ensure we have exactly colorCount colors
+    return adjustColorCount(extractedColors, colorCount);
   } catch (error) {
-    console.error('Color extraction error:', error);
-    // Return fallback colors if extraction fails
+    console.error('Native color extraction error:', error);
     return generateFallbackColors(colorCount);
   }
 }
 
 /**
- * Extract colors from base64 PNG data
+ * Extract colors from Android Palette API result
  */
-async function extractColorsFromBase64(
-  base64: string,
-  colorCount: number
-): Promise<string[]> {
-  // Decode base64 to binary
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
+function extractAndroidColors(result: AndroidImageColors): string[] {
+  const colors: string[] = [];
 
-  // Simple PNG parser to extract pixel data
-  const pixels = parsePNGPixels(bytes);
+  // Priority order for Android Palette colors
+  const colorKeys: (keyof AndroidImageColors)[] = [
+    'vibrant',
+    'dominant',
+    'darkVibrant',
+    'lightVibrant',
+    'muted',
+    'darkMuted',
+    'lightMuted',
+    'average',
+  ];
 
-  if (pixels.length === 0) {
-    return generateFallbackColors(colorCount);
-  }
-
-  // Quantize colors and find dominant ones
-  const dominantColors = findDominantColors(pixels, colorCount);
-
-  return dominantColors.map(rgb => rgbToHex(rgb));
-}
-
-/**
- * Simple PNG pixel extractor
- * Note: This is a simplified parser that works for basic PNGs
- */
-function parsePNGPixels(data: Uint8Array): RGB[] {
-  const pixels: RGB[] = [];
-
-  // PNG signature check
-  if (data[0] !== 137 || data[1] !== 80 || data[2] !== 78 || data[3] !== 71) {
-    console.warn('Not a valid PNG file');
-    return [];
-  }
-
-  // Find IDAT chunk and decompress
-  // For simplicity, we'll sample colors from the raw data
-  // This is a heuristic approach that works reasonably well
-
-  let offset = 8; // Skip PNG signature
-  let width = 0;
-  let height = 0;
-
-  while (offset < data.length) {
-    const chunkLength = (data[offset] << 24) | (data[offset + 1] << 16) |
-                        (data[offset + 2] << 8) | data[offset + 3];
-    const chunkType = String.fromCharCode(
-      data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]
-    );
-
-    if (chunkType === 'IHDR') {
-      width = (data[offset + 8] << 24) | (data[offset + 9] << 16) |
-              (data[offset + 10] << 8) | data[offset + 11];
-      height = (data[offset + 12] << 24) | (data[offset + 13] << 16) |
-               (data[offset + 14] << 8) | data[offset + 15];
-    }
-
-    if (chunkType === 'IEND') break;
-    offset += 12 + chunkLength; // 4 length + 4 type + data + 4 CRC
-  }
-
-  // Sample colors from the image data
-  // Since PNG uses compression, we'll use a different approach:
-  // Sample from various positions in the file where color data might be
-  const samplePositions = [];
-  const dataLength = data.length;
-
-  for (let i = 0; i < 500; i++) {
-    const pos = Math.floor((i / 500) * (dataLength - 100)) + 50;
-    samplePositions.push(pos);
-  }
-
-  for (const pos of samplePositions) {
-    if (pos + 2 < dataLength) {
-      const r = data[pos];
-      const g = data[pos + 1];
-      const b = data[pos + 2];
-
-      // Filter out unlikely color values (mostly metadata)
-      if (isLikelyColorValue(r, g, b)) {
-        pixels.push({ r, g, b });
+  for (const key of colorKeys) {
+    const color = result[key];
+    if (color && typeof color === 'string' && color !== '#000000') {
+      // Avoid duplicates
+      if (!colors.includes(color.toUpperCase())) {
+        colors.push(color.toUpperCase());
       }
     }
-  }
-
-  return pixels;
-}
-
-/**
- * Check if RGB values are likely to be actual color data
- */
-function isLikelyColorValue(r: number, g: number, b: number): boolean {
-  // Filter out values that are likely metadata or compression artifacts
-  // Colors that are too uniform or match common header bytes
-  if (r === g && g === b && (r === 0 || r === 255)) return false;
-  if (r === 137 && g === 80 && b === 78) return false; // PNG signature
-  if (r === 73 && g === 72 && b === 68) return false; // IHDR
-  return true;
-}
-
-/**
- * Find dominant colors using simple clustering
- */
-function findDominantColors(pixels: RGB[], count: number): RGB[] {
-  if (pixels.length === 0) {
-    return generateFallbackColorsRGB(count);
-  }
-
-  // Simple color quantization using buckets
-  const bucketSize = 32;
-  const buckets = new Map<string, { sum: RGB; count: number }>();
-
-  for (const pixel of pixels) {
-    const bucketR = Math.floor(pixel.r / bucketSize) * bucketSize;
-    const bucketG = Math.floor(pixel.g / bucketSize) * bucketSize;
-    const bucketB = Math.floor(pixel.b / bucketSize) * bucketSize;
-    const key = `${bucketR},${bucketG},${bucketB}`;
-
-    if (!buckets.has(key)) {
-      buckets.set(key, { sum: { r: 0, g: 0, b: 0 }, count: 0 });
-    }
-
-    const bucket = buckets.get(key)!;
-    bucket.sum.r += pixel.r;
-    bucket.sum.g += pixel.g;
-    bucket.sum.b += pixel.b;
-    bucket.count++;
-  }
-
-  // Sort buckets by count and get top colors
-  const sortedBuckets = Array.from(buckets.entries())
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, count * 2); // Get more than needed to filter similar colors
-
-  const colors: RGB[] = [];
-
-  for (const [_, bucket] of sortedBuckets) {
-    if (colors.length >= count) break;
-
-    const avgColor: RGB = {
-      r: Math.round(bucket.sum.r / bucket.count),
-      g: Math.round(bucket.sum.g / bucket.count),
-      b: Math.round(bucket.sum.b / bucket.count),
-    };
-
-    // Check if this color is different enough from existing ones
-    const isDifferent = colors.every(c => colorDistance(c, avgColor) > 50);
-
-    if (isDifferent) {
-      colors.push(avgColor);
-    }
-  }
-
-  // Fill remaining slots if needed
-  while (colors.length < count) {
-    colors.push(generateRandomColor());
   }
 
   return colors;
 }
 
 /**
- * Calculate color distance (Euclidean)
+ * Extract colors from iOS UIImage result
  */
-function colorDistance(c1: RGB, c2: RGB): number {
-  return Math.sqrt(
-    Math.pow(c1.r - c2.r, 2) +
-    Math.pow(c1.g - c2.g, 2) +
-    Math.pow(c1.b - c2.b, 2)
-  );
+function extractIOSColors(result: IOSImageColors): string[] {
+  const colors: string[] = [];
+
+  // iOS returns: background, primary, secondary, detail
+  const colorKeys: (keyof IOSImageColors)[] = [
+    'primary',
+    'secondary',
+    'background',
+    'detail',
+  ];
+
+  for (const key of colorKeys) {
+    const color = result[key];
+    if (color && typeof color === 'string' && color !== '#000000') {
+      if (!colors.includes(color.toUpperCase())) {
+        colors.push(color.toUpperCase());
+      }
+    }
+  }
+
+  return colors;
 }
 
 /**
- * Convert RGB to hex string
+ * Adjust color array to match requested count
  */
-function rgbToHex(rgb: RGB): string {
-  const toHex = (n: number) => {
-    const hex = Math.max(0, Math.min(255, n)).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  };
-  return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
+function adjustColorCount(colors: string[], targetCount: number): string[] {
+  if (colors.length === 0) {
+    return generateFallbackColors(targetCount);
+  }
+
+  if (colors.length >= targetCount) {
+    return colors.slice(0, targetCount);
+  }
+
+  // Generate additional colors by creating variations
+  const result = [...colors];
+  let variationIndex = 0;
+
+  while (result.length < targetCount) {
+    const baseColor = colors[variationIndex % colors.length];
+    const variation = createColorVariation(baseColor, result.length);
+
+    if (!result.includes(variation)) {
+      result.push(variation);
+    } else {
+      // If variation already exists, use fallback
+      const fallback = generateFallbackColors(targetCount);
+      result.push(fallback[result.length % fallback.length]);
+    }
+
+    variationIndex++;
+  }
+
+  return result;
+}
+
+/**
+ * Create a color variation by adjusting lightness
+ */
+function createColorVariation(hexColor: string, index: number): string {
+  const rgb = hexToRgb(hexColor);
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  // Alternate between lighter and darker variations
+  const lightnessShift = (index % 2 === 0) ? 15 : -15;
+  const newLightness = Math.max(10, Math.min(90, hsl.l + lightnessShift));
+
+  const newRgb = hslToRgb(hsl.h, hsl.s, newLightness);
+  return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
 }
 
 /**
@@ -243,20 +161,89 @@ function generateFallbackColors(count: number): string[] {
   return palette.slice(0, count);
 }
 
-function generateFallbackColorsRGB(count: number): RGB[] {
-  const hexColors = generateFallbackColors(count);
-  return hexColors.map(hex => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return { r, g, b };
-  });
+// ============ Color Utility Functions ============
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const cleanHex = hex.replace('#', '');
+  return {
+    r: parseInt(cleanHex.substring(0, 2), 16),
+    g: parseInt(cleanHex.substring(2, 4), 16),
+    b: parseInt(cleanHex.substring(4, 6), 16),
+  };
 }
 
-function generateRandomColor(): RGB {
+function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (n: number) => {
+    const hex = Math.max(0, Math.min(255, Math.round(n))).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+}
+
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
   return {
-    r: Math.floor(Math.random() * 256),
-    g: Math.floor(Math.random() * 256),
-    b: Math.floor(Math.random() * 256),
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100),
+  };
+}
+
+function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
+  h /= 360;
+  s /= 100;
+  l /= 100;
+
+  let r: number, g: number, b: number;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  return {
+    r: Math.round(r * 255),
+    g: Math.round(g * 255),
+    b: Math.round(b * 255),
   };
 }
