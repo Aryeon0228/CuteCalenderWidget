@@ -449,11 +449,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
         {/* Style Filters */}
         {processedColors.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.styleFiltersContainer}
-          >
+          <View style={styles.styleFiltersContainer}>
             {(Object.keys(STYLE_PRESETS) as StyleFilter[]).map((filter) => (
               <TouchableOpacity
                 key={filter}
@@ -465,7 +461,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               >
                 <Ionicons
                   name={STYLE_PRESETS[filter].icon as any}
-                  size={18}
+                  size={16}
                   color={styleFilter === filter ? '#fff' : '#666'}
                 />
                 <Text
@@ -478,16 +474,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         )}
 
         {/* Color Cards */}
         {processedColors.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.colorCardsContainer}
-          >
+          <View style={styles.colorCardsContainer}>
             {processedColors.map((color, index) => (
               <TouchableOpacity
                 key={index}
@@ -501,7 +493,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 <Text style={styles.colorHex}>{color}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         )}
 
         {/* Main Extraction Card */}
@@ -1005,26 +997,28 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   styleFiltersContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    gap: 8,
+    gap: 6,
   },
   styleFilterButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    justifyContent: 'center',
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: '#16161e',
-    marginRight: 8,
-    gap: 6,
+    gap: 4,
   },
   styleFilterButtonActive: {
     backgroundColor: '#6366f1',
   },
   styleFilterText: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#666',
     fontWeight: '600',
   },
@@ -1032,28 +1026,30 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   colorCardsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
+    gap: 10,
   },
   colorCard: {
     alignItems: 'center',
-    marginRight: 12,
   },
   colorCardSelected: {
     transform: [{ scale: 1.05 }],
   },
   colorSwatch: {
-    width: COLOR_CARD_SIZE,
-    height: COLOR_CARD_SIZE,
+    width: 56,
+    height: 56,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#2d2d38',
   },
   colorHex: {
     color: '#888',
-    fontSize: 11,
-    marginTop: 8,
+    fontSize: 9,
+    marginTop: 6,
     fontFamily: 'monospace',
   },
   extractionCard: {
