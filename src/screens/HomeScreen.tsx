@@ -25,7 +25,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLOR_CARD_SIZE = (SCREEN_WIDTH - 64) / 4 - 8;
 
 // Style filter presets
-type StyleFilter = 'original' | 'hypercasual' | 'stylized' | 'realistic' | 'custom';
+type StyleFilter = 'original' | 'hypercasual' | 'stylized' | 'realistic';
 
 interface StylePreset {
   name: string;
@@ -39,7 +39,6 @@ const STYLE_PRESETS: Record<StyleFilter, StylePreset> = {
   hypercasual: { name: 'Hyper', saturation: 1.3, brightness: 1.1, icon: 'sparkles-outline' },
   stylized: { name: 'Stylized', saturation: 1.15, brightness: 1.05, icon: 'brush-outline' },
   realistic: { name: 'Realistic', saturation: 0.9, brightness: 0.95, icon: 'camera-outline' },
-  custom: { name: 'Custom', saturation: 1.0, brightness: 1.0, icon: 'settings-outline' },
 };
 
 // Color conversion utilities (outside component for hoisting)
@@ -567,8 +566,15 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 step={1}
                 value={colorCount}
                 onValueChange={(value) => setColorCount(Math.round(value))}
+                onSlidingComplete={(value) => {
+                  const newCount = Math.round(value);
+                  setColorCount(newCount);
+                  if (currentImageUri) {
+                    doExtract(currentImageUri, newCount, extractionMethod);
+                  }
+                }}
                 minimumTrackTintColor="#6366f1"
-                maximumTrackTintColor="#333"
+                maximumTrackTintColor="#3a3a4a"
                 thumbTintColor="#fff"
               />
               <Text style={styles.sliderMax}>8</Text>
@@ -929,7 +935,7 @@ function ExportOption({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#0a0a10',
   },
   header: {
     flexDirection: 'row',
@@ -946,7 +952,7 @@ const styles = StyleSheet.create({
   },
   grayscaleButton: {
     padding: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderRadius: 12,
   },
   content: {
@@ -957,7 +963,7 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
   },
   image: {
     width: '100%',
@@ -1010,7 +1016,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     marginRight: 8,
     gap: 6,
   },
@@ -1042,7 +1048,7 @@ const styles = StyleSheet.create({
     height: COLOR_CARD_SIZE,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: '#2d2d38',
   },
   colorHex: {
     color: '#888',
@@ -1053,7 +1059,7 @@ const styles = StyleSheet.create({
   extractionCard: {
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderRadius: 16,
     padding: 20,
   },
@@ -1071,7 +1077,7 @@ const styles = StyleSheet.create({
   },
   methodToggle: {
     flexDirection: 'row',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#24242e',
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -1083,7 +1089,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   methodOptionActive: {
-    backgroundColor: '#3a3a3a',
+    backgroundColor: '#34344a',
   },
   methodOptionText: {
     color: '#666',
@@ -1145,7 +1151,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   reExtractButtonDisabled: {
-    backgroundColor: '#333',
+    backgroundColor: '#2d2d38',
   },
   reExtractButtonText: {
     color: '#fff',
@@ -1157,7 +1163,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingBottom: 36,
-    backgroundColor: '#111',
+    backgroundColor: '#101018',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     gap: 12,
@@ -1169,7 +1175,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     gap: 6,
   },
   actionButtonText: {
@@ -1199,7 +1205,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     gap: 6,
   },
   exportButtonText: {
@@ -1217,7 +1223,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   colorDetailContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -1226,7 +1232,7 @@ const styles = StyleSheet.create({
   colorDetailHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#444',
+    backgroundColor: '#3e3e50',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
@@ -1242,7 +1248,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: '#2d2d38',
   },
   colorDetailInfo: {
     marginLeft: 16,
@@ -1258,7 +1264,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   colorValueSection: {
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#0c0c12',
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -1269,7 +1275,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
+    borderBottomColor: '#16161e',
   },
   colorValueLabel: {
     width: 48,
@@ -1288,7 +1294,7 @@ const styles = StyleSheet.create({
   },
   // Value Variations styles
   variationsSection: {
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#0c0c12',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -1306,7 +1312,7 @@ const styles = StyleSheet.create({
   },
   hueShiftToggle: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderRadius: 8,
     padding: 2,
   },
@@ -1362,7 +1368,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   grayscaleSection: {
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#0c0c12',
     borderRadius: 12,
     padding: 16,
   },
@@ -1382,7 +1388,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#2d2d38',
   },
   grayscaleValue: {
     fontSize: 14,
@@ -1395,7 +1401,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
+    borderBottomColor: '#16161e',
   },
   channelHeader: {
     flexDirection: 'row',
@@ -1423,13 +1429,13 @@ const styles = StyleSheet.create({
   },
   channelBarBg: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#24242e',
     borderRadius: 4,
     overflow: 'hidden',
   },
   hueGradientBar: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#24242e',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -1452,7 +1458,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderRadius: 16,
     padding: 24,
     width: '85%',
@@ -1481,7 +1487,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#333',
+    backgroundColor: '#2d2d38',
     alignItems: 'center',
   },
   modalButtonPrimary: {
@@ -1505,7 +1511,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   exportModalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#16161e',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -1514,7 +1520,7 @@ const styles = StyleSheet.create({
   exportModalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#444',
+    backgroundColor: '#3e3e50',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
@@ -1536,7 +1542,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
+    borderBottomColor: '#24242e',
   },
   exportOptionIcon: {
     width: 44,
