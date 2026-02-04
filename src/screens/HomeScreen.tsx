@@ -26,6 +26,8 @@ import ViewShot from 'react-native-view-shot';
 
 import { usePaletteStore } from '../store/paletteStore';
 import { useThemeStore } from '../store/themeStore';
+import { usePremiumStore } from '../store/premiumStore';
+import { MockRewardedAd } from '../components/MockRewardedAd';
 import {
   extractColorsFromImage,
   ExtractionMethod,
@@ -92,8 +94,24 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [isExporting, setIsExporting] = useState(false);
   const paletteCardRef = useRef<ViewShot>(null);
 
+  // SNS Card State
+  const [snsCardType, setSnsCardType] = useState<'instagram' | 'twitter'>('instagram');
+  const [cardShowHex, setCardShowHex] = useState(true);
+  const [cardShowStats, setCardShowStats] = useState(true);
+
+  // Ad State
+  const [showRewardedAd, setShowRewardedAd] = useState(false);
+
   // Theme & Store
   const { mode, colors: theme, toggleTheme } = useThemeStore();
+  const {
+    isPremium,
+    canExtract,
+    useExtraction,
+    watchRewardedAd,
+    getRemainingExtractions,
+    resetDailyLimits,
+  } = usePremiumStore();
   const {
     currentColors,
     currentImageUri,
@@ -242,6 +260,25 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   };
 
   const extractColors = async (imageUri: string) => {
+    // Check daily reset
+    resetDailyLimits();
+
+    // Check extraction limit
+    if (!canExtract()) {
+      Alert.alert(
+        'Daily Limit Reached',
+        'Watch a short ad to get +5 free extractions!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Watch Ad', onPress: () => setShowRewardedAd(true) },
+        ]
+      );
+      return;
+    }
+
+    // Use one extraction
+    useExtraction();
+
     setCurrentImageUri(imageUri);
     await doExtract(imageUri, colorCount, extractionMethod);
     // Run histogram analysis in background (non-blocking)
@@ -266,9 +303,30 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   };
 
   const handleReExtract = async () => {
-    if (currentImageUri) {
-      await doExtract(currentImageUri, colorCount, extractionMethod);
+    if (!currentImageUri) return;
+
+    // Check extraction limit
+    resetDailyLimits();
+    if (!canExtract()) {
+      Alert.alert(
+        'Daily Limit Reached',
+        'Watch a short ad to get +5 free extractions!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Watch Ad', onPress: () => setShowRewardedAd(true) },
+        ]
+      );
+      return;
     }
+
+    useExtraction();
+    await doExtract(currentImageUri, colorCount, extractionMethod);
+  };
+
+  const handleRewardEarned = () => {
+    watchRewardedAd();
+    hapticSuccess();
+    Alert.alert('Reward Earned!', '+5 extractions added. You can now continue extracting colors!');
   };
 
   // ============================================
@@ -426,7 +484,20 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Game Palette</Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Game Palette</Text>
+          {!isPremium && (
+            <TouchableOpacity
+              style={styles.extractionsBadge}
+              onPress={() => setShowRewardedAd(true)}
+            >
+              <Ionicons name="flash" size={12} color="#f59e0b" />
+              <Text style={styles.extractionsBadgeText}>
+                {getRemainingExtractions()}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <TouchableOpacity
           style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
           onPress={toggleTheme}
@@ -1082,79 +1153,156 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               style={styles.exportPreviewScroll}
               showsVerticalScrollIndicator={false}
             >
+              {/* SNS Card Type Selector */}
+              <View style={styles.snsTypeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.snsTypeButton,
+                    snsCardType === 'instagram' && styles.snsTypeButtonActive,
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    setSnsCardType('instagram');
+                  }}
+                >
+                  <Ionicons
+                    name="logo-instagram"
+                    size={18}
+                    color={snsCardType === 'instagram' ? '#fff' : '#888'}
+                  />
+                  <Text
+                    style={[
+                      styles.snsTypeText,
+                      snsCardType === 'instagram' && styles.snsTypeTextActive,
+                    ]}
+                  >
+                    Instagram
+                  </Text>
+                  <Text style={styles.snsTypeRatio}>1:1</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.snsTypeButton,
+                    snsCardType === 'twitter' && styles.snsTypeButtonActive,
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    setSnsCardType('twitter');
+                  }}
+                >
+                  <Ionicons
+                    name="logo-twitter"
+                    size={18}
+                    color={snsCardType === 'twitter' ? '#fff' : '#888'}
+                  />
+                  <Text
+                    style={[
+                      styles.snsTypeText,
+                      snsCardType === 'twitter' && styles.snsTypeTextActive,
+                    ]}
+                  >
+                    Twitter
+                  </Text>
+                  <Text style={styles.snsTypeRatio}>16:9</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Card Options */}
+              <View style={styles.cardOptionsRow}>
+                <TouchableOpacity
+                  style={[styles.cardOptionButton, cardShowHex && styles.cardOptionButtonActive]}
+                  onPress={() => setCardShowHex(!cardShowHex)}
+                >
+                  <Text style={[styles.cardOptionText, cardShowHex && styles.cardOptionTextActive]}>
+                    HEX
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.cardOptionButton, cardShowStats && styles.cardOptionButtonActive]}
+                  onPress={() => setCardShowStats(!cardShowStats)}
+                >
+                  <Text style={[styles.cardOptionText, cardShowStats && styles.cardOptionTextActive]}>
+                    Stats
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* SNS Card Preview */}
               <ViewShot
                 ref={paletteCardRef}
                 options={{ format: 'png', quality: 1.0 }}
-                style={styles.paletteCard}
+                style={[
+                  styles.snsCard,
+                  snsCardType === 'instagram' ? styles.snsCardInstagram : styles.snsCardTwitter,
+                ]}
               >
-                {currentImageUri && (
-                  <Image
-                    source={{ uri: currentImageUri }}
-                    style={styles.paletteCardImage}
-                    contentFit="cover"
-                  />
-                )}
+                {/* Background gradient using first color */}
+                <View
+                  style={[
+                    styles.snsCardBackground,
+                    { backgroundColor: processedColors[0] || '#1a1a24' },
+                  ]}
+                />
+                <View style={styles.snsCardOverlay} />
 
-                <View style={styles.paletteCardSwatches}>
-                  {processedColors.map((color, index) => (
-                    <View
-                      key={index}
-                      style={[styles.paletteCardSwatch, { backgroundColor: color }]}
-                    />
-                  ))}
-                </View>
+                {/* Card Content */}
+                <View style={styles.snsCardContent}>
+                  {/* Image Section */}
+                  {currentImageUri && (
+                    <View style={[
+                      styles.snsCardImageWrapper,
+                      snsCardType === 'twitter' && styles.snsCardImageWrapperTwitter,
+                    ]}>
+                      <Image
+                        source={{ uri: currentImageUri }}
+                        style={styles.snsCardImage}
+                        contentFit="cover"
+                      />
+                    </View>
+                  )}
 
-                <Text style={styles.paletteCardName}>
-                  {paletteName || 'Untitled Palette'}
-                </Text>
-                <Text style={styles.paletteCardLabel}>PALETTE</Text>
-
-                <View style={styles.paletteCardColors}>
-                  {processedColors.map((hex, index) => {
-                    const rgb = hexToRgb(hex);
-                    return (
-                      <View key={index} style={styles.paletteCardColorRow}>
+                  {/* Color Palette Strip */}
+                  <View style={[
+                    styles.snsCardPalette,
+                    snsCardType === 'twitter' && styles.snsCardPaletteTwitter,
+                  ]}>
+                    {processedColors.map((color, index) => (
+                      <View key={index} style={styles.snsCardColorItem}>
                         <View
-                          style={[styles.paletteCardColorDot, { backgroundColor: hex }]}
+                          style={[styles.snsCardColorSwatch, { backgroundColor: color }]}
                         />
-                        <View style={styles.paletteCardColorInfo}>
-                          <Text style={styles.paletteCardHex}>{hex}</Text>
-                          <Text style={styles.paletteCardRgb}>
-                            RGB({rgb.r}, {rgb.g}, {rgb.b})
-                          </Text>
-                        </View>
+                        {cardShowHex && (
+                          <Text style={styles.snsCardColorHex}>{color}</Text>
+                        )}
                       </View>
-                    );
-                  })}
-                </View>
-
-                <Text style={styles.paletteCardWatermark}>GamePalette</Text>
-
-                {histogram && (
-                  <View style={styles.paletteCardHistogram}>
-                    <View style={styles.paletteCardHistogramRow}>
-                      <Text style={styles.paletteCardHistogramLabel}>Contrast</Text>
-                      <Text style={styles.paletteCardHistogramValue}>
-                        {histogram.contrast}%
-                      </Text>
-                    </View>
-                    <View style={styles.paletteCardHistogramRow}>
-                      <Text style={styles.paletteCardHistogramLabel}>
-                        Dark / Mid / Bright
-                      </Text>
-                      <Text style={styles.paletteCardHistogramValue}>
-                        {histogram.darkPercent}% / {histogram.midPercent}% /{' '}
-                        {histogram.brightPercent}%
-                      </Text>
-                    </View>
-                    <View style={styles.paletteCardHistogramRow}>
-                      <Text style={styles.paletteCardHistogramLabel}>Avg Luminosity</Text>
-                      <Text style={styles.paletteCardHistogramValue}>
-                        {histogram.average}
-                      </Text>
-                    </View>
+                    ))}
                   </View>
-                )}
+
+                  {/* Stats Section */}
+                  {cardShowStats && histogram && (
+                    <View style={styles.snsCardStats}>
+                      <View style={styles.snsCardStatItem}>
+                        <Text style={styles.snsCardStatValue}>{histogram.contrast}%</Text>
+                        <Text style={styles.snsCardStatLabel}>Contrast</Text>
+                      </View>
+                      <View style={styles.snsCardStatDivider} />
+                      <View style={styles.snsCardStatItem}>
+                        <Text style={styles.snsCardStatValue}>{processedColors.length}</Text>
+                        <Text style={styles.snsCardStatLabel}>Colors</Text>
+                      </View>
+                      <View style={styles.snsCardStatDivider} />
+                      <View style={styles.snsCardStatItem}>
+                        <Text style={styles.snsCardStatValue}>{histogram.average}</Text>
+                        <Text style={styles.snsCardStatLabel}>Avg Lum</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Watermark */}
+                  <View style={styles.snsCardWatermark}>
+                    <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                  </View>
+                </View>
               </ViewShot>
 
               {/* Format Selection */}
@@ -1192,7 +1340,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </View>
               </View>
 
-              {/* Export Button */}
+              {/* Share Button */}
               <TouchableOpacity
                 style={styles.exportConfirmButton}
                 onPress={handleExportConfirm}
@@ -1204,7 +1352,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <>
                     <Ionicons name="share-outline" size={20} color="#fff" />
                     <Text style={styles.exportConfirmButtonText}>
-                      Export as {exportFormat.toUpperCase()}
+                      Share to {snsCardType === 'instagram' ? 'Instagram' : 'Twitter'}
                     </Text>
                   </>
                 )}
@@ -1240,6 +1388,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         </View>
       </Modal>
+
+      {/* Rewarded Ad Modal */}
+      <MockRewardedAd
+        visible={showRewardedAd}
+        onClose={() => setShowRewardedAd(false)}
+        onRewardEarned={handleRewardEarned}
+      />
     </View>
   );
 }
@@ -1261,10 +1416,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  extractionsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  extractionsBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#f59e0b',
   },
   headerButton: {
     padding: 8,
@@ -1971,6 +2145,170 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#888',
     fontFamily: 'monospace',
+  },
+
+  // SNS Card Type Selector
+  snsTypeSelector: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  snsTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#24242e',
+    gap: 8,
+  },
+  snsTypeButtonActive: {
+    backgroundColor: '#6366f1',
+  },
+  snsTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#888',
+  },
+  snsTypeTextActive: {
+    color: '#fff',
+  },
+  snsTypeRatio: {
+    fontSize: 11,
+    color: '#666',
+    backgroundColor: '#1a1a24',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+
+  // Card Options
+  cardOptionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  cardOptionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#24242e',
+  },
+  cardOptionButtonActive: {
+    backgroundColor: '#4a4a5a',
+  },
+  cardOptionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  cardOptionTextActive: {
+    color: '#fff',
+  },
+
+  // SNS Card
+  snsCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  snsCardInstagram: {
+    width: SCREEN_WIDTH - 40,
+    height: SCREEN_WIDTH - 40,
+  },
+  snsCardTwitter: {
+    width: SCREEN_WIDTH - 40,
+    height: (SCREEN_WIDTH - 40) * 9 / 16,
+  },
+  snsCardBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  snsCardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  snsCardContent: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  snsCardImageWrapper: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  snsCardImageWrapperTwitter: {
+    flex: 0,
+    height: 80,
+    marginBottom: 10,
+  },
+  snsCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  snsCardPalette: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  snsCardPaletteTwitter: {
+    gap: 6,
+  },
+  snsCardColorItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  snsCardColorSwatch: {
+    width: '100%',
+    height: 48,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  snsCardColorHex: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: 'monospace',
+  },
+  snsCardStats: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 12,
+  },
+  snsCardStatItem: {
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  snsCardStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  snsCardStatLabel: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginTop: 2,
+  },
+  snsCardStatDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  snsCardWatermark: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  snsCardWatermarkText: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontWeight: '600',
+    letterSpacing: 1,
   },
 
   // Format Selection
