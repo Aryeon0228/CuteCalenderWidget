@@ -638,6 +638,33 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         )}
 
+        {/* Color Count Slider - Below Palette */}
+        <View style={[styles.colorCountRow, { backgroundColor: theme.backgroundCard }]}>
+          <Text style={[styles.colorCountLabel, { color: theme.textSecondary }]}>Colors</Text>
+          <Slider
+            style={styles.colorCountSlider}
+            minimumValue={3}
+            maximumValue={8}
+            step={1}
+            value={colorCount}
+            onValueChange={(value) => setColorCount(Math.round(value))}
+            onSlidingComplete={(value) => {
+              const newCount = Math.round(value);
+              setColorCount(newCount);
+              if (currentImageUri) {
+                doExtract(currentImageUri, newCount, extractionMethod);
+              }
+            }}
+            minimumTrackTintColor={theme.accent}
+            maximumTrackTintColor={theme.borderLight}
+            thumbTintColor={theme.textPrimary}
+            disabled={!currentImageUri}
+          />
+          <View style={[styles.colorCountBadge, { backgroundColor: theme.backgroundTertiary }]}>
+            <Text style={[styles.colorCountBadgeText, { color: theme.textPrimary }]}>{colorCount}</Text>
+          </View>
+        </View>
+
         {/* Inline Color Detail - Below Palette */}
         {colorInfo && selectedColorIndex !== null && (
           <View style={[styles.inlineColorDetail, { backgroundColor: theme.backgroundCard }]}>
@@ -809,32 +836,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 ? '🎨 Hue histogram - Fast, good for game art with clear color regions'
                 : '🔬 K-Means clustering - More accurate, better for photos & gradients'}
             </Text>
-          </View>
-
-          {/* Color Count - Inline */}
-          <View style={styles.sliderRow}>
-            <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>Colors</Text>
-            <Slider
-              style={styles.sliderInline}
-              minimumValue={3}
-              maximumValue={8}
-              step={1}
-              value={colorCount}
-              onValueChange={(value) => setColorCount(Math.round(value))}
-              onSlidingComplete={(value) => {
-                const newCount = Math.round(value);
-                setColorCount(newCount);
-                if (currentImageUri) {
-                  doExtract(currentImageUri, newCount, extractionMethod);
-                }
-              }}
-              minimumTrackTintColor={theme.accent}
-              maximumTrackTintColor={theme.borderLight}
-              thumbTintColor={theme.textPrimary}
-            />
-            <View style={[styles.countBadge, { backgroundColor: theme.backgroundTertiary }]}>
-              <Text style={[styles.countBadgeText, { color: theme.textPrimary }]}>{colorCount}</Text>
-            </View>
           </View>
         </View>
 
@@ -1655,6 +1656,39 @@ const styles = StyleSheet.create({
   colorSwatchEmpty: {
     backgroundColor: '#1a1a24',
     borderStyle: 'dashed',
+  },
+
+  // Color Count Slider
+  colorCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  colorCountLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  colorCountSlider: {
+    flex: 1,
+    height: 30,
+  },
+  colorCountBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  colorCountBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   // Inline Color Detail
