@@ -238,3 +238,99 @@ export function generateColorVariations(
     { ...highlight2, label: 'L2', fullLabel: 'Light 2' },
   ];
 }
+
+// ============================================
+// COLOR HARMONY
+// ============================================
+
+export type HarmonyType =
+  | 'complementary'
+  | 'analogous'
+  | 'triadic'
+  | 'split-complementary'
+  | 'tetradic';
+
+export interface HarmonyColor {
+  hex: string;
+  name: string;
+  angle: number;
+}
+
+export interface ColorHarmony {
+  type: HarmonyType;
+  name: string;
+  description: string;
+  colors: HarmonyColor[];
+}
+
+/**
+ * Generate color at a specific hue rotation from base color
+ */
+function rotateHue(hex: string, degrees: number): string {
+  const rgb = hexToRgb(hex);
+  const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const newH = (h + degrees + 360) % 360;
+  const newRgb = hslToRgb(newH, s, l);
+  return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+}
+
+/**
+ * Generate all color harmonies for a given base color
+ */
+export function generateColorHarmonies(hex: string): ColorHarmony[] {
+  const rgb = hexToRgb(hex);
+  const { h } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  return [
+    {
+      type: 'complementary',
+      name: 'Complementary',
+      description: '보색 - 정반대 색상',
+      colors: [
+        { hex, name: 'Base', angle: 0 },
+        { hex: rotateHue(hex, 180), name: 'Complement', angle: 180 },
+      ],
+    },
+    {
+      type: 'analogous',
+      name: 'Analogous',
+      description: '유사색 - 인접한 색상',
+      colors: [
+        { hex: rotateHue(hex, -30), name: 'Left', angle: -30 },
+        { hex, name: 'Base', angle: 0 },
+        { hex: rotateHue(hex, 30), name: 'Right', angle: 30 },
+      ],
+    },
+    {
+      type: 'triadic',
+      name: 'Triadic',
+      description: '삼각배색 - 120° 간격',
+      colors: [
+        { hex, name: 'Base', angle: 0 },
+        { hex: rotateHue(hex, 120), name: 'Second', angle: 120 },
+        { hex: rotateHue(hex, 240), name: 'Third', angle: 240 },
+      ],
+    },
+    {
+      type: 'split-complementary',
+      name: 'Split Comp.',
+      description: '분열보색 - 보색 양옆',
+      colors: [
+        { hex, name: 'Base', angle: 0 },
+        { hex: rotateHue(hex, 150), name: 'Split 1', angle: 150 },
+        { hex: rotateHue(hex, 210), name: 'Split 2', angle: 210 },
+      ],
+    },
+    {
+      type: 'tetradic',
+      name: 'Tetradic',
+      description: '사각배색 - 90° 간격',
+      colors: [
+        { hex, name: 'Base', angle: 0 },
+        { hex: rotateHue(hex, 90), name: 'Second', angle: 90 },
+        { hex: rotateHue(hex, 180), name: 'Third', angle: 180 },
+        { hex: rotateHue(hex, 270), name: 'Fourth', angle: 270 },
+      ],
+    },
+  ];
+}
