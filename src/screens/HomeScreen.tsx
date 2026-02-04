@@ -1175,7 +1175,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 <View style={styles.snsCardOverlay} />
 
                 {/* Card Content */}
-                <View style={styles.snsCardContent}>
+                <View style={[
+                  styles.snsCardContent,
+                  snsCardType === 'twitter' && styles.snsCardContentTwitter,
+                ]}>
                   {/* Image Section */}
                   {currentImageUri && (
                     <View style={[
@@ -1198,7 +1201,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     {processedColors.map((color, index) => (
                       <View key={index} style={styles.snsCardColorItem}>
                         <View
-                          style={[styles.snsCardColorSwatch, { backgroundColor: color }]}
+                          style={[
+                            styles.snsCardColorSwatch,
+                            snsCardType === 'twitter' && styles.snsCardColorSwatchTwitter,
+                            { backgroundColor: color },
+                          ]}
                         />
                         {cardShowHex && (
                           <Text style={styles.snsCardColorHex}>{color}</Text>
@@ -1209,20 +1216,41 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
                   {/* Stats Section */}
                   {cardShowStats && histogram && (
-                    <View style={styles.snsCardStats}>
+                    <View style={[
+                      styles.snsCardStats,
+                      snsCardType === 'twitter' && styles.snsCardStatsTwitter,
+                    ]}>
                       <View style={styles.snsCardStatItem}>
-                        <Text style={styles.snsCardStatValue}>{histogram.contrast}%</Text>
-                        <Text style={styles.snsCardStatLabel}>Contrast</Text>
+                        <Text style={[
+                          styles.snsCardStatValue,
+                          snsCardType === 'twitter' && styles.snsCardStatValueTwitter,
+                        ]}>{histogram.contrast}%</Text>
+                        <Text style={[
+                          styles.snsCardStatLabel,
+                          snsCardType === 'twitter' && styles.snsCardStatLabelTwitter,
+                        ]}>Contrast</Text>
                       </View>
                       <View style={styles.snsCardStatDivider} />
                       <View style={styles.snsCardStatItem}>
-                        <Text style={styles.snsCardStatValue}>{processedColors.length}</Text>
-                        <Text style={styles.snsCardStatLabel}>Colors</Text>
+                        <Text style={[
+                          styles.snsCardStatValue,
+                          snsCardType === 'twitter' && styles.snsCardStatValueTwitter,
+                        ]}>{processedColors.length}</Text>
+                        <Text style={[
+                          styles.snsCardStatLabel,
+                          snsCardType === 'twitter' && styles.snsCardStatLabelTwitter,
+                        ]}>Colors</Text>
                       </View>
                       <View style={styles.snsCardStatDivider} />
                       <View style={styles.snsCardStatItem}>
-                        <Text style={styles.snsCardStatValue}>{histogram.average}</Text>
-                        <Text style={styles.snsCardStatLabel}>Avg Lum</Text>
+                        <Text style={[
+                          styles.snsCardStatValue,
+                          snsCardType === 'twitter' && styles.snsCardStatValueTwitter,
+                        ]}>{histogram.average}</Text>
+                        <Text style={[
+                          styles.snsCardStatLabel,
+                          snsCardType === 'twitter' && styles.snsCardStatLabelTwitter,
+                        ]}>Avg Lum</Text>
                       </View>
                     </View>
                   )}
@@ -2155,6 +2183,9 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: 'space-between',
   },
+  snsCardContentTwitter: {
+    padding: 12,
+  },
   snsCardImageWrapper: {
     flex: 1,
     borderRadius: 12,
@@ -2163,8 +2194,9 @@ const styles = StyleSheet.create({
   },
   snsCardImageWrapperTwitter: {
     flex: 0,
-    height: 80,
-    marginBottom: 10,
+    height: 60,
+    marginBottom: 6,
+    borderRadius: 8,
   },
   snsCardImage: {
     width: '100%',
@@ -2187,6 +2219,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 4,
   },
+  snsCardColorSwatchTwitter: {
+    height: 32,
+    borderRadius: 6,
+    marginBottom: 2,
+  },
   snsCardColorHex: {
     fontSize: 8,
     color: 'rgba(255, 255, 255, 0.8)',
@@ -2202,6 +2239,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 12,
   },
+  snsCardStatsTwitter: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 8,
+  },
   snsCardStatItem: {
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -2211,10 +2254,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
+  snsCardStatValueTwitter: {
+    fontSize: 12,
+  },
   snsCardStatLabel: {
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 2,
+  },
+  snsCardStatLabelTwitter: {
+    fontSize: 8,
+    marginTop: 1,
   },
   snsCardStatDivider: {
     width: 1,
