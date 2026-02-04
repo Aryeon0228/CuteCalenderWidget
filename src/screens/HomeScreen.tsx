@@ -13,6 +13,7 @@ import {
   ActionSheetIOS,
   Platform,
   SafeAreaView,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Slider from '@react-native-community/slider';
@@ -103,6 +104,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   // Ad State
   const [showRewardedAd, setShowRewardedAd] = useState(false);
+
+  // Info Modal State
+  const [showInfo, setShowInfo] = useState(false);
 
   // Theme & Store
   const { mode, colors: theme, toggleTheme } = useThemeStore();
@@ -505,16 +509,24 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </TouchableOpacity>
           )}
         </View>
-        <TouchableOpacity
-          style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
-          onPress={toggleTheme}
-        >
-          <Ionicons
-            name={mode === 'dark' ? 'sunny-outline' : 'moon-outline'}
-            size={22}
-            color={theme.textPrimary}
-          />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
+            onPress={() => setShowInfo(true)}
+          >
+            <Ionicons name="information-circle-outline" size={22} color={theme.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
+            onPress={toggleTheme}
+          >
+            <Ionicons
+              name={mode === 'dark' ? 'sunny-outline' : 'moon-outline'}
+              size={22}
+              color={theme.textPrimary}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -1448,6 +1460,49 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         </View>
       </Modal>
 
+      {/* Info Modal */}
+      <Modal
+        visible={showInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowInfo(false)}
+      >
+        <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
+          <View style={[styles.infoModalContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={styles.infoModalHeader}>
+              <View style={[styles.infoModalIcon, { backgroundColor: theme.accent }]}>
+                <Ionicons name="color-palette" size={32} color="#fff" />
+              </View>
+              <Text style={[styles.infoModalTitle, { color: theme.textPrimary }]}>Pixel Paw</Text>
+              <Text style={[styles.infoModalVersion, { color: theme.textMuted }]}>v1.0.0</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.infoModalButton, { backgroundColor: theme.backgroundTertiary }]}
+              onPress={() => {
+                Linking.openURL('mailto:aryeon.dev@gmail.com?subject=Pixel Paw Feedback');
+              }}
+            >
+              <Ionicons name="mail-outline" size={20} color={theme.accent} />
+              <Text style={[styles.infoModalButtonText, { color: theme.textPrimary }]}>
+                피드백 보내기
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.infoModalFooter, { color: theme.textMuted }]}>
+              Made with 🤍 by Studio Aryeon
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.infoModalCloseButton, { backgroundColor: theme.accent }]}
+              onPress={() => setShowInfo(false)}
+            >
+              <Text style={styles.infoModalCloseButtonText}>닫기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Rewarded Ad Modal */}
       <MockRewardedAd
         visible={showRewardedAd}
@@ -1479,6 +1534,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
     fontSize: 28,
@@ -2748,5 +2808,62 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: '#fff',
+  },
+
+  // Info Modal
+  infoModalContent: {
+    width: SCREEN_WIDTH - 60,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+  },
+  infoModalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  infoModalIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  infoModalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  infoModalVersion: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  infoModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 20,
+  },
+  infoModalButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  infoModalFooter: {
+    fontSize: 13,
+    marginBottom: 20,
+  },
+  infoModalCloseButton: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  infoModalCloseButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
