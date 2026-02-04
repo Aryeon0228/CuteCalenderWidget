@@ -751,8 +751,24 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
         {/* Extraction Settings Card - Compact */}
         <View style={[styles.extractionCard, { backgroundColor: theme.backgroundCard }]}>
-          {/* Top Row: Title + Method Toggle + Value Check */}
-          <View style={styles.extractionTopRow}>
+          {/* Algorithm Section */}
+          <View style={styles.algorithmSection}>
+            <View style={styles.algorithmHeader}>
+              <Text style={[styles.algorithmLabel, { color: theme.textSecondary }]}>Algorithm</Text>
+              <TouchableOpacity
+                style={[
+                  styles.valueToggleButton,
+                  { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
+                ]}
+                onPress={() => setShowGrayscale(!showGrayscale)}
+              >
+                <Ionicons
+                  name="contrast-outline"
+                  size={16}
+                  color={showGrayscale ? '#fff' : theme.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
             <View style={[styles.methodToggle, { backgroundColor: theme.backgroundTertiary }]}>
               <TouchableOpacity
                 style={[
@@ -787,20 +803,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[
-                styles.valueToggleButton,
-                { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
-              ]}
-              onPress={() => setShowGrayscale(!showGrayscale)}
-            >
-              <Ionicons
-                name="contrast-outline"
-                size={16}
-                color={showGrayscale ? '#fff' : theme.textSecondary}
-              />
-            </TouchableOpacity>
+            <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
+              {extractionMethod === 'histogram'
+                ? '🎨 Hue histogram - Fast, good for game art with clear color regions'
+                : '🔬 K-Means clustering - More accurate, better for photos & gradients'}
+            </Text>
           </View>
 
           {/* Color Count - Inline */}
@@ -1004,24 +1011,30 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       if (!currentHarmony) return null;
 
                       return (
-                        <View style={styles.harmonyColorsRow}>
-                          {currentHarmony.colors.map((color, i) => (
-                            <TouchableOpacity
-                              key={i}
-                              style={styles.harmonyColorItem}
-                              onPress={() => copyColor(color.hex)}
-                            >
-                              <View
-                                style={[
-                                  styles.harmonyColorSwatch,
-                                  { backgroundColor: color.hex },
-                                  color.name === 'Base' && styles.harmonyColorSwatchBase,
-                                ]}
-                              />
-                              <Text style={[styles.harmonyColorHex, { color: theme.textMuted }]}>{color.hex}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
+                        <>
+                          <Text style={[styles.harmonyDesc, { color: theme.textMuted }]}>
+                            {currentHarmony.description}
+                            {currentHarmony.colors.length > 1 && ` (${currentHarmony.colors.map(c => c.angle + '°').join(', ')})`}
+                          </Text>
+                          <View style={styles.harmonyColorsRow}>
+                            {currentHarmony.colors.map((color, i) => (
+                              <TouchableOpacity
+                                key={i}
+                                style={styles.harmonyColorItem}
+                                onPress={() => copyColor(color.hex)}
+                              >
+                                <View
+                                  style={[
+                                    styles.harmonyColorSwatch,
+                                    { backgroundColor: color.hex },
+                                    color.name === 'Base' && styles.harmonyColorSwatchBase,
+                                  ]}
+                                />
+                                <Text style={[styles.harmonyColorHex, { color: theme.textMuted }]}>{color.hex}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </>
                       );
                     })()}
                   </View>
@@ -1697,6 +1710,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  algorithmSection: {
+    marginBottom: 12,
+  },
+  algorithmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  algorithmLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  algorithmDesc: {
+    fontSize: 11,
+    marginTop: 8,
+    lineHeight: 16,
+  },
   methodToggle: {
     flexDirection: 'row',
     backgroundColor: '#0c0c12',
@@ -1996,7 +2027,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   harmonyTypesScroll: {
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  harmonyDesc: {
+    fontSize: 11,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   harmonyTypeButton: {
     paddingHorizontal: 14,
