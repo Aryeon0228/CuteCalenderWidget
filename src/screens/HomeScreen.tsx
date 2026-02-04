@@ -37,6 +37,7 @@ import {
 import {
   hexToRgb,
   rgbToHsl,
+  toGrayscale,
   adjustColor,
   generateColorVariations,
   generateColorHarmonies,
@@ -80,6 +81,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   // Filter & Display State
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
+  const [showGrayscale, setShowGrayscale] = useState(false);
   const [variationHueShift, setVariationHueShift] = useState(true);
   const [selectedHarmony, setSelectedHarmony] = useState<HarmonyType>('complementary');
 
@@ -129,6 +131,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   // ============================================
 
   const processedColors = currentColors.map((hex) => {
+    if (showGrayscale) {
+      return toGrayscale(hex);
+    }
     const preset = STYLE_PRESETS[styleFilter];
     return adjustColor(hex, preset.saturation, preset.brightness);
   });
@@ -483,11 +488,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <Text style={[styles.title, { color: theme.textPrimary }]}>Game Palette</Text>
           {!isPremium && (
             <TouchableOpacity
-              style={styles.extractionsBadge}
+              style={[styles.extractionsBadge, { backgroundColor: theme.backgroundTertiary }]}
               onPress={() => setShowRewardedAd(true)}
             >
               <Ionicons name="flash" size={12} color="#f59e0b" />
-              <Text style={styles.extractionsBadgeText}>
+              <Text style={[styles.extractionsBadgeText, { color: theme.textPrimary }]}>
                 {getRemainingExtractions()}
               </Text>
             </TouchableOpacity>
@@ -564,7 +569,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         )}
 
-        {/* Style Filters - Compact row */}
+        {/* Style Filters - Icon Grid */}
         {processedColors.length > 0 && (
           <View style={styles.styleFiltersContainer}>
             {STYLE_FILTER_KEYS.map((filter) => (
@@ -572,14 +577,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 key={filter}
                 style={[
                   styles.styleFilterButton,
-                  styleFilter === filter && styles.styleFilterButtonActive,
+                  { backgroundColor: styleFilter === filter ? theme.accent : theme.backgroundCard },
                 ]}
                 onPress={() => setStyleFilter(filter)}
               >
+                <Ionicons
+                  name={STYLE_PRESETS[filter].icon as any}
+                  size={20}
+                  color={styleFilter === filter ? '#fff' : theme.textSecondary}
+                />
                 <Text
                   style={[
                     styles.styleFilterText,
-                    styleFilter === filter && styles.styleFilterTextActive,
+                    { color: styleFilter === filter ? '#fff' : theme.textSecondary },
                   ]}
                 >
                   {STYLE_PRESETS[filter].name}
@@ -689,21 +699,21 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         )}
 
         {/* Extraction Settings Card - Compact */}
-        <View style={styles.extractionCard}>
+        <View style={[styles.extractionCard, { backgroundColor: theme.backgroundCard }]}>
           {/* Top Row: Title + Method Toggle + Value Check */}
           <View style={styles.extractionTopRow}>
-            <View style={styles.methodToggle}>
+            <View style={[styles.methodToggle, { backgroundColor: theme.backgroundTertiary }]}>
               <TouchableOpacity
                 style={[
                   styles.methodOption,
-                  extractionMethod === 'histogram' && styles.methodOptionActive,
+                  extractionMethod === 'histogram' && { backgroundColor: theme.buttonBg },
                 ]}
                 onPress={() => handleMethodChange('histogram')}
               >
                 <Text
                   style={[
                     styles.methodOptionText,
-                    extractionMethod === 'histogram' && styles.methodOptionTextActive,
+                    { color: extractionMethod === 'histogram' ? theme.textPrimary : theme.textMuted },
                   ]}
                 >
                   Histogram
@@ -712,25 +722,39 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <TouchableOpacity
                 style={[
                   styles.methodOption,
-                  extractionMethod === 'kmeans' && styles.methodOptionActive,
+                  extractionMethod === 'kmeans' && { backgroundColor: theme.buttonBg },
                 ]}
                 onPress={() => handleMethodChange('kmeans')}
               >
                 <Text
                   style={[
                     styles.methodOptionText,
-                    extractionMethod === 'kmeans' && styles.methodOptionTextActive,
+                    { color: extractionMethod === 'kmeans' ? theme.textPrimary : theme.textMuted },
                   ]}
                 >
                   K-Means
                 </Text>
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity
+              style={[
+                styles.valueToggleButton,
+                { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
+              ]}
+              onPress={() => setShowGrayscale(!showGrayscale)}
+            >
+              <Ionicons
+                name="contrast-outline"
+                size={16}
+                color={showGrayscale ? '#fff' : theme.textSecondary}
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Color Count - Inline */}
           <View style={styles.sliderRow}>
-            <Text style={styles.sliderLabel}>Colors</Text>
+            <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>Colors</Text>
             <Slider
               style={styles.sliderInline}
               minimumValue={3}
@@ -745,12 +769,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   doExtract(currentImageUri, newCount, extractionMethod);
                 }
               }}
-              minimumTrackTintColor="#6366f1"
-              maximumTrackTintColor="#3a3a4a"
-              thumbTintColor="#fff"
+              minimumTrackTintColor={theme.accent}
+              maximumTrackTintColor={theme.borderLight}
+              thumbTintColor={theme.textPrimary}
             />
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{colorCount}</Text>
+            <View style={[styles.countBadge, { backgroundColor: theme.backgroundTertiary }]}>
+              <Text style={[styles.countBadgeText, { color: theme.textPrimary }]}>{colorCount}</Text>
             </View>
           </View>
         </View>
@@ -759,10 +783,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       </ScrollView>
 
       {/* Bottom Action Bar */}
-      <View style={styles.actionBar}>
+      <View style={[styles.actionBar, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.border }]}>
         <TouchableOpacity style={styles.actionButton} onPress={onNavigateToLibrary}>
-          <Ionicons name="library-outline" size={22} color="#888" />
-          <Text style={styles.actionButtonText}>Library</Text>
+          <Ionicons name="library-outline" size={22} color={theme.textSecondary} />
+          <Text style={[styles.actionButtonText, { color: theme.textSecondary }]}>Library</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -770,9 +794,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
-          <Ionicons name="share-outline" size={22} color="#6366f1" />
-          <Text style={styles.exportButtonText}>Export</Text>
+        <TouchableOpacity style={[styles.exportButton, { backgroundColor: theme.backgroundTertiary }]} onPress={handleExport}>
+          <Ionicons name="share-outline" size={22} color={theme.accent} />
+          <Text style={[styles.exportButtonText, { color: theme.accent }]}>Export</Text>
         </TouchableOpacity>
       </View>
 
@@ -783,13 +807,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         animationType="slide"
         onRequestClose={() => setShowColorDetail(false)}
       >
-        <View style={styles.colorDetailOverlay}>
+        <View style={[styles.colorDetailOverlay, { backgroundColor: theme.modalOverlay }]}>
           <TouchableOpacity
             style={styles.colorDetailBackground}
             onPress={() => setShowColorDetail(false)}
           />
-          <View style={styles.colorDetailContent}>
-            <View style={styles.colorDetailHandle} />
+          <View style={[styles.colorDetailContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={[styles.colorDetailHandle, { backgroundColor: theme.border }]} />
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {colorInfo && (
@@ -801,52 +825,52 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     />
                     <View style={styles.colorDetailValues}>
                       <TouchableOpacity
-                        style={styles.colorValueCompact}
+                        style={[styles.colorValueCompact, { backgroundColor: theme.backgroundTertiary }]}
                         onPress={() => copyColor(colorInfo.hex)}
                       >
-                        <Text style={styles.colorValueCompactLabel}>HEX</Text>
-                        <Text style={styles.colorValueCompactText}>{colorInfo.hex}</Text>
-                        <Ionicons name="copy-outline" size={14} color="#666" />
+                        <Text style={[styles.colorValueCompactLabel, { color: theme.textMuted }]}>HEX</Text>
+                        <Text style={[styles.colorValueCompactText, { color: theme.textPrimary }]}>{colorInfo.hex}</Text>
+                        <Ionicons name="copy-outline" size={14} color={theme.textMuted} />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.colorValueCompact}
+                        style={[styles.colorValueCompact, { backgroundColor: theme.backgroundTertiary }]}
                         onPress={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}
                       >
-                        <Text style={styles.colorValueCompactLabel}>RGB</Text>
-                        <Text style={styles.colorValueCompactText}>
+                        <Text style={[styles.colorValueCompactLabel, { color: theme.textMuted }]}>RGB</Text>
+                        <Text style={[styles.colorValueCompactText, { color: theme.textPrimary }]}>
                           {colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b}
                         </Text>
-                        <Ionicons name="copy-outline" size={14} color="#666" />
+                        <Ionicons name="copy-outline" size={14} color={theme.textMuted} />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.colorValueCompact}
+                        style={[styles.colorValueCompact, { backgroundColor: theme.backgroundTertiary }]}
                         onPress={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}
                       >
-                        <Text style={styles.colorValueCompactLabel}>HSL</Text>
-                        <Text style={styles.colorValueCompactText}>
+                        <Text style={[styles.colorValueCompactLabel, { color: theme.textMuted }]}>HSL</Text>
+                        <Text style={[styles.colorValueCompactText, { color: theme.textPrimary }]}>
                           {colorInfo.hsl.h}°, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%
                         </Text>
-                        <Ionicons name="copy-outline" size={14} color="#666" />
+                        <Ionicons name="copy-outline" size={14} color={theme.textMuted} />
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   {/* Value Variations */}
-                  <View style={styles.variationsSection}>
+                  <View style={[styles.variationsSection, { backgroundColor: theme.backgroundTertiary }]}>
                     <View style={styles.variationsHeader}>
-                      <Text style={styles.variationsSectionTitle}>Variations</Text>
-                      <View style={styles.hueShiftToggle}>
+                      <Text style={[styles.variationsSectionTitle, { color: theme.textPrimary }]}>Variations</Text>
+                      <View style={[styles.hueShiftToggle, { backgroundColor: theme.backgroundSecondary }]}>
                         <TouchableOpacity
                           style={[
                             styles.hueShiftOption,
-                            variationHueShift && styles.hueShiftOptionActive,
+                            variationHueShift && { backgroundColor: theme.buttonBg },
                           ]}
                           onPress={() => setVariationHueShift(true)}
                         >
                           <Text
                             style={[
                               styles.hueShiftOptionText,
-                              variationHueShift && styles.hueShiftOptionTextActive,
+                              { color: variationHueShift ? theme.textPrimary : theme.textMuted },
                             ]}
                           >
                             Hue Shift
@@ -855,14 +879,14 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                         <TouchableOpacity
                           style={[
                             styles.hueShiftOption,
-                            !variationHueShift && styles.hueShiftOptionActive,
+                            !variationHueShift && { backgroundColor: theme.buttonBg },
                           ]}
                           onPress={() => setVariationHueShift(false)}
                         >
                           <Text
                             style={[
                               styles.hueShiftOptionText,
-                              !variationHueShift && styles.hueShiftOptionTextActive,
+                              { color: !variationHueShift ? theme.textPrimary : theme.textMuted },
                             ]}
                           >
                             OFF
@@ -883,7 +907,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                             onPress={() => copyColor(v.hex)}
                           >
                             <View style={[styles.variationColor, { backgroundColor: v.hex }]} />
-                            <Text style={styles.variationHex}>{v.hex}</Text>
+                            <Text style={[styles.variationHex, { color: theme.textMuted }]}>{v.hex}</Text>
                           </TouchableOpacity>
                         )
                       )}
@@ -891,8 +915,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   </View>
 
                   {/* Color Harmony */}
-                  <View style={styles.harmonySection}>
-                    <Text style={styles.harmonySectionTitle}>Harmony</Text>
+                  <View style={[styles.harmonySection, { backgroundColor: theme.backgroundTertiary }]}>
+                    <Text style={[styles.harmonySectionTitle, { color: theme.textPrimary }]}>Harmony</Text>
 
                     <ScrollView
                       horizontal
@@ -904,7 +928,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                           key={harmony.type}
                           style={[
                             styles.harmonyTypeButton,
-                            selectedHarmony === harmony.type && styles.harmonyTypeButtonActive,
+                            { backgroundColor: selectedHarmony === harmony.type ? theme.accent : theme.backgroundSecondary },
                           ]}
                           onPress={() => {
                             hapticLight();
@@ -914,7 +938,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                           <Text
                             style={[
                               styles.harmonyTypeText,
-                              selectedHarmony === harmony.type && styles.harmonyTypeTextActive,
+                              { color: selectedHarmony === harmony.type ? '#fff' : theme.textMuted },
                             ]}
                           >
                             {harmony.name}
@@ -943,7 +967,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                                   color.name === 'Base' && styles.harmonyColorSwatchBase,
                                 ]}
                               />
-                              <Text style={styles.harmonyColorHex}>{color.hex}</Text>
+                              <Text style={[styles.harmonyColorHex, { color: theme.textMuted }]}>{color.hex}</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -1002,23 +1026,23 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         animationType="fade"
         onRequestClose={() => setShowSaveModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Save Palette</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Save Palette</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.border }]}
               value={paletteName}
               onChangeText={setPaletteName}
               placeholder="Auto: Palette YYYY-MM-DD_001"
-              placeholderTextColor="#555"
+              placeholderTextColor={theme.textMuted}
               autoFocus
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={styles.modalButton}
+                style={[styles.modalButton, { backgroundColor: theme.buttonBg }]}
                 onPress={() => setShowSaveModal(false)}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={[styles.modalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonPrimary]}
@@ -1040,17 +1064,17 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         animationType="slide"
         onRequestClose={() => setShowExportModal(false)}
       >
-        <View style={styles.exportModalOverlay}>
+        <View style={[styles.exportModalOverlay, { backgroundColor: theme.modalOverlay }]}>
           <TouchableOpacity
             style={styles.exportModalBackground}
             onPress={() => setShowExportModal(false)}
           />
-          <View style={styles.exportModalContent}>
-            <View style={styles.exportModalHandle} />
+          <View style={[styles.exportModalContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={[styles.exportModalHandle, { backgroundColor: theme.border }]} />
             <View style={styles.exportModalHeader}>
-              <Text style={styles.exportModalTitle}>Export Palette</Text>
+              <Text style={[styles.exportModalTitle, { color: theme.textPrimary }]}>Export Palette</Text>
               <TouchableOpacity onPress={() => setShowExportModal(false)}>
-                <Ionicons name="close" size={24} color="#888" />
+                <Ionicons name="close" size={24} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -1063,7 +1087,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 <TouchableOpacity
                   style={[
                     styles.snsTypeButton,
-                    snsCardType === 'instagram' && styles.snsTypeButtonActive,
+                    { backgroundColor: snsCardType === 'instagram' ? theme.accent : theme.backgroundTertiary },
                   ]}
                   onPress={() => {
                     hapticLight();
@@ -1073,22 +1097,22 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <Ionicons
                     name="logo-instagram"
                     size={18}
-                    color={snsCardType === 'instagram' ? '#fff' : '#888'}
+                    color={snsCardType === 'instagram' ? '#fff' : theme.textSecondary}
                   />
                   <Text
                     style={[
                       styles.snsTypeText,
-                      snsCardType === 'instagram' && styles.snsTypeTextActive,
+                      { color: snsCardType === 'instagram' ? '#fff' : theme.textSecondary },
                     ]}
                   >
                     Instagram
                   </Text>
-                  <Text style={styles.snsTypeRatio}>1:1</Text>
+                  <Text style={[styles.snsTypeRatio, { color: snsCardType === 'instagram' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>1:1</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.snsTypeButton,
-                    snsCardType === 'twitter' && styles.snsTypeButtonActive,
+                    { backgroundColor: snsCardType === 'twitter' ? theme.accent : theme.backgroundTertiary },
                   ]}
                   onPress={() => {
                     hapticLight();
@@ -1098,35 +1122,35 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <Ionicons
                     name="logo-twitter"
                     size={18}
-                    color={snsCardType === 'twitter' ? '#fff' : '#888'}
+                    color={snsCardType === 'twitter' ? '#fff' : theme.textSecondary}
                   />
                   <Text
                     style={[
                       styles.snsTypeText,
-                      snsCardType === 'twitter' && styles.snsTypeTextActive,
+                      { color: snsCardType === 'twitter' ? '#fff' : theme.textSecondary },
                     ]}
                   >
                     Twitter
                   </Text>
-                  <Text style={styles.snsTypeRatio}>16:9</Text>
+                  <Text style={[styles.snsTypeRatio, { color: snsCardType === 'twitter' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>16:9</Text>
                 </TouchableOpacity>
               </View>
 
               {/* Card Options */}
               <View style={styles.cardOptionsRow}>
                 <TouchableOpacity
-                  style={[styles.cardOptionButton, cardShowHex && styles.cardOptionButtonActive]}
+                  style={[styles.cardOptionButton, { backgroundColor: cardShowHex ? theme.accent : theme.backgroundTertiary }]}
                   onPress={() => setCardShowHex(!cardShowHex)}
                 >
-                  <Text style={[styles.cardOptionText, cardShowHex && styles.cardOptionTextActive]}>
+                  <Text style={[styles.cardOptionText, { color: cardShowHex ? '#fff' : theme.textSecondary }]}>
                     HEX
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.cardOptionButton, cardShowStats && styles.cardOptionButtonActive]}
+                  style={[styles.cardOptionButton, { backgroundColor: cardShowStats ? theme.accent : theme.backgroundTertiary }]}
                   onPress={() => setCardShowStats(!cardShowStats)}
                 >
-                  <Text style={[styles.cardOptionText, cardShowStats && styles.cardOptionTextActive]}>
+                  <Text style={[styles.cardOptionText, { color: cardShowStats ? '#fff' : theme.textSecondary }]}>
                     Stats
                   </Text>
                 </TouchableOpacity>
@@ -1212,7 +1236,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
               {/* Format Selection */}
               <View style={styles.formatSection}>
-                <Text style={styles.formatSectionTitle}>Export Format</Text>
+                <Text style={[styles.formatSectionTitle, { color: theme.textSecondary }]}>Export Format</Text>
                 <View style={styles.formatOptions}>
                   {[
                     { id: 'png', label: 'PNG', icon: 'image-outline' },
@@ -1223,19 +1247,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       key={format.id}
                       style={[
                         styles.formatOption,
-                        exportFormat === format.id && styles.formatOptionActive,
+                        { backgroundColor: exportFormat === format.id ? theme.accent : theme.backgroundTertiary },
                       ]}
                       onPress={() => setExportFormat(format.id as typeof exportFormat)}
                     >
                       <Ionicons
                         name={format.icon as any}
                         size={18}
-                        color={exportFormat === format.id ? '#fff' : '#888'}
+                        color={exportFormat === format.id ? '#fff' : theme.textSecondary}
                       />
                       <Text
                         style={[
                           styles.formatOptionText,
-                          exportFormat === format.id && styles.formatOptionTextActive,
+                          { color: exportFormat === format.id ? '#fff' : theme.textSecondary },
                         ]}
                       >
                         {format.label}
@@ -1265,25 +1289,25 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
               {/* Quick Copy Options */}
               <View style={styles.quickCopySection}>
-                <Text style={styles.quickCopyTitle}>Quick Copy</Text>
+                <Text style={[styles.quickCopyTitle, { color: theme.textSecondary }]}>Quick Copy</Text>
                 <View style={styles.quickCopyButtons}>
                   <TouchableOpacity
-                    style={styles.quickCopyButton}
+                    style={[styles.quickCopyButton, { backgroundColor: theme.backgroundTertiary }]}
                     onPress={() => copyToClipboard('text')}
                   >
-                    <Text style={styles.quickCopyButtonText}>HEX</Text>
+                    <Text style={[styles.quickCopyButtonText, { color: theme.textPrimary }]}>HEX</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.quickCopyButton}
+                    style={[styles.quickCopyButton, { backgroundColor: theme.backgroundTertiary }]}
                     onPress={() => copyToClipboard('json')}
                   >
-                    <Text style={styles.quickCopyButtonText}>JSON</Text>
+                    <Text style={[styles.quickCopyButtonText, { color: theme.textPrimary }]}>JSON</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.quickCopyButton}
+                    style={[styles.quickCopyButton, { backgroundColor: theme.backgroundTertiary }]}
                     onPress={() => copyToClipboard('css')}
                   >
-                    <Text style={styles.quickCopyButtonText}>CSS</Text>
+                    <Text style={[styles.quickCopyButtonText, { color: theme.textPrimary }]}>CSS</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1445,28 +1469,31 @@ const styles = StyleSheet.create({
     color: '#6366f1',
   },
 
-  // Style Filters - Compact pills
+  // Style Filters - Icon Grid
   styleFiltersContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 4,
-    gap: 6,
+    gap: 8,
   },
   styleFilterButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
     backgroundColor: '#1a1a24',
+    gap: 4,
   },
   styleFilterButtonActive: {
     backgroundColor: '#6366f1',
   },
   styleFilterText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#888',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   styleFilterTextActive: {
     color: '#fff',
@@ -1529,6 +1556,17 @@ const styles = StyleSheet.create({
   },
   methodOptionTextActive: {
     color: '#fff',
+  },
+  valueToggleButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: '#24242e',
+  },
+  valueToggleButtonActive: {
+    backgroundColor: '#6366f1',
   },
 
   // Slider - Inline
