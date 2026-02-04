@@ -101,7 +101,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 
       {/* Bottom branding */}
       <View style={styles.bottomBranding}>
-        <Text style={styles.brandingText}>Powered by K-Means & Histogram</Text>
+        <Text style={styles.brandingText}>Aryeon Studio with Claude</Text>
       </View>
     </View>
   );
