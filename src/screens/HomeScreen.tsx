@@ -812,216 +812,144 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <View style={styles.colorDetailContent}>
             <View style={styles.colorDetailHandle} />
 
-            {colorInfo && (
-              <>
-                {/* Color Preview */}
-                <View style={styles.colorDetailPreview}>
-                  <View
-                    style={[styles.colorDetailSwatch, { backgroundColor: colorInfo.hex }]}
-                  />
-                  <View style={styles.colorDetailInfo}>
-                    <Text style={styles.colorDetailTitle}>Color Details</Text>
-                    <Text style={styles.colorDetailIndex}>
-                      Color {(selectedColorIndex ?? 0) + 1} of {processedColors.length}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Color Values with Visual Bars */}
-                <View style={styles.colorValueSection}>
-                  {/* HEX */}
-                  <View style={styles.colorValueRow}>
-                    <Text style={styles.colorValueLabel}>HEX</Text>
-                    <Text style={styles.colorValueText}>{colorInfo.hex}</Text>
-                    <TouchableOpacity
-                      style={styles.colorValueCopy}
-                      onPress={() => copyColor(colorInfo.hex)}
-                    >
-                      <Ionicons name="copy-outline" size={18} color="#888" />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* RGB with bars */}
-                  <View style={styles.colorChannelSection}>
-                    <View style={styles.channelHeader}>
-                      <Text style={styles.colorValueLabel}>RGB</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {colorInfo && (
+                <>
+                  {/* Color Preview + Values Compact */}
+                  <View style={styles.colorDetailHeader}>
+                    <View
+                      style={[styles.colorDetailSwatch, { backgroundColor: colorInfo.hex }]}
+                    />
+                    <View style={styles.colorDetailValues}>
                       <TouchableOpacity
-                        onPress={() =>
-                          copyColor(
-                            `rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`
-                          )
-                        }
+                        style={styles.colorValueCompact}
+                        onPress={() => copyColor(colorInfo.hex)}
                       >
-                        <Ionicons name="copy-outline" size={16} color="#666" />
+                        <Text style={styles.colorValueCompactLabel}>HEX</Text>
+                        <Text style={styles.colorValueCompactText}>{colorInfo.hex}</Text>
+                        <Ionicons name="copy-outline" size={14} color="#666" />
                       </TouchableOpacity>
-                    </View>
-                    <ColorChannelBar
-                      label="R"
-                      value={colorInfo.rgb.r}
-                      max={255}
-                      color="#ef4444"
-                    />
-                    <ColorChannelBar
-                      label="G"
-                      value={colorInfo.rgb.g}
-                      max={255}
-                      color="#22c55e"
-                    />
-                    <ColorChannelBar
-                      label="B"
-                      value={colorInfo.rgb.b}
-                      max={255}
-                      color="#3b82f6"
-                    />
-                  </View>
-
-                  {/* HSL with bars */}
-                  <View style={styles.colorChannelSection}>
-                    <View style={styles.channelHeader}>
-                      <Text style={styles.colorValueLabel}>HSL</Text>
                       <TouchableOpacity
-                        onPress={() =>
-                          copyColor(
-                            `hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`
-                          )
-                        }
+                        style={styles.colorValueCompact}
+                        onPress={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}
                       >
-                        <Ionicons name="copy-outline" size={16} color="#666" />
-                      </TouchableOpacity>
-                    </View>
-                    <ColorChannelBar
-                      label="H"
-                      value={colorInfo.hsl.h}
-                      max={360}
-                      color={colorInfo.hex}
-                      isHue
-                    />
-                    <ColorChannelBar
-                      label="S"
-                      value={colorInfo.hsl.s}
-                      max={100}
-                      color="#a855f7"
-                    />
-                    <ColorChannelBar
-                      label="L"
-                      value={colorInfo.hsl.l}
-                      max={100}
-                      color="#888"
-                    />
-                  </View>
-                </View>
-
-                {/* Value Variations */}
-                <View style={styles.variationsSection}>
-                  <View style={styles.variationsHeader}>
-                    <Text style={styles.variationsSectionTitle}>Value Variations</Text>
-                    <View style={styles.hueShiftToggle}>
-                      <TouchableOpacity
-                        style={[
-                          styles.hueShiftOption,
-                          variationHueShift && styles.hueShiftOptionActive,
-                        ]}
-                        onPress={() => setVariationHueShift(true)}
-                      >
-                        <Text
-                          style={[
-                            styles.hueShiftOptionText,
-                            variationHueShift && styles.hueShiftOptionTextActive,
-                          ]}
-                        >
-                          Hue Shift
+                        <Text style={styles.colorValueCompactLabel}>RGB</Text>
+                        <Text style={styles.colorValueCompactText}>
+                          {colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b}
                         </Text>
+                        <Ionicons name="copy-outline" size={14} color="#666" />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[
-                          styles.hueShiftOption,
-                          !variationHueShift && styles.hueShiftOptionActive,
-                        ]}
-                        onPress={() => setVariationHueShift(false)}
+                        style={styles.colorValueCompact}
+                        onPress={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}
                       >
-                        <Text
-                          style={[
-                            styles.hueShiftOptionText,
-                            !variationHueShift && styles.hueShiftOptionTextActive,
-                          ]}
-                        >
-                          OFF
+                        <Text style={styles.colorValueCompactLabel}>HSL</Text>
+                        <Text style={styles.colorValueCompactText}>
+                          {colorInfo.hsl.h}°, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%
                         </Text>
+                        <Ionicons name="copy-outline" size={14} color="#666" />
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  <View style={styles.variationStrip}>
-                    {generateColorVariations(colorInfo.hex, variationHueShift).map(
-                      (v, i) => (
+                  {/* Value Variations */}
+                  <View style={styles.variationsSection}>
+                    <View style={styles.variationsHeader}>
+                      <Text style={styles.variationsSectionTitle}>Variations</Text>
+                      <View style={styles.hueShiftToggle}>
                         <TouchableOpacity
-                          key={i}
                           style={[
-                            styles.variationCell,
-                            v.label === 'Base' && styles.variationCellBase,
+                            styles.hueShiftOption,
+                            variationHueShift && styles.hueShiftOptionActive,
                           ]}
-                          onPress={() => copyColor(v.hex)}
+                          onPress={() => setVariationHueShift(true)}
                         >
-                          <View style={[styles.variationColor, { backgroundColor: v.hex }]} />
-                          <Text style={styles.variationHex}>{v.hex}</Text>
-                          <Text style={styles.variationLabel}>L:{v.hsl.l}%</Text>
+                          <Text
+                            style={[
+                              styles.hueShiftOptionText,
+                              variationHueShift && styles.hueShiftOptionTextActive,
+                            ]}
+                          >
+                            Hue Shift
+                          </Text>
                         </TouchableOpacity>
-                      )
-                    )}
+                        <TouchableOpacity
+                          style={[
+                            styles.hueShiftOption,
+                            !variationHueShift && styles.hueShiftOptionActive,
+                          ]}
+                          onPress={() => setVariationHueShift(false)}
+                        >
+                          <Text
+                            style={[
+                              styles.hueShiftOptionText,
+                              !variationHueShift && styles.hueShiftOptionTextActive,
+                            ]}
+                          >
+                            OFF
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={styles.variationStrip}>
+                      {generateColorVariations(colorInfo.hex, variationHueShift).map(
+                        (v, i) => (
+                          <TouchableOpacity
+                            key={i}
+                            style={[
+                              styles.variationCell,
+                              v.label === 'Base' && styles.variationCellBase,
+                            ]}
+                            onPress={() => copyColor(v.hex)}
+                          >
+                            <View style={[styles.variationColor, { backgroundColor: v.hex }]} />
+                            <Text style={styles.variationHex}>{v.hex}</Text>
+                          </TouchableOpacity>
+                        )
+                      )}
+                    </View>
                   </View>
 
-                  <Text style={styles.variationsHint}>
-                    {variationHueShift
-                      ? 'Shadows → Blue, Highlights → Yellow'
-                      : 'Pure lightness changes only'}
-                  </Text>
-                </View>
+                  {/* Color Harmony */}
+                  <View style={styles.harmonySection}>
+                    <Text style={styles.harmonySectionTitle}>Harmony</Text>
 
-                {/* Color Harmony */}
-                <View style={styles.harmonySection}>
-                  <Text style={styles.harmonySectionTitle}>Color Harmony</Text>
-
-                  {/* Harmony Type Selector */}
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.harmonyTypesScroll}
-                  >
-                    {generateColorHarmonies(colorInfo.hex).map((harmony) => (
-                      <TouchableOpacity
-                        key={harmony.type}
-                        style={[
-                          styles.harmonyTypeButton,
-                          selectedHarmony === harmony.type && styles.harmonyTypeButtonActive,
-                        ]}
-                        onPress={() => {
-                          hapticLight();
-                          setSelectedHarmony(harmony.type);
-                        }}
-                      >
-                        <Text
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.harmonyTypesScroll}
+                    >
+                      {generateColorHarmonies(colorInfo.hex).map((harmony) => (
+                        <TouchableOpacity
+                          key={harmony.type}
                           style={[
-                            styles.harmonyTypeText,
-                            selectedHarmony === harmony.type && styles.harmonyTypeTextActive,
+                            styles.harmonyTypeButton,
+                            selectedHarmony === harmony.type && styles.harmonyTypeButtonActive,
                           ]}
+                          onPress={() => {
+                            hapticLight();
+                            setSelectedHarmony(harmony.type);
+                          }}
                         >
-                          {harmony.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
+                          <Text
+                            style={[
+                              styles.harmonyTypeText,
+                              selectedHarmony === harmony.type && styles.harmonyTypeTextActive,
+                            ]}
+                          >
+                            {harmony.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
 
-                  {/* Selected Harmony Colors */}
-                  {(() => {
-                    const harmonies = generateColorHarmonies(colorInfo.hex);
-                    const currentHarmony = harmonies.find(h => h.type === selectedHarmony);
-                    if (!currentHarmony) return null;
+                    {(() => {
+                      const harmonies = generateColorHarmonies(colorInfo.hex);
+                      const currentHarmony = harmonies.find(h => h.type === selectedHarmony);
+                      if (!currentHarmony) return null;
 
-                    return (
-                      <>
-                        <Text style={styles.harmonyDescription}>
-                          {currentHarmony.description}
-                        </Text>
+                      return (
                         <View style={styles.harmonyColorsRow}>
                           {currentHarmony.colors.map((color, i) => (
                             <TouchableOpacity
@@ -1040,34 +968,14 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                             </TouchableOpacity>
                           ))}
                         </View>
-                      </>
-                    );
-                  })()}
-                </View>
-
-                {/* Grayscale Preview */}
-                <View style={styles.grayscaleSection}>
-                  <Text style={styles.grayscaleSectionTitle}>Value Check</Text>
-                  <View style={styles.grayscaleRow}>
-                    <View style={[styles.grayscaleSwatch, { backgroundColor: colorInfo.hex }]} />
-                    <Ionicons name="arrow-forward" size={16} color="#666" />
-                    <View
-                      style={[
-                        styles.grayscaleSwatch,
-                        { backgroundColor: toGrayscale(colorInfo.hex) },
-                      ]}
-                    />
-                    <Text style={styles.grayscaleValue}>
-                      {Math.round(
-                        0.299 * colorInfo.rgb.r +
-                          0.587 * colorInfo.rgb.g +
-                          0.114 * colorInfo.rgb.b
-                      )}
-                    </Text>
+                      );
+                    })()}
                   </View>
-                </View>
-              </>
-            )}
+
+                  <View style={{ height: 20 }} />
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1775,6 +1683,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
     paddingBottom: 40,
+    maxHeight: '70%',
   },
   colorDetailHandle: {
     width: 40,
@@ -1783,69 +1692,44 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  colorDetailPreview: {
+  colorDetailHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   colorDetailSwatch: {
-    width: 64,
-    height: 64,
+    width: 80,
+    height: 80,
     borderRadius: 16,
     borderWidth: 2,
     borderColor: '#2d2d38',
   },
-  colorDetailInfo: {
-    marginLeft: 16,
+  colorDetailValues: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+    gap: 6,
   },
-  colorDetailTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  colorDetailIndex: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  colorValueSection: {
-    backgroundColor: '#0c0c12',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-  },
-  colorValueRow: {
+  colorValueCompact: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#16161e',
+    backgroundColor: '#0c0c12',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
-  colorValueLabel: {
-    width: 48,
-    fontSize: 12,
+  colorValueCompactLabel: {
+    fontSize: 10,
     fontWeight: '600',
     color: '#666',
+    width: 28,
   },
-  colorValueText: {
+  colorValueCompactText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 12,
     color: '#fff',
     fontFamily: 'monospace',
-  },
-  colorValueCopy: {
-    padding: 8,
-  },
-
-  // Color Channel Section
-  colorChannelSection: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#16161e',
   },
   channelHeader: {
     flexDirection: 'row',
