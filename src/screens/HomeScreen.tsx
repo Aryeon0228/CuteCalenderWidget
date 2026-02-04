@@ -26,6 +26,8 @@ import ViewShot from 'react-native-view-shot';
 
 import { usePaletteStore } from '../store/paletteStore';
 import { useThemeStore } from '../store/themeStore';
+import { usePremiumStore } from '../store/premiumStore';
+import { MockRewardedAd } from '../components/MockRewardedAd';
 import {
   extractColorsFromImage,
   ExtractionMethod,
@@ -97,8 +99,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [cardShowHex, setCardShowHex] = useState(true);
   const [cardShowStats, setCardShowStats] = useState(true);
 
+  // Ad State
+  const [showRewardedAd, setShowRewardedAd] = useState(false);
+
   // Theme & Store
   const { mode, colors: theme, toggleTheme } = useThemeStore();
+  const {
+    isPremium,
+    canExtract,
+    useExtraction,
+    watchRewardedAd,
+    getRemainingExtractions,
+    resetDailyLimits,
+  } = usePremiumStore();
   const {
     currentColors,
     currentImageUri,
@@ -247,6 +260,25 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   };
 
   const extractColors = async (imageUri: string) => {
+    // Check daily reset
+    resetDailyLimits();
+
+    // Check extraction limit
+    if (!canExtract()) {
+      Alert.alert(
+        'Daily Limit Reached',
+        'Watch a short ad to get +5 free extractions!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Watch Ad', onPress: () => setShowRewardedAd(true) },
+        ]
+      );
+      return;
+    }
+
+    // Use one extraction
+    useExtraction();
+
     setCurrentImageUri(imageUri);
     await doExtract(imageUri, colorCount, extractionMethod);
     // Run histogram analysis in background (non-blocking)
@@ -271,9 +303,30 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   };
 
   const handleReExtract = async () => {
-    if (currentImageUri) {
-      await doExtract(currentImageUri, colorCount, extractionMethod);
+    if (!currentImageUri) return;
+
+    // Check extraction limit
+    resetDailyLimits();
+    if (!canExtract()) {
+      Alert.alert(
+        'Daily Limit Reached',
+        'Watch a short ad to get +5 free extractions!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Watch Ad', onPress: () => setShowRewardedAd(true) },
+        ]
+      );
+      return;
     }
+
+    useExtraction();
+    await doExtract(currentImageUri, colorCount, extractionMethod);
+  };
+
+  const handleRewardEarned = () => {
+    watchRewardedAd();
+    hapticSuccess();
+    Alert.alert('Reward Earned!', '+5 extractions added. You can now continue extracting colors!');
   };
 
   // ============================================
@@ -431,7 +484,20 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Game Palette</Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Game Palette</Text>
+          {!isPremium && (
+            <TouchableOpacity
+              style={styles.extractionsBadge}
+              onPress={() => setShowRewardedAd(true)}
+            >
+              <Ionicons name="flash" size={12} color="#f59e0b" />
+              <Text style={styles.extractionsBadgeText}>
+                {getRemainingExtractions()}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <TouchableOpacity
           style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
           onPress={toggleTheme}
@@ -1322,6 +1388,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         </View>
       </Modal>
+
+      {/* Rewarded Ad Modal */}
+      <MockRewardedAd
+        visible={showRewardedAd}
+        onClose={() => setShowRewardedAd(false)}
+        onRewardEarned={handleRewardEarned}
+      />
     </View>
   );
 }
@@ -1343,10 +1416,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  extractionsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  extractionsBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#f59e0b',
   },
   headerButton: {
     padding: 8,
