@@ -98,6 +98,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [snsCardType, setSnsCardType] = useState<'instagram' | 'twitter'>('instagram');
   const [cardShowHex, setCardShowHex] = useState(true);
   const [cardShowStats, setCardShowStats] = useState(true);
+  const [cardShowHistogram, setCardShowHistogram] = useState(true);
 
   // Ad State
   const [showRewardedAd, setShowRewardedAd] = useState(false);
@@ -1204,6 +1205,14 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     Stats
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.cardOptionButton, { backgroundColor: cardShowHistogram ? theme.accent : theme.backgroundTertiary }]}
+                  onPress={() => setCardShowHistogram(!cardShowHistogram)}
+                >
+                  <Text style={[styles.cardOptionText, { color: cardShowHistogram ? '#fff' : theme.textSecondary }]}>
+                    Histogram
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* SNS Card Preview */}
@@ -1263,6 +1272,35 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       </View>
                     ))}
                   </View>
+
+                  {/* Mini Histogram */}
+                  {cardShowHistogram && histogram && (
+                    <View style={[
+                      styles.snsCardHistogram,
+                      snsCardType === 'twitter' && styles.snsCardHistogramTwitter,
+                    ]}>
+                      <View style={styles.snsCardHistogramBars}>
+                        {histogram.bins.map((value, index) => (
+                          <View key={index} style={styles.snsCardHistogramBarWrapper}>
+                            <View
+                              style={[
+                                styles.snsCardHistogramBar,
+                                {
+                                  height: `${Math.max(value, 3)}%`,
+                                  backgroundColor: `rgba(255, 255, 255, ${0.3 + (index / 32) * 0.5})`,
+                                },
+                              ]}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                      <View style={styles.snsCardHistogramLabels}>
+                        <Text style={styles.snsCardHistogramLabel}>{histogram.darkPercent}% Dark</Text>
+                        <Text style={styles.snsCardHistogramLabel}>{histogram.midPercent}% Mid</Text>
+                        <Text style={styles.snsCardHistogramLabel}>{histogram.brightPercent}% Bright</Text>
+                      </View>
+                    </View>
+                  )}
 
                   {/* Stats Section */}
                   {cardShowStats && histogram && (
@@ -2324,6 +2362,42 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: 'monospace',
+  },
+  snsCardHistogram: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+  },
+  snsCardHistogramTwitter: {
+    padding: 6,
+    marginTop: 6,
+    borderRadius: 8,
+  },
+  snsCardHistogramBars: {
+    flexDirection: 'row',
+    height: 30,
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  snsCardHistogramBarWrapper: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  snsCardHistogramBar: {
+    width: '100%',
+    borderRadius: 1,
+    minHeight: 2,
+  },
+  snsCardHistogramLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  snsCardHistogramLabel: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.6)',
   },
   snsCardStats: {
     flexDirection: 'row',
