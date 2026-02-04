@@ -512,33 +512,64 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Image Card */}
-        <TouchableOpacity style={styles.imageCard} onPress={showImageSourceOptions}>
-          {currentImageUri ? (
-            <>
-              <Image
-                source={{ uri: currentImageUri }}
-                style={[styles.image, showGrayscale && { filter: 'grayscale(1)' }]}
-                contentFit="cover"
-              />
-              <View style={styles.sourceImageBadge}>
-                <Text style={styles.sourceImageText}>
-                  {showGrayscale ? 'Value Check' : 'Source Image'}
-                </Text>
+        {currentImageUri ? (
+          <TouchableOpacity style={styles.imageCard} onPress={showImageSourceOptions}>
+            <Image
+              source={{ uri: currentImageUri }}
+              style={[styles.image, showGrayscale && { filter: 'grayscale(1)' }]}
+              contentFit="cover"
+            />
+            <View style={styles.sourceImageBadge}>
+              <Text style={styles.sourceImageText}>
+                {showGrayscale ? 'Value Check' : 'Source Image'}
+              </Text>
+            </View>
+            {/* Re-extract button */}
+            <TouchableOpacity
+              style={styles.reExtractIconButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                hapticLight();
+                handleReExtract();
+              }}
+              disabled={isExtracting}
+            >
+              <Ionicons name="refresh" size={18} color="#fff" />
+            </TouchableOpacity>
+            {isExtracting && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.loadingText}>Extracting colors...</Text>
               </View>
-            </>
-          ) : (
-            <View style={styles.placeholder}>
-              <Ionicons name="image-outline" size={48} color="#4a4a6a" />
-              <Text style={styles.placeholderText}>Tap to select image</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.imageCardEmpty}>
+            <Text style={styles.imageCardEmptyTitle}>Select Image</Text>
+            <View style={styles.imageSourceButtons}>
+              <TouchableOpacity
+                style={styles.imageSourceButton}
+                onPress={() => {
+                  hapticLight();
+                  openCamera();
+                }}
+              >
+                <Ionicons name="camera" size={28} color="#6366f1" />
+                <Text style={styles.imageSourceButtonText}>Camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imageSourceButton}
+                onPress={() => {
+                  hapticLight();
+                  pickFromGallery();
+                }}
+              >
+                <Ionicons name="images" size={28} color="#6366f1" />
+                <Text style={styles.imageSourceButtonText}>Gallery</Text>
+              </TouchableOpacity>
             </View>
-          )}
-          {isExtracting && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="#fff" />
-              <Text style={styles.loadingText}>Extracting colors...</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+          </View>
+        )}
 
         {/* Style Filters - Compact row */}
         {processedColors.length > 0 && (
@@ -743,19 +774,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <Text style={styles.countBadgeText}>{colorCount}</Text>
             </View>
           </View>
-
-          {/* Re-extract Button */}
-          <TouchableOpacity
-            style={[
-              styles.reExtractButton,
-              !currentImageUri && styles.reExtractButtonDisabled,
-            ]}
-            onPress={handleReExtract}
-            disabled={!currentImageUri || isExtracting}
-          >
-            <Ionicons name="refresh-outline" size={18} color="#fff" />
-            <Text style={styles.reExtractButtonText}>Re-extract</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={{ height: 100 }} />
@@ -1494,6 +1512,50 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#fff',
     marginTop: 12,
+  },
+  reExtractIconButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageCardEmpty: {
+    marginHorizontal: 16,
+    height: 220,
+    borderRadius: 16,
+    backgroundColor: '#16161e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  imageCardEmptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#888',
+    marginBottom: 20,
+  },
+  imageSourceButtons: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  imageSourceButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 16,
+    backgroundColor: '#1e1e2a',
+    gap: 8,
+  },
+  imageSourceButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6366f1',
   },
 
   // Style Filters - Compact pills
