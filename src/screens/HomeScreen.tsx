@@ -1480,7 +1480,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <TouchableOpacity
               style={[styles.infoModalButton, { backgroundColor: theme.backgroundTertiary }]}
               onPress={() => {
-                Linking.openURL('mailto:aryeon.dev@gmail.com?subject=Pixel Paw Feedback');
+                Linking.openURL('mailto:studio.aryeon@gmail.com?subject=Pixel Paw Feedback');
               }}
             >
               <Ionicons name="mail-outline" size={20} color={theme.accent} />
