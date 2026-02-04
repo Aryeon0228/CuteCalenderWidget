@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "GamePalette",
-    "slug": "gamepalette-mobile",
+    "name": "Pixel Paw",
+    "slug": "pixel-paw",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,14 +17,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gamepalette.mobile"
+      "bundleIdentifier": "com.studioaryeon.pixelpaw"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0d1a"
       },
-      "package": "com.gamepalette.mobile"
+      "package": "com.studioaryeon.pixelpaw"
     },
     "web": {
       "favicon": "./assets/favicon.png"
