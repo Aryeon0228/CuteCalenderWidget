@@ -4,85 +4,11 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width, height } = Dimensions.get('window');
-
 interface SplashScreenProps {
   onFinish: () => void;
-}
-
-// Floating particle component
-function FloatingParticle({ delay, startX, size, duration }: {
-  delay: number;
-  startX: number;
-  size: number;
-  duration: number;
-}) {
-  const translateY = useRef(new Animated.Value(height + 50)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: -100,
-          duration: duration,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.timing(opacity, {
-            toValue: 0.6,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0.6,
-            duration: duration - 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 0.8,
-            duration: duration - 600,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
-    }, delay);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        styles.particle,
-        {
-          left: startX,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          opacity,
-          transform: [{ translateY }, { scale }],
-        },
-      ]}
-    />
-  );
 }
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
@@ -159,27 +85,8 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     outputRange: ['0deg', '360deg'],
   });
 
-  // Generate particles
-  const particles = [
-    { delay: 0, startX: width * 0.1, size: 8, duration: 3000 },
-    { delay: 200, startX: width * 0.3, size: 12, duration: 3500 },
-    { delay: 400, startX: width * 0.5, size: 6, duration: 2800 },
-    { delay: 100, startX: width * 0.7, size: 10, duration: 3200 },
-    { delay: 300, startX: width * 0.85, size: 8, duration: 3000 },
-    { delay: 500, startX: width * 0.2, size: 14, duration: 3800 },
-    { delay: 600, startX: width * 0.6, size: 6, duration: 2600 },
-    { delay: 150, startX: width * 0.4, size: 10, duration: 3400 },
-    { delay: 450, startX: width * 0.9, size: 8, duration: 3100 },
-    { delay: 250, startX: width * 0.15, size: 12, duration: 3300 },
-  ];
-
   return (
     <View style={styles.container}>
-      {/* Floating particles */}
-      {particles.map((p, i) => (
-        <FloatingParticle key={i} {...p} />
-      ))}
-
       {/* Glow effect behind logo */}
       <Animated.View
         style={[
@@ -244,14 +151,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-  },
-  particle: {
-    position: 'absolute',
-    backgroundColor: '#6366f1',
-    shadowColor: '#6366f1',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
   },
   glowOuter: {
     position: 'absolute',
