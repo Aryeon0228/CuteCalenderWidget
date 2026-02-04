@@ -12,6 +12,7 @@ import {
   Dimensions,
   ActionSheetIOS,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Slider from '@react-native-community/slider';
@@ -1058,28 +1059,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             ref={cameraRef}
             style={styles.camera}
             facing="back"
-          >
-            <View style={styles.cameraOverlay}>
-              <TouchableOpacity
-                style={styles.cameraCloseButton}
-                onPress={() => {
-                  hapticLight();
-                  setShowCamera(false);
-                }}
-              >
-                <Ionicons name="close" size={28} color="#fff" />
-              </TouchableOpacity>
+          />
+          <SafeAreaView style={styles.cameraOverlay}>
+            <TouchableOpacity
+              style={styles.cameraCloseButton}
+              onPress={() => {
+                hapticLight();
+                setShowCamera(false);
+              }}
+            >
+              <Ionicons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
 
-              <View style={styles.cameraControls}>
-                <TouchableOpacity
-                  style={styles.captureButton}
-                  onPress={takePicture}
-                >
-                  <View style={styles.captureButtonInner} />
-                </TouchableOpacity>
-              </View>
+            <View style={styles.cameraBottomControls}>
+              <TouchableOpacity
+                style={styles.captureButton}
+                onPress={takePicture}
+              >
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
             </View>
-          </CameraView>
+          </SafeAreaView>
         </View>
       </Modal>
 
@@ -2679,17 +2679,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   camera: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   cameraOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
   },
   cameraCloseButton: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
+    marginTop: 10,
+    marginLeft: 20,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -2697,9 +2695,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cameraControls: {
+  cameraBottomControls: {
     alignItems: 'center',
-    paddingBottom: 50,
+    marginBottom: 30,
   },
   captureButton: {
     width: 80,
