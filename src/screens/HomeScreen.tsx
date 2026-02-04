@@ -37,7 +37,6 @@ import {
 import {
   hexToRgb,
   rgbToHsl,
-  toGrayscale,
   adjustColor,
   generateColorVariations,
   generateColorHarmonies,
@@ -81,7 +80,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   // Filter & Display State
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
-  const [showGrayscale, setShowGrayscale] = useState(false);
   const [variationHueShift, setVariationHueShift] = useState(true);
   const [selectedHarmony, setSelectedHarmony] = useState<HarmonyType>('complementary');
 
@@ -131,9 +129,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   // ============================================
 
   const processedColors = currentColors.map((hex) => {
-    if (showGrayscale) {
-      return toGrayscale(hex);
-    }
     const preset = STYLE_PRESETS[styleFilter];
     return adjustColor(hex, preset.saturation, preset.brightness);
   });
@@ -516,13 +511,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <TouchableOpacity style={styles.imageCard} onPress={showImageSourceOptions}>
             <Image
               source={{ uri: currentImageUri }}
-              style={[styles.image, showGrayscale && { filter: 'grayscale(1)' }]}
+              style={styles.image}
               contentFit="cover"
             />
             <View style={styles.sourceImageBadge}>
-              <Text style={styles.sourceImageText}>
-                {showGrayscale ? 'Value Check' : 'Source Image'}
-              </Text>
+              <Text style={styles.sourceImageText}>Source Image</Text>
             </View>
             {/* Re-extract button */}
             <TouchableOpacity
@@ -733,20 +726,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[
-                styles.valueToggleButton,
-                showGrayscale && styles.valueToggleButtonActive,
-              ]}
-              onPress={() => setShowGrayscale(!showGrayscale)}
-            >
-              <Ionicons
-                name="contrast-outline"
-                size={14}
-                color={showGrayscale ? '#fff' : '#888'}
-              />
-            </TouchableOpacity>
           </View>
 
           {/* Color Count - Inline */}
@@ -1529,17 +1508,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  valueToggleButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    backgroundColor: '#24242e',
-  },
-  valueToggleButtonActive: {
-    backgroundColor: '#6366f1',
-  },
   methodToggle: {
     flexDirection: 'row',
     backgroundColor: '#0c0c12',
@@ -1812,37 +1780,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 4,
-  },
-
-  // Grayscale Section
-  grayscaleSection: {
-    backgroundColor: '#0c0c12',
-    borderRadius: 12,
-    padding: 16,
-  },
-  grayscaleSectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 12,
-  },
-  grayscaleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  grayscaleSwatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#2d2d38',
-  },
-  grayscaleValue: {
-    fontSize: 14,
-    color: '#888',
-    marginLeft: 'auto',
-    fontFamily: 'monospace',
   },
 
   // Color Harmony
