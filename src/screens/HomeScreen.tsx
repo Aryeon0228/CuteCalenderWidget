@@ -10,6 +10,8 @@ import {
   Modal,
   TextInput,
   Dimensions,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Slider from '@react-native-community/slider';
@@ -17,6 +19,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import * as Haptics from 'expo-haptics';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
 
@@ -34,6 +38,8 @@ import {
   toGrayscale,
   adjustColor,
   generateColorVariations,
+  generateColorHarmonies,
+  HarmonyType,
 } from '../lib/colorUtils';
 import { StyleFilter, STYLE_PRESETS, STYLE_FILTER_KEYS } from '../constants/stylePresets';
 import { ColorChannelBar } from '../components/ColorChannelBar';
@@ -64,12 +70,18 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showColorDetail, setShowColorDetail] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const [paletteName, setPaletteName] = useState('');
+
+  // Camera
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
 
   // Filter & Display State
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
   const [showGrayscale, setShowGrayscale] = useState(false);
   const [variationHueShift, setVariationHueShift] = useState(true);
+  const [selectedHarmony, setSelectedHarmony] = useState<HarmonyType>('complementary');
 
   // Histogram State
   const [histogram, setHistogram] = useState<LuminosityHistogram | null>(null);
@@ -121,10 +133,74 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const colorInfo = getSelectedColorInfo();
 
   // ============================================
+  // HAPTIC FEEDBACK
+  // ============================================
+
+  const hapticLight = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const hapticMedium = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const hapticSuccess = () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+  // ============================================
   // IMAGE HANDLING
   // ============================================
 
-  const pickImage = async () => {
+  const showImageSourceOptions = () => {
+    hapticLight();
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Library'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) openCamera();
+          else if (buttonIndex === 2) pickFromGallery();
+        }
+      );
+    } else {
+      Alert.alert(
+        'Select Image',
+        'Choose image source',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Take Photo', onPress: openCamera },
+          { text: 'Choose from Library', onPress: pickFromGallery },
+        ]
+      );
+    }
+  };
+
+  const openCamera = async () => {
+    if (!cameraPermission?.granted) {
+      const permission = await requestCameraPermission();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please allow camera access.');
+        return;
+      }
+    }
+    setShowCamera(true);
+  };
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      hapticMedium();
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+        });
+        setShowCamera(false);
+        if (photo?.uri) {
+          await extractColors(photo.uri);
+          hapticSuccess();
+        }
+      } catch (error) {
+        console.error('Camera error:', error);
+        Alert.alert('Error', 'Failed to take photo.');
+      }
+    }
+  };
+
+  const pickFromGallery = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
@@ -140,6 +216,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
     if (!result.canceled && result.assets[0]) {
       await extractColors(result.assets[0].uri);
+      hapticSuccess();
     }
   };
 
@@ -364,7 +441,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Image Card */}
-        <TouchableOpacity style={styles.imageCard} onPress={pickImage}>
+        <TouchableOpacity style={styles.imageCard} onPress={showImageSourceOptions}>
           {currentImageUri ? (
             <>
               <Image
@@ -811,6 +888,74 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   </Text>
                 </View>
 
+                {/* Color Harmony */}
+                <View style={styles.harmonySection}>
+                  <Text style={styles.harmonySectionTitle}>Color Harmony</Text>
+
+                  {/* Harmony Type Selector */}
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.harmonyTypesScroll}
+                  >
+                    {generateColorHarmonies(colorInfo.hex).map((harmony) => (
+                      <TouchableOpacity
+                        key={harmony.type}
+                        style={[
+                          styles.harmonyTypeButton,
+                          selectedHarmony === harmony.type && styles.harmonyTypeButtonActive,
+                        ]}
+                        onPress={() => {
+                          hapticLight();
+                          setSelectedHarmony(harmony.type);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.harmonyTypeText,
+                            selectedHarmony === harmony.type && styles.harmonyTypeTextActive,
+                          ]}
+                        >
+                          {harmony.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  {/* Selected Harmony Colors */}
+                  {(() => {
+                    const harmonies = generateColorHarmonies(colorInfo.hex);
+                    const currentHarmony = harmonies.find(h => h.type === selectedHarmony);
+                    if (!currentHarmony) return null;
+
+                    return (
+                      <>
+                        <Text style={styles.harmonyDescription}>
+                          {currentHarmony.description}
+                        </Text>
+                        <View style={styles.harmonyColorsRow}>
+                          {currentHarmony.colors.map((color, i) => (
+                            <TouchableOpacity
+                              key={i}
+                              style={styles.harmonyColorItem}
+                              onPress={() => copyColor(color.hex)}
+                            >
+                              <View
+                                style={[
+                                  styles.harmonyColorSwatch,
+                                  { backgroundColor: color.hex },
+                                  color.name === 'Base' && styles.harmonyColorSwatchBase,
+                                ]}
+                              />
+                              <Text style={styles.harmonyColorHex}>{color.hex}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </>
+                    );
+                  })()}
+                </View>
+
                 {/* Grayscale Preview */}
                 <View style={styles.grayscaleSection}>
                   <Text style={styles.grayscaleSectionTitle}>Value Check</Text>
@@ -835,6 +980,42 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </>
             )}
           </View>
+        </View>
+      </Modal>
+
+      {/* Camera Modal */}
+      <Modal
+        visible={showCamera}
+        animationType="slide"
+        onRequestClose={() => setShowCamera(false)}
+      >
+        <View style={styles.cameraContainer}>
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+          >
+            <View style={styles.cameraOverlay}>
+              <TouchableOpacity
+                style={styles.cameraCloseButton}
+                onPress={() => {
+                  hapticLight();
+                  setShowCamera(false);
+                }}
+              >
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+
+              <View style={styles.cameraControls}>
+                <TouchableOpacity
+                  style={styles.captureButton}
+                  onPress={takePicture}
+                >
+                  <View style={styles.captureButtonInner} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </CameraView>
         </View>
       </Modal>
 
@@ -1544,6 +1725,72 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
 
+  // Color Harmony
+  harmonySection: {
+    backgroundColor: '#0c0c12',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  harmonySectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  harmonyTypesScroll: {
+    marginBottom: 12,
+  },
+  harmonyTypeButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: '#16161e',
+    marginRight: 8,
+  },
+  harmonyTypeButtonActive: {
+    backgroundColor: '#6366f1',
+  },
+  harmonyTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  harmonyTypeTextActive: {
+    color: '#fff',
+  },
+  harmonyDescription: {
+    fontSize: 11,
+    color: '#888',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  harmonyColorsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  harmonyColorItem: {
+    alignItems: 'center',
+  },
+  harmonyColorSwatch: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    marginBottom: 6,
+    borderWidth: 2,
+    borderColor: '#2d2d38',
+  },
+  harmonyColorSwatchBase: {
+    borderColor: '#6366f1',
+    borderWidth: 2,
+  },
+  harmonyColorHex: {
+    fontSize: 9,
+    color: '#888',
+    fontFamily: 'monospace',
+  },
+
   // Save Modal
   modalOverlay: {
     flex: 1,
@@ -1901,5 +2148,50 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6366f1',
     fontWeight: '700',
+  },
+
+  // Camera
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'space-between',
+  },
+  cameraCloseButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraControls: {
+    alignItems: 'center',
+    paddingBottom: 50,
+  },
+  captureButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: '#fff',
+  },
+  captureButtonInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fff',
   },
 });
