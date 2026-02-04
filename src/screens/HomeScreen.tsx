@@ -12,6 +12,7 @@ import {
   Dimensions,
   ActionSheetIOS,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Slider from '@react-native-community/slider';
@@ -98,6 +99,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [snsCardType, setSnsCardType] = useState<'instagram' | 'twitter'>('instagram');
   const [cardShowHex, setCardShowHex] = useState(true);
   const [cardShowStats, setCardShowStats] = useState(true);
+  const [cardShowHistogram, setCardShowHistogram] = useState(true);
 
   // Ad State
   const [showRewardedAd, setShowRewardedAd] = useState(false);
@@ -334,8 +336,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   // ============================================
 
   const handleColorPress = (index: number) => {
-    setSelectedColorIndex(index);
-    setShowColorDetail(true);
+    hapticLight();
+    // Toggle selection - tap same color to deselect
+    if (selectedColorIndex === index) {
+      setSelectedColorIndex(null);
+    } else {
+      setSelectedColorIndex(index);
+    }
   };
 
   const copyColor = async (value: string) => {
@@ -510,7 +517,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={!!currentImageUri}
+      >
         {/* Image Card */}
         {currentImageUri ? (
           <TouchableOpacity style={styles.imageCard} onPress={showImageSourceOptions}>
@@ -570,37 +581,39 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         )}
 
         {/* Style Filters - Icon Grid */}
-        {processedColors.length > 0 && (
-          <View style={styles.styleFiltersContainer}>
-            {STYLE_FILTER_KEYS.map((filter) => (
-              <TouchableOpacity
-                key={filter}
+        <View style={styles.styleFiltersContainer}>
+          {STYLE_FILTER_KEYS.map((filter) => (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.styleFilterButton,
+                {
+                  backgroundColor: styleFilter === filter ? theme.accent : theme.backgroundCard,
+                  opacity: processedColors.length > 0 ? 1 : 0.4,
+                },
+              ]}
+              onPress={() => setStyleFilter(filter)}
+              disabled={processedColors.length === 0}
+            >
+              <Ionicons
+                name={STYLE_PRESETS[filter].icon as any}
+                size={20}
+                color={styleFilter === filter ? '#fff' : theme.textSecondary}
+              />
+              <Text
                 style={[
-                  styles.styleFilterButton,
-                  { backgroundColor: styleFilter === filter ? theme.accent : theme.backgroundCard },
+                  styles.styleFilterText,
+                  { color: styleFilter === filter ? '#fff' : theme.textSecondary },
                 ]}
-                onPress={() => setStyleFilter(filter)}
               >
-                <Ionicons
-                  name={STYLE_PRESETS[filter].icon as any}
-                  size={20}
-                  color={styleFilter === filter ? '#fff' : theme.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.styleFilterText,
-                    { color: styleFilter === filter ? '#fff' : theme.textSecondary },
-                  ]}
-                >
-                  {STYLE_PRESETS[filter].name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+                {STYLE_PRESETS[filter].name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* Color Cards - Prominent display */}
-        {processedColors.length > 0 && (
+        {processedColors.length > 0 ? (
           <View style={styles.colorCardsContainer}>
             {processedColors.map((color, index) => (
               <TouchableOpacity
@@ -615,93 +628,148 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </TouchableOpacity>
             ))}
           </View>
+        ) : (
+          <View style={[styles.colorCardsContainer, styles.colorCardsEmpty]}>
+            {[1, 2, 3, 4, 5].map((_, index) => (
+              <View key={index} style={styles.colorCard}>
+                <View style={[styles.colorSwatch, styles.colorSwatchEmpty]} />
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Inline Color Detail - Below Palette */}
+        {colorInfo && selectedColorIndex !== null && (
+          <View style={[styles.inlineColorDetail, { backgroundColor: theme.backgroundCard }]}>
+            <View style={styles.inlineColorDetailHeader}>
+              <View style={[styles.inlineColorSwatch, { backgroundColor: colorInfo.hex }]} />
+              <View style={styles.inlineColorValues}>
+                <TouchableOpacity
+                  style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
+                  onPress={() => copyColor(colorInfo.hex)}
+                >
+                  <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>HEX</Text>
+                  <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.hex}</Text>
+                  <Ionicons name="copy-outline" size={12} color={theme.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
+                  onPress={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}
+                >
+                  <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>RGB</Text>
+                  <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b}</Text>
+                  <Ionicons name="copy-outline" size={12} color={theme.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
+                  onPress={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}
+                >
+                  <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>HSL</Text>
+                  <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.hsl.h}°, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%</Text>
+                  <Ionicons name="copy-outline" size={12} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         )}
 
         {/* Luminosity Histogram - Below color palette */}
-        {histogram && currentImageUri && (
-          <TouchableOpacity
-            style={styles.histogramCard}
-            onPress={() => setShowHistogram(!showHistogram)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.histogramHeader}>
-              <View style={styles.histogramTitleRow}>
-                <Ionicons name="analytics-outline" size={14} color="#888" />
-                <Text style={styles.histogramTitle}>LUMINOSITY</Text>
-              </View>
+        <View style={[styles.histogramCard, { opacity: histogram ? 1 : 0.4 }]}>
+          <View style={styles.histogramHeader}>
+            <View style={styles.histogramTitleRow}>
+              <Ionicons name="analytics-outline" size={14} color="#888" />
+              <Text style={styles.histogramTitle}>LUMINOSITY</Text>
+            </View>
+            {histogram ? (
               <View style={styles.histogramStats}>
-                <Text style={styles.histogramStatText}>
-                  {histogram.contrast}%
-                </Text>
+                <Text style={styles.histogramStatText}>{histogram.contrast}%</Text>
                 <Text style={styles.histogramContrastLabel}>contrast</Text>
-                <Ionicons
-                  name={showHistogram ? 'chevron-up' : 'chevron-down'}
-                  size={14}
-                  color="#666"
+              </View>
+            ) : (
+              <Text style={styles.histogramEmptyText}>No data</Text>
+            )}
+          </View>
+
+          <View style={styles.histogramBars}>
+            {histogram ? (
+              histogram.bins.map((value, index) => (
+                <View key={index} style={styles.histogramBarWrapper}>
+                  <View
+                    style={[
+                      styles.histogramBar,
+                      {
+                        height: `${Math.max(value, 2)}%`,
+                        backgroundColor: index < 11 ? '#4a4a5a' : index < 21 ? '#6a6a7a' : '#9a9aaa',
+                      },
+                    ]}
+                  />
+                </View>
+              ))
+            ) : (
+              Array.from({ length: 32 }).map((_, index) => (
+                <View key={index} style={styles.histogramBarWrapper}>
+                  <View style={[styles.histogramBar, styles.histogramBarEmpty]} />
+                </View>
+              ))
+            )}
+          </View>
+
+          <View style={styles.histogramScale}>
+            <View style={styles.histogramGradient}>
+              {Array.from({ length: 16 }).map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.histogramGradientStep,
+                    { backgroundColor: `rgb(${i * 17}, ${i * 17}, ${i * 17})` },
+                  ]}
                 />
+              ))}
+            </View>
+          </View>
+
+          {histogram && (
+            <View style={styles.histogramStatsRow}>
+              <View style={styles.histogramStatItem}>
+                <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
+                <Text style={styles.histogramStatLabel}>Dark</Text>
+              </View>
+              <View style={styles.histogramStatItem}>
+                <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
+                <Text style={styles.histogramStatLabel}>Mid</Text>
+              </View>
+              <View style={styles.histogramStatItem}>
+                <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
+                <Text style={styles.histogramStatLabel}>Bright</Text>
+              </View>
+              <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
+                <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
+                <Text style={styles.histogramStatLabel}>Avg</Text>
               </View>
             </View>
-
-            {showHistogram && (
-              <>
-                <View style={styles.histogramBars}>
-                  {histogram.bins.map((value, index) => (
-                    <View key={index} style={styles.histogramBarWrapper}>
-                      <View
-                        style={[
-                          styles.histogramBar,
-                          {
-                            height: `${Math.max(value, 2)}%`,
-                            backgroundColor:
-                              index < 11 ? '#4a4a5a' : index < 21 ? '#6a6a7a' : '#9a9aaa',
-                          },
-                        ]}
-                      />
-                    </View>
-                  ))}
-                </View>
-
-                <View style={styles.histogramScale}>
-                  <View style={styles.histogramGradient}>
-                    {Array.from({ length: 16 }).map((_, i) => (
-                      <View
-                        key={i}
-                        style={[
-                          styles.histogramGradientStep,
-                          { backgroundColor: `rgb(${i * 17}, ${i * 17}, ${i * 17})` },
-                        ]}
-                      />
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.histogramStatsRow}>
-                  <View style={styles.histogramStatItem}>
-                    <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
-                    <Text style={styles.histogramStatLabel}>Dark</Text>
-                  </View>
-                  <View style={styles.histogramStatItem}>
-                    <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
-                    <Text style={styles.histogramStatLabel}>Mid</Text>
-                  </View>
-                  <View style={styles.histogramStatItem}>
-                    <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
-                    <Text style={styles.histogramStatLabel}>Bright</Text>
-                  </View>
-                  <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
-                    <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
-                    <Text style={styles.histogramStatLabel}>Avg</Text>
-                  </View>
-                </View>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
+          )}
+        </View>
 
         {/* Extraction Settings Card - Compact */}
         <View style={[styles.extractionCard, { backgroundColor: theme.backgroundCard }]}>
-          {/* Top Row: Title + Method Toggle + Value Check */}
-          <View style={styles.extractionTopRow}>
+          {/* Algorithm Section */}
+          <View style={styles.algorithmSection}>
+            <View style={styles.algorithmHeader}>
+              <Text style={[styles.algorithmLabel, { color: theme.textSecondary }]}>Algorithm</Text>
+              <TouchableOpacity
+                style={[
+                  styles.valueToggleButton,
+                  { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
+                ]}
+                onPress={() => setShowGrayscale(!showGrayscale)}
+              >
+                <Ionicons
+                  name="contrast-outline"
+                  size={16}
+                  color={showGrayscale ? '#fff' : theme.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
             <View style={[styles.methodToggle, { backgroundColor: theme.backgroundTertiary }]}>
               <TouchableOpacity
                 style={[
@@ -736,20 +804,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[
-                styles.valueToggleButton,
-                { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
-              ]}
-              onPress={() => setShowGrayscale(!showGrayscale)}
-            >
-              <Ionicons
-                name="contrast-outline"
-                size={16}
-                color={showGrayscale ? '#fff' : theme.textSecondary}
-              />
-            </TouchableOpacity>
+            <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
+              {extractionMethod === 'histogram'
+                ? '🎨 Hue histogram - Fast, good for game art with clear color regions'
+                : '🔬 K-Means clustering - More accurate, better for photos & gradients'}
+            </Text>
           </View>
 
           {/* Color Count - Inline */}
@@ -779,7 +838,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         </View>
 
-        <View style={{ height: 100 }} />
+        {currentImageUri && <View style={{ height: 100 }} />}
       </ScrollView>
 
       {/* Bottom Action Bar */}
@@ -953,24 +1012,30 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       if (!currentHarmony) return null;
 
                       return (
-                        <View style={styles.harmonyColorsRow}>
-                          {currentHarmony.colors.map((color, i) => (
-                            <TouchableOpacity
-                              key={i}
-                              style={styles.harmonyColorItem}
-                              onPress={() => copyColor(color.hex)}
-                            >
-                              <View
-                                style={[
-                                  styles.harmonyColorSwatch,
-                                  { backgroundColor: color.hex },
-                                  color.name === 'Base' && styles.harmonyColorSwatchBase,
-                                ]}
-                              />
-                              <Text style={[styles.harmonyColorHex, { color: theme.textMuted }]}>{color.hex}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
+                        <>
+                          <Text style={[styles.harmonyDesc, { color: theme.textMuted }]}>
+                            {currentHarmony.description}
+                            {currentHarmony.colors.length > 1 && ` (${currentHarmony.colors.map(c => c.angle + '°').join(', ')})`}
+                          </Text>
+                          <View style={styles.harmonyColorsRow}>
+                            {currentHarmony.colors.map((color, i) => (
+                              <TouchableOpacity
+                                key={i}
+                                style={styles.harmonyColorItem}
+                                onPress={() => copyColor(color.hex)}
+                              >
+                                <View
+                                  style={[
+                                    styles.harmonyColorSwatch,
+                                    { backgroundColor: color.hex },
+                                    color.name === 'Base' && styles.harmonyColorSwatchBase,
+                                  ]}
+                                />
+                                <Text style={[styles.harmonyColorHex, { color: theme.textMuted }]}>{color.hex}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </>
                       );
                     })()}
                   </View>
@@ -994,28 +1059,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             ref={cameraRef}
             style={styles.camera}
             facing="back"
-          >
-            <View style={styles.cameraOverlay}>
-              <TouchableOpacity
-                style={styles.cameraCloseButton}
-                onPress={() => {
-                  hapticLight();
-                  setShowCamera(false);
-                }}
-              >
-                <Ionicons name="close" size={28} color="#fff" />
-              </TouchableOpacity>
+          />
+          <SafeAreaView style={styles.cameraOverlay}>
+            <TouchableOpacity
+              style={styles.cameraCloseButton}
+              onPress={() => {
+                hapticLight();
+                setShowCamera(false);
+              }}
+            >
+              <Ionicons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
 
-              <View style={styles.cameraControls}>
-                <TouchableOpacity
-                  style={styles.captureButton}
-                  onPress={takePicture}
-                >
-                  <View style={styles.captureButtonInner} />
-                </TouchableOpacity>
-              </View>
+            <View style={styles.cameraBottomControls}>
+              <TouchableOpacity
+                style={styles.captureButton}
+                onPress={takePicture}
+              >
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
             </View>
-          </CameraView>
+          </SafeAreaView>
         </View>
       </Modal>
 
@@ -1154,6 +1218,14 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     Stats
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.cardOptionButton, { backgroundColor: cardShowHistogram ? theme.accent : theme.backgroundTertiary }]}
+                  onPress={() => setCardShowHistogram(!cardShowHistogram)}
+                >
+                  <Text style={[styles.cardOptionText, { color: cardShowHistogram ? '#fff' : theme.textSecondary }]}>
+                    Histogram
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* SNS Card Preview */}
@@ -1213,6 +1285,35 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       </View>
                     ))}
                   </View>
+
+                  {/* Mini Histogram */}
+                  {cardShowHistogram && histogram && (
+                    <View style={[
+                      styles.snsCardHistogram,
+                      snsCardType === 'twitter' && styles.snsCardHistogramTwitter,
+                    ]}>
+                      <View style={styles.snsCardHistogramBars}>
+                        {histogram.bins.map((value, index) => (
+                          <View key={index} style={styles.snsCardHistogramBarWrapper}>
+                            <View
+                              style={[
+                                styles.snsCardHistogramBar,
+                                {
+                                  height: `${Math.max(value, 3)}%`,
+                                  backgroundColor: `rgba(255, 255, 255, ${0.3 + (index / 32) * 0.5})`,
+                                },
+                              ]}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                      <View style={styles.snsCardHistogramLabels}>
+                        <Text style={styles.snsCardHistogramLabel}>{histogram.darkPercent}% Dark</Text>
+                        <Text style={styles.snsCardHistogramLabel}>{histogram.midPercent}% Mid</Text>
+                        <Text style={styles.snsCardHistogramLabel}>{histogram.brightPercent}% Bright</Text>
+                      </View>
+                    </View>
+                  )}
 
                   {/* Stats Section */}
                   {cardShowStats && histogram && (
@@ -1548,6 +1649,52 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#2d2d38',
   },
+  colorCardsEmpty: {
+    opacity: 0.4,
+  },
+  colorSwatchEmpty: {
+    backgroundColor: '#1a1a24',
+    borderStyle: 'dashed',
+  },
+
+  // Inline Color Detail
+  inlineColorDetail: {
+    marginHorizontal: 16,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  inlineColorDetailHeader: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  inlineColorSwatch: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+  },
+  inlineColorValues: {
+    flex: 1,
+    gap: 4,
+  },
+  inlineColorValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 8,
+  },
+  inlineColorLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    width: 28,
+  },
+  inlineColorValue: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'monospace',
+  },
 
   // Extraction Card - Compact
   extractionCard: {
@@ -1562,6 +1709,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  algorithmSection: {
+    marginBottom: 12,
+  },
+  algorithmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  algorithmLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  algorithmDesc: {
+    fontSize: 11,
+    marginTop: 8,
+    lineHeight: 16,
   },
   methodToggle: {
     flexDirection: 'row',
@@ -1862,7 +2027,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   harmonyTypesScroll: {
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  harmonyDesc: {
+    fontSize: 11,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   harmonyTypeButton: {
     paddingHorizontal: 14,
@@ -2229,6 +2399,42 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: 'monospace',
   },
+  snsCardHistogram: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+  },
+  snsCardHistogramTwitter: {
+    padding: 6,
+    marginTop: 6,
+    borderRadius: 8,
+  },
+  snsCardHistogramBars: {
+    flexDirection: 'row',
+    height: 30,
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  snsCardHistogramBarWrapper: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  snsCardHistogramBar: {
+    width: '100%',
+    borderRadius: 1,
+    minHeight: 2,
+  },
+  snsCardHistogramLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  snsCardHistogramLabel: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
   snsCardStats: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -2415,6 +2621,14 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     minHeight: 2,
   },
+  histogramBarEmpty: {
+    height: 8,
+    backgroundColor: '#2a2a3a',
+  },
+  histogramEmptyText: {
+    fontSize: 11,
+    color: '#555',
+  },
   histogramScale: {
     marginTop: 6,
   },
@@ -2465,17 +2679,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   camera: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   cameraOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
   },
   cameraCloseButton: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
+    marginTop: 10,
+    marginLeft: 20,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -2483,9 +2695,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cameraControls: {
+  cameraBottomControls: {
     alignItems: 'center',
-    paddingBottom: 50,
+    marginBottom: 30,
   },
   captureButton: {
     width: 80,
