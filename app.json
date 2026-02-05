@@ -17,7 +17,8 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.studioaryeon.pixelpaw"
+      "bundleIdentifier": "com.studioaryeon.pixelpaw",
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
