@@ -476,12 +476,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderLight, borderWidth: 1 }]}
-            onPress={() => setShowInfo(true)}
-          >
-            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderLight, borderWidth: 1 }]}
             onPress={toggleTheme}
           >
             <Ionicons
@@ -489,6 +483,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               size={20}
               color={theme.textSecondary}
             />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderLight, borderWidth: 1 }]}
+            onPress={() => setShowInfo(true)}
+          >
+            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
