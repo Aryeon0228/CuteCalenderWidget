@@ -93,6 +93,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [exportFormat, setExportFormat] = useState<'png' | 'json' | 'css'>('png');
   const [isExporting, setIsExporting] = useState(false);
   const paletteCardRef = useRef<ViewShot>(null);
+  const twitterCard2Ref = useRef<ViewShot>(null);
 
   // SNS Card State
   const [snsCardType, setSnsCardType] = useState<'instagram' | 'twitter'>('instagram');
@@ -338,12 +339,29 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
     setIsExporting(true);
     try {
-      const uri = await paletteCardRef.current.capture?.();
-      if (uri && (await Sharing.isAvailableAsync())) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          dialogTitle: 'Share Palette',
-        });
+      // For Twitter with histogram/stats, capture both cards
+      if (snsCardType === 'twitter' && twitterCard2Ref.current && (cardShowHistogram || cardShowStats)) {
+        const uri1 = await paletteCardRef.current.capture?.();
+        const uri2 = await twitterCard2Ref.current.capture?.();
+        if (uri1 && uri2 && (await Sharing.isAvailableAsync())) {
+          // Share first image, then second
+          await Sharing.shareAsync(uri1, {
+            mimeType: 'image/png',
+            dialogTitle: 'Share Palette (1/2) - Image & Colors',
+          });
+          await Sharing.shareAsync(uri2, {
+            mimeType: 'image/png',
+            dialogTitle: 'Share Palette (2/2) - Analysis',
+          });
+        }
+      } else {
+        const uri = await paletteCardRef.current.capture?.();
+        if (uri && (await Sharing.isAvailableAsync())) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/png',
+            dialogTitle: 'Share Palette',
+          });
+        }
       }
     } catch (error) {
       console.error('PNG export error:', error);
@@ -602,7 +620,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 ]}
                 onPress={() => handleColorPress(index)}
               >
-                <View style={[styles.colorSwatch, { backgroundColor: color }]} />
+                <View style={[
+                  styles.colorSwatch,
+                  { backgroundColor: color },
+                  selectedColorIndex === index && styles.colorSwatchSelected,
+                ]} />
               </TouchableOpacity>
             ))}
           </View>
@@ -634,8 +656,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               }
             }}
             minimumTrackTintColor={theme.accent}
-            maximumTrackTintColor={theme.borderLight}
-            thumbTintColor={theme.textPrimary}
+            maximumTrackTintColor={mode === 'dark' ? '#3d3d4a' : '#c0c0cc'}
+            thumbTintColor={theme.accent}
             disabled={!currentImageUri}
           />
           <View style={[styles.colorCountBadge, { backgroundColor: theme.backgroundTertiary }]}>
@@ -655,7 +677,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 >
                   <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>HEX</Text>
                   <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.hex}</Text>
-                  <Ionicons name="copy-outline" size={12} color={theme.textMuted} />
+                  <Ionicons name="copy-outline" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
@@ -663,7 +685,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 >
                   <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>RGB</Text>
                   <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b}</Text>
-                  <Ionicons name="copy-outline" size={12} color={theme.textMuted} />
+                  <Ionicons name="copy-outline" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
@@ -671,7 +693,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 >
                   <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>HSL</Text>
                   <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.hsl.h}°, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%</Text>
-                  <Ionicons name="copy-outline" size={12} color={theme.textMuted} />
+                  <Ionicons name="copy-outline" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -704,7 +726,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       styles.histogramBar,
                       {
                         height: `${Math.max(value, 2)}%`,
-                        backgroundColor: index < 11 ? '#4a4a5a' : index < 21 ? '#6a6a7a' : '#9a9aaa',
+                        backgroundColor: index < 11 ? '#6a6a80' : index < 21 ? '#8a8aa0' : '#b0b0c8',
                       },
                     ]}
                   />
@@ -832,9 +854,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.exportButton, { backgroundColor: theme.backgroundTertiary }]} onPress={handleExport}>
-          <Ionicons name="share-outline" size={22} color={theme.accent} />
-          <Text style={[styles.exportButtonText, { color: theme.accent }]}>Export</Text>
+        <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
+          <Ionicons name="share-outline" size={22} color="#fff" />
+          <Text style={styles.exportButtonText}>Export</Text>
         </TouchableOpacity>
       </View>
 
@@ -1208,139 +1230,184 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </View>
 
               {/* SNS Card Preview */}
-              <ViewShot
-                ref={paletteCardRef}
-                options={{ format: 'png', quality: 1.0 }}
-                style={[
-                  styles.snsCard,
-                  snsCardType === 'instagram' ? styles.snsCardInstagram : styles.snsCardTwitter,
-                ]}
-              >
-                {/* Background gradient using first color */}
-                <View
-                  style={[
-                    styles.snsCardBackground,
-                    { backgroundColor: processedColors[0] || '#1a1a24' },
-                  ]}
-                />
-                <View style={styles.snsCardOverlay} />
-
-                {/* Card Content */}
-                <View style={[
-                  styles.snsCardContent,
-                  snsCardType === 'twitter' && styles.snsCardContentTwitter,
-                ]}>
-                  {/* Image Section */}
-                  {currentImageUri && (
-                    <View style={[
-                      styles.snsCardImageWrapper,
-                      snsCardType === 'twitter' && styles.snsCardImageWrapperTwitter,
-                    ]}>
-                      <Image
-                        source={{ uri: currentImageUri }}
-                        style={styles.snsCardImage}
-                        contentFit="cover"
-                      />
-                    </View>
-                  )}
-
-                  {/* Color Palette Strip */}
-                  <View style={[
-                    styles.snsCardPalette,
-                    snsCardType === 'twitter' && styles.snsCardPaletteTwitter,
-                  ]}>
-                    {processedColors.map((color, index) => (
-                      <View key={index} style={styles.snsCardColorItem}>
-                        <View
-                          style={[
-                            styles.snsCardColorSwatch,
-                            snsCardType === 'twitter' && styles.snsCardColorSwatchTwitter,
-                            { backgroundColor: color },
-                          ]}
-                        />
-                        {cardShowHex && (
-                          <Text style={styles.snsCardColorHex}>{color}</Text>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-
-                  {/* Mini Histogram */}
-                  {cardShowHistogram && histogram && (
-                    <View style={[
-                      styles.snsCardHistogram,
-                      snsCardType === 'twitter' && styles.snsCardHistogramTwitter,
-                    ]}>
-                      <View style={styles.snsCardHistogramBars}>
-                        {histogram.bins.map((value, index) => (
-                          <View key={index} style={styles.snsCardHistogramBarWrapper}>
-                            <View
-                              style={[
-                                styles.snsCardHistogramBar,
-                                {
-                                  height: `${Math.max(value, 3)}%`,
-                                  backgroundColor: `rgba(255, 255, 255, ${0.3 + (index / 32) * 0.5})`,
-                                },
-                              ]}
-                            />
+              {snsCardType === 'twitter' ? (
+                <>
+                  {/* Twitter Card 1: Image + Palette */}
+                  <Text style={[styles.twitterCardLabel, { color: theme.textMuted }]}>Card 1 — Image & Colors</Text>
+                  <ViewShot
+                    ref={paletteCardRef}
+                    options={{ format: 'png', quality: 1.0 }}
+                    style={[styles.snsCard, styles.snsCardTwitter]}
+                  >
+                    <View style={[styles.snsCardBackground, { backgroundColor: processedColors[0] || '#1a1a24' }]} />
+                    <View style={styles.snsCardOverlay} />
+                    <View style={[styles.snsCardContent, styles.snsCardContentTwitter]}>
+                      {currentImageUri && (
+                        <View style={[styles.snsCardImageWrapper, styles.snsCardImageWrapperTwitterCard1]}>
+                          <Image source={{ uri: currentImageUri }} style={styles.snsCardImage} contentFit="cover" />
+                        </View>
+                      )}
+                      <View style={[styles.snsCardPalette, styles.snsCardPaletteTwitter]}>
+                        {processedColors.map((color, index) => (
+                          <View key={index} style={styles.snsCardColorItem}>
+                            <View style={[styles.snsCardColorSwatch, styles.snsCardColorSwatchTwitterCard1, { backgroundColor: color }]} />
+                            {cardShowHex && <Text style={[styles.snsCardColorHex, styles.snsCardColorHexTwitter]}>{color}</Text>}
                           </View>
                         ))}
                       </View>
-                      <View style={styles.snsCardHistogramLabels}>
-                        <Text style={styles.snsCardHistogramLabel}>{histogram.darkPercent}% Dark</Text>
-                        <Text style={styles.snsCardHistogramLabel}>{histogram.midPercent}% Mid</Text>
-                        <Text style={styles.snsCardHistogramLabel}>{histogram.brightPercent}% Bright</Text>
+                      <View style={styles.snsCardWatermark}>
+                        <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
                       </View>
                     </View>
-                  )}
+                  </ViewShot>
 
-                  {/* Stats Section */}
-                  {cardShowStats && histogram && (
-                    <View style={[
-                      styles.snsCardStats,
-                      snsCardType === 'twitter' && styles.snsCardStatsTwitter,
-                    ]}>
-                      <View style={styles.snsCardStatItem}>
-                        <Text style={[
-                          styles.snsCardStatValue,
-                          snsCardType === 'twitter' && styles.snsCardStatValueTwitter,
-                        ]}>{histogram.contrast}%</Text>
-                        <Text style={[
-                          styles.snsCardStatLabel,
-                          snsCardType === 'twitter' && styles.snsCardStatLabelTwitter,
-                        ]}>Contrast</Text>
+                  {/* Twitter Card 2: Histogram + Stats */}
+                  {(cardShowHistogram || cardShowStats) && (
+                    <>
+                      <Text style={[styles.twitterCardLabel, { color: theme.textMuted }]}>Card 2 — Analysis</Text>
+                      <ViewShot
+                        ref={twitterCard2Ref}
+                        options={{ format: 'png', quality: 1.0 }}
+                        style={[styles.snsCard, styles.snsCardTwitter]}
+                      >
+                        <View style={[styles.snsCardBackground, { backgroundColor: processedColors[0] || '#1a1a24' }]} />
+                        <View style={styles.snsCardOverlay} />
+                        <View style={[styles.snsCardContent, styles.snsCardContentTwitter]}>
+                          {/* Palette strip recap */}
+                          <View style={[styles.snsCardPalette, styles.snsCardPaletteTwitter]}>
+                            {processedColors.map((color, index) => (
+                              <View key={index} style={styles.snsCardColorItem}>
+                                <View style={[styles.snsCardColorSwatch, { height: 24, borderRadius: 4, marginBottom: 2, backgroundColor: color }]} />
+                                <Text style={[styles.snsCardColorHex, { fontSize: 7 }]}>{color}</Text>
+                              </View>
+                            ))}
+                          </View>
+
+                          {/* Histogram - larger on card 2 */}
+                          {cardShowHistogram && histogram && (
+                            <View style={styles.snsCardHistogramTwitterCard2}>
+                              <View style={styles.snsCardHistogramBarsTwitterCard2}>
+                                {histogram.bins.map((value, index) => (
+                                  <View key={index} style={styles.snsCardHistogramBarWrapper}>
+                                    <View
+                                      style={[
+                                        styles.snsCardHistogramBar,
+                                        {
+                                          height: `${Math.max(value, 3)}%`,
+                                          backgroundColor: `rgba(255, 255, 255, ${0.3 + (index / 32) * 0.5})`,
+                                        },
+                                      ]}
+                                    />
+                                  </View>
+                                ))}
+                              </View>
+                              <View style={styles.snsCardHistogramLabels}>
+                                <Text style={[styles.snsCardHistogramLabel, { fontSize: 10 }]}>{histogram.darkPercent}% Dark</Text>
+                                <Text style={[styles.snsCardHistogramLabel, { fontSize: 10 }]}>{histogram.midPercent}% Mid</Text>
+                                <Text style={[styles.snsCardHistogramLabel, { fontSize: 10 }]}>{histogram.brightPercent}% Bright</Text>
+                              </View>
+                            </View>
+                          )}
+
+                          {/* Stats - larger on card 2 */}
+                          {cardShowStats && histogram && (
+                            <View style={styles.snsCardStatsTwitterCard2}>
+                              <View style={styles.snsCardStatItem}>
+                                <Text style={styles.snsCardStatValue}>{histogram.contrast}%</Text>
+                                <Text style={styles.snsCardStatLabel}>Contrast</Text>
+                              </View>
+                              <View style={styles.snsCardStatDivider} />
+                              <View style={styles.snsCardStatItem}>
+                                <Text style={styles.snsCardStatValue}>{processedColors.length}</Text>
+                                <Text style={styles.snsCardStatLabel}>Colors</Text>
+                              </View>
+                              <View style={styles.snsCardStatDivider} />
+                              <View style={styles.snsCardStatItem}>
+                                <Text style={styles.snsCardStatValue}>{histogram.average}</Text>
+                                <Text style={styles.snsCardStatLabel}>Avg Lum</Text>
+                              </View>
+                            </View>
+                          )}
+
+                          <View style={styles.snsCardWatermark}>
+                            <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                          </View>
+                        </View>
+                      </ViewShot>
+                    </>
+                  )}
+                </>
+              ) : (
+                /* Instagram Card: Single square card */
+                <ViewShot
+                  ref={paletteCardRef}
+                  options={{ format: 'png', quality: 1.0 }}
+                  style={[styles.snsCard, styles.snsCardInstagram]}
+                >
+                  <View style={[styles.snsCardBackground, { backgroundColor: processedColors[0] || '#1a1a24' }]} />
+                  <View style={styles.snsCardOverlay} />
+                  <View style={styles.snsCardContent}>
+                    {currentImageUri && (
+                      <View style={styles.snsCardImageWrapper}>
+                        <Image source={{ uri: currentImageUri }} style={styles.snsCardImage} contentFit="cover" />
                       </View>
-                      <View style={styles.snsCardStatDivider} />
-                      <View style={styles.snsCardStatItem}>
-                        <Text style={[
-                          styles.snsCardStatValue,
-                          snsCardType === 'twitter' && styles.snsCardStatValueTwitter,
-                        ]}>{processedColors.length}</Text>
-                        <Text style={[
-                          styles.snsCardStatLabel,
-                          snsCardType === 'twitter' && styles.snsCardStatLabelTwitter,
-                        ]}>Colors</Text>
-                      </View>
-                      <View style={styles.snsCardStatDivider} />
-                      <View style={styles.snsCardStatItem}>
-                        <Text style={[
-                          styles.snsCardStatValue,
-                          snsCardType === 'twitter' && styles.snsCardStatValueTwitter,
-                        ]}>{histogram.average}</Text>
-                        <Text style={[
-                          styles.snsCardStatLabel,
-                          snsCardType === 'twitter' && styles.snsCardStatLabelTwitter,
-                        ]}>Avg Lum</Text>
-                      </View>
+                    )}
+                    <View style={styles.snsCardPalette}>
+                      {processedColors.map((color, index) => (
+                        <View key={index} style={styles.snsCardColorItem}>
+                          <View style={[styles.snsCardColorSwatch, { backgroundColor: color }]} />
+                          {cardShowHex && <Text style={styles.snsCardColorHex}>{color}</Text>}
+                        </View>
+                      ))}
                     </View>
-                  )}
-
-                  {/* Watermark */}
-                  <View style={styles.snsCardWatermark}>
-                    <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                    {cardShowHistogram && histogram && (
+                      <View style={styles.snsCardHistogram}>
+                        <View style={styles.snsCardHistogramBars}>
+                          {histogram.bins.map((value, index) => (
+                            <View key={index} style={styles.snsCardHistogramBarWrapper}>
+                              <View
+                                style={[
+                                  styles.snsCardHistogramBar,
+                                  {
+                                    height: `${Math.max(value, 3)}%`,
+                                    backgroundColor: `rgba(255, 255, 255, ${0.3 + (index / 32) * 0.5})`,
+                                  },
+                                ]}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                        <View style={styles.snsCardHistogramLabels}>
+                          <Text style={styles.snsCardHistogramLabel}>{histogram.darkPercent}% Dark</Text>
+                          <Text style={styles.snsCardHistogramLabel}>{histogram.midPercent}% Mid</Text>
+                          <Text style={styles.snsCardHistogramLabel}>{histogram.brightPercent}% Bright</Text>
+                        </View>
+                      </View>
+                    )}
+                    {cardShowStats && histogram && (
+                      <View style={styles.snsCardStats}>
+                        <View style={styles.snsCardStatItem}>
+                          <Text style={styles.snsCardStatValue}>{histogram.contrast}%</Text>
+                          <Text style={styles.snsCardStatLabel}>Contrast</Text>
+                        </View>
+                        <View style={styles.snsCardStatDivider} />
+                        <View style={styles.snsCardStatItem}>
+                          <Text style={styles.snsCardStatValue}>{processedColors.length}</Text>
+                          <Text style={styles.snsCardStatLabel}>Colors</Text>
+                        </View>
+                        <View style={styles.snsCardStatDivider} />
+                        <View style={styles.snsCardStatItem}>
+                          <Text style={styles.snsCardStatValue}>{histogram.average}</Text>
+                          <Text style={styles.snsCardStatLabel}>Avg Lum</Text>
+                        </View>
+                      </View>
+                    )}
+                    <View style={styles.snsCardWatermark}>
+                      <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                    </View>
                   </View>
-                </View>
-              </ViewShot>
+                </ViewShot>
+              )}
 
               {/* Format Selection */}
               <View style={styles.formatSection}>
@@ -1389,7 +1456,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <>
                     <Ionicons name="share-outline" size={20} color="#fff" />
                     <Text style={styles.exportConfirmButtonText}>
-                      Share to {snsCardType === 'instagram' ? 'Instagram' : 'Twitter'}
+                      {snsCardType === 'twitter' && (cardShowHistogram || cardShowStats)
+                        ? 'Share to Twitter (2 images)'
+                        : `Share to ${snsCardType === 'instagram' ? 'Instagram' : 'Twitter'}`}
                     </Text>
                   </>
                 )}
@@ -1712,7 +1781,7 @@ const styles = StyleSheet.create({
   },
   styleFilterText: {
     fontSize: 10,
-    color: '#888',
+    color: '#a0a0b0',
     fontWeight: '600',
   },
   styleFilterTextActive: {
@@ -1729,6 +1798,8 @@ const styles = StyleSheet.create({
   colorCard: {
     flex: 1,
     alignItems: 'center',
+    minHeight: 48,
+    paddingVertical: 2,
   },
   colorCardSelected: {
     transform: [{ scale: 1.08 }],
@@ -1739,6 +1810,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#2d2d38',
+  },
+  colorSwatchSelected: {
+    borderColor: '#fff',
+    borderWidth: 3,
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 8,
   },
   colorCardsEmpty: {
     opacity: 0.6,
@@ -1767,7 +1847,7 @@ const styles = StyleSheet.create({
   },
   colorCountSlider: {
     flex: 1,
-    height: 30,
+    height: 44,
   },
   colorCountBadge: {
     minWidth: 28,
@@ -1806,9 +1886,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 10,
     borderRadius: 8,
     gap: 8,
+    minHeight: 44,
   },
   inlineColorLabel: {
     fontSize: 10,
@@ -1870,7 +1951,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a3a',
   },
   methodOptionText: {
-    color: '#666',
+    color: '#9090a0',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1896,7 +1977,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sliderLabel: {
-    color: '#888',
+    color: '#a0a0b0',
     fontSize: 12,
     fontWeight: '500',
     marginRight: 10,
@@ -1963,12 +2044,12 @@ const styles = StyleSheet.create({
     borderColor: '#24242e',
   },
   actionButtonText: {
-    color: '#888',
+    color: '#a0a0b0',
     fontSize: 13,
     fontWeight: '600',
   },
   saveButton: {
-    flex: 1.5,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2059,7 +2140,7 @@ const styles = StyleSheet.create({
   colorValueCompactLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#666',
+    color: '#9090a0',
     width: 28,
   },
   colorValueCompactText: {
@@ -2110,7 +2191,7 @@ const styles = StyleSheet.create({
   hueShiftOptionText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#666',
+    color: '#9090a0',
   },
   hueShiftOptionTextActive: {
     color: '#fff',
@@ -2136,17 +2217,17 @@ const styles = StyleSheet.create({
   },
   variationHex: {
     fontSize: 8,
-    color: '#888',
+    color: '#a0a0b0',
     fontFamily: 'monospace',
     marginTop: 4,
   },
   variationLabel: {
     fontSize: 8,
-    color: '#555',
+    color: '#8888a0',
   },
   variationsHint: {
     fontSize: 10,
-    color: '#666',
+    color: '#9090a0',
     textAlign: 'center',
     marginTop: 4,
   },
@@ -2185,14 +2266,14 @@ const styles = StyleSheet.create({
   harmonyTypeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: '#9090a0',
   },
   harmonyTypeTextActive: {
     color: '#fff',
   },
   harmonyDescription: {
     fontSize: 11,
-    color: '#888',
+    color: '#a0a0b0',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -2218,7 +2299,7 @@ const styles = StyleSheet.create({
   },
   harmonyColorHex: {
     fontSize: 9,
-    color: '#888',
+    color: '#a0a0b0',
     fontFamily: 'monospace',
   },
 
@@ -2345,7 +2426,7 @@ const styles = StyleSheet.create({
   },
   paletteCardLabel: {
     fontSize: 11,
-    color: '#666',
+    color: '#8888a0',
     letterSpacing: 1,
     marginBottom: 12,
   },
@@ -2373,7 +2454,7 @@ const styles = StyleSheet.create({
   },
   paletteCardRgb: {
     fontSize: 11,
-    color: '#888',
+    color: '#a0a0b0',
     fontFamily: 'monospace',
   },
   paletteCardWatermark: {
@@ -2396,11 +2477,11 @@ const styles = StyleSheet.create({
   },
   paletteCardHistogramLabel: {
     fontSize: 11,
-    color: '#666',
+    color: '#8888a0',
   },
   paletteCardHistogramValue: {
     fontSize: 11,
-    color: '#888',
+    color: '#a0a0b0',
     fontFamily: 'monospace',
   },
 
@@ -2415,10 +2496,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: '#24242e',
     gap: 8,
+    minHeight: 48,
   },
   snsTypeButtonActive: {
     backgroundColor: '#6366f1',
@@ -2426,14 +2508,14 @@ const styles = StyleSheet.create({
   snsTypeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#888',
+    color: '#a0a0b0',
   },
   snsTypeTextActive: {
     color: '#fff',
   },
   snsTypeRatio: {
     fontSize: 11,
-    color: '#666',
+    color: '#8888a0',
     backgroundColor: '#1a1a24',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -2448,10 +2530,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardOptionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderRadius: 20,
     backgroundColor: '#24242e',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   cardOptionButtonActive: {
     backgroundColor: '#4a4a5a',
@@ -2459,7 +2543,7 @@ const styles = StyleSheet.create({
   cardOptionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: '#9090a0',
   },
   cardOptionTextActive: {
     color: '#fff',
@@ -2505,6 +2589,49 @@ const styles = StyleSheet.create({
     height: 60,
     marginBottom: 6,
     borderRadius: 8,
+  },
+  snsCardImageWrapperTwitterCard1: {
+    flex: 1,
+    marginBottom: 8,
+    borderRadius: 10,
+  },
+  snsCardColorSwatchTwitterCard1: {
+    height: 40,
+    borderRadius: 6,
+    marginBottom: 3,
+  },
+  snsCardColorHexTwitter: {
+    fontSize: 9,
+  },
+  twitterCardLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 6,
+    marginTop: 4,
+    letterSpacing: 0.3,
+  },
+  snsCardHistogramTwitterCard2: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+    flex: 1,
+  },
+  snsCardHistogramBarsTwitterCard2: {
+    flexDirection: 'row',
+    flex: 1,
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  snsCardStatsTwitterCard2: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
   },
   snsCardImage: {
     width: '100%',
@@ -2645,11 +2772,12 @@ const styles = StyleSheet.create({
   formatOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 10,
     backgroundColor: '#24242e',
     gap: 6,
+    minHeight: 44,
   },
   formatOptionActive: {
     backgroundColor: '#6366f1',
@@ -2657,7 +2785,7 @@ const styles = StyleSheet.create({
   formatOptionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#888',
+    color: '#a0a0b0',
   },
   formatOptionTextActive: {
     color: '#fff',
@@ -2693,14 +2821,16 @@ const styles = StyleSheet.create({
   quickCopyButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingVertical: 14,
     borderRadius: 10,
     backgroundColor: '#24242e',
+    minHeight: 44,
   },
   quickCopyButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#888',
+    color: '#a0a0b0',
   },
 
   // Histogram - Compact
@@ -2726,7 +2856,7 @@ const styles = StyleSheet.create({
   histogramTitle: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#666',
+    color: '#9999aa',
     letterSpacing: 0.5,
   },
   histogramStats: {
@@ -2741,7 +2871,7 @@ const styles = StyleSheet.create({
   },
   histogramContrastLabel: {
     fontSize: 10,
-    color: '#666',
+    color: '#9999aa',
     marginRight: 6,
   },
   histogramBars: {
@@ -2763,11 +2893,11 @@ const styles = StyleSheet.create({
   },
   histogramBarEmpty: {
     height: 8,
-    backgroundColor: '#2a2a3a',
+    backgroundColor: '#3a3a4a',
   },
   histogramEmptyText: {
     fontSize: 11,
-    color: '#555',
+    color: '#8888a0',
   },
   histogramScale: {
     marginTop: 6,
@@ -2799,7 +2929,7 @@ const styles = StyleSheet.create({
   },
   histogramStatLabel: {
     fontSize: 9,
-    color: '#555',
+    color: '#9090a0',
     marginTop: 2,
   },
   histogramStatValue: {
