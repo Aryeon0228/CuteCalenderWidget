@@ -128,7 +128,7 @@ App Store에 제출할 때마다 **buildNumber를 올려야 함**. 같은 번호
 ```json
 // app.json
 "ios": {
-  "buildNumber": "3"  // 제출할 때마다 +1
+  "buildNumber": "5"  // 제출할 때마다 +1 (현재 5)
 }
 ```
 
@@ -147,13 +147,37 @@ eas submit --platform android
 eas build --platform all
 ```
 
+### 빌드 전 필수 체크리스트 (IMPORTANT!)
+
+**EAS는 GitHub 리포 기준으로 빌드함. 로컬 파일이 아님!**
+
+```bash
+# 빌드 전 반드시 이 순서로:
+1. GitHub에서 PR 머지 확인
+2. git pull origin main          # 최신 코드 받기
+3. grep buildNumber app.json     # 번호 확인
+4. eas build --platform ios      # 빌드
+5. eas submit --platform ios     # 제출
+```
+
 ### 흔한 실수
 
 | 실수 | 해결 |
 |------|------|
 | "Already submitted this build" | `app.json`에서 `ios.buildNumber` 올리고 **다시 빌드** |
 | 빌드는 했는데 번호 안 올림 | 번호 올린 후 **새로 빌드**해야 함 (submit만 다시 하면 안 됨) |
-| git 충돌로 app.json 꼬임 | `git checkout --theirs app.json` 후 번호 확인 |
+| 이전 버전으로 빌드됨 | `git pull origin main` 안 해서 로컬이 옛날 코드. **반드시 pull 먼저!** |
+| git pull 시 divergent branches | `git pull origin main --rebase` 사용 |
+| rebase 시 unstaged changes | `git stash && git pull origin main --rebase && git stash pop` |
+| stash pop 후 app.json 충돌 | `git checkout origin/main -- app.json` (--theirs 쓰면 stash 버전 들어감!) |
+| git 충돌로 app.json 꼬임 | `git checkout origin/main -- app.json` 후 번호 확인 |
+
+### 브랜치 정리 (주기적으로!)
+
+```bash
+# 머지된 로컬 브랜치 삭제 + 원격 추적 정리
+git checkout main && git branch | grep -v "main" | xargs git branch -D && git remote prune origin
+```
 
 ### slider iOS 빌드 에러
 
@@ -172,3 +196,5 @@ eas build --platform all
 | EAS Node version error | Set `node: "20.18.0"` in `eas.json` build profile |
 | Yoga StyleSizeLength error | Set `newArchEnabled: false` in `app.json` |
 | npm ERESOLVE error | Use `--legacy-peer-deps`, check `.npmrc` exists |
+| Expo Go 캐시로 구버전 표시 | `npx expo start --go --clear`, Expo Go 앱 삭제 후 재설치 |
+| PR "nothing to compare" | 이미 머지된 상태. `git log --oneline origin/main` 으로 확인 |
