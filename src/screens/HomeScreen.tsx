@@ -460,23 +460,34 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>Game Palette</Text>
+          <View style={styles.headerLogoMark}>
+            <View style={[styles.headerLogoDot, { backgroundColor: '#f472b6' }]} />
+            <View style={[styles.headerLogoDot, { backgroundColor: '#6366f1' }]} />
+            <View style={[styles.headerLogoDot, { backgroundColor: '#34d399' }]} />
+          </View>
+          <View>
+            <Text style={[styles.title, { color: theme.textPrimary }]}>Pixel Paw</Text>
+            <View style={[styles.headerSubtitleRow]}>
+              <View style={[styles.headerAccentLine, { backgroundColor: theme.accent }]} />
+              <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>Color Extractor</Text>
+            </View>
+          </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
+            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderLight, borderWidth: 1 }]}
             onPress={() => setShowInfo(true)}
           >
-            <Ionicons name="information-circle-outline" size={22} color={theme.textPrimary} />
+            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary }]}
+            style={[styles.headerButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderLight, borderWidth: 1 }]}
             onPress={toggleTheme}
           >
             <Ionicons
               name={mode === 'dark' ? 'sunny-outline' : 'moon-outline'}
-              size={22}
-              color={theme.textPrimary}
+              size={20}
+              color={theme.textSecondary}
             />
           </TouchableOpacity>
         </View>
@@ -518,28 +529,48 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             )}
           </TouchableOpacity>
         ) : (
-          <View style={styles.imageCardEmpty}>
-            <Text style={styles.imageCardEmptyTitle}>Select Image</Text>
+          <View style={[styles.imageCardEmpty, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderLight }]}>
+            {/* Decorative color dots */}
+            <View style={styles.emptyDecoContainer}>
+              <View style={[styles.emptyDecoDot, { backgroundColor: '#f472b6', top: 16, left: 20, width: 8, height: 8 }]} />
+              <View style={[styles.emptyDecoDot, { backgroundColor: '#60a5fa', top: 30, right: 30, width: 6, height: 6 }]} />
+              <View style={[styles.emptyDecoDot, { backgroundColor: '#fbbf24', bottom: 40, left: 30, width: 10, height: 10 }]} />
+              <View style={[styles.emptyDecoDot, { backgroundColor: '#34d399', top: 50, right: 50, width: 7, height: 7 }]} />
+              <View style={[styles.emptyDecoDot, { backgroundColor: '#a78bfa', bottom: 24, right: 20, width: 9, height: 9 }]} />
+            </View>
+
+            {/* Central content */}
+            <View style={[styles.emptyIconCircle, { backgroundColor: theme.accent + '15' }]}>
+              <View style={[styles.emptyIconInner, { backgroundColor: theme.accent + '25' }]}>
+                <Ionicons name="color-palette-outline" size={32} color={theme.accent} />
+              </View>
+            </View>
+            <Text style={[styles.imageCardEmptyTitle, { color: theme.textPrimary }]}>Add your artwork</Text>
+            <Text style={[styles.imageCardEmptySubtitle, { color: theme.textMuted }]}>Extract beautiful color palettes</Text>
             <View style={styles.imageSourceButtons}>
               <TouchableOpacity
-                style={styles.imageSourceButton}
+                style={[styles.imageSourceButton, { backgroundColor: theme.backgroundTertiary, borderColor: theme.borderLight }]}
                 onPress={() => {
                   hapticLight();
                   openCamera();
                 }}
               >
-                <Ionicons name="camera" size={28} color="#6366f1" />
-                <Text style={styles.imageSourceButtonText}>Camera</Text>
+                <View style={[styles.imageSourceIconBg, { backgroundColor: theme.accent + '20' }]}>
+                  <Ionicons name="camera" size={22} color={theme.accent} />
+                </View>
+                <Text style={[styles.imageSourceButtonText, { color: theme.textPrimary }]}>Camera</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.imageSourceButton}
+                style={[styles.imageSourceButton, { backgroundColor: theme.backgroundTertiary, borderColor: theme.borderLight }]}
                 onPress={() => {
                   hapticLight();
                   pickFromGallery();
                 }}
               >
-                <Ionicons name="images" size={28} color="#6366f1" />
-                <Text style={styles.imageSourceButtonText}>Gallery</Text>
+                <View style={[styles.imageSourceIconBg, { backgroundColor: '#f472b6' + '20' }]}>
+                  <Ionicons name="images" size={22} color="#f472b6" />
+                </View>
+                <Text style={[styles.imageSourceButtonText, { color: theme.textPrimary }]}>Gallery</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -599,9 +630,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         ) : (
           <View style={[styles.colorCardsContainer, styles.colorCardsEmpty]}>
-            {[1, 2, 3, 4, 5].map((_, index) => (
+            {['#6366f1', '#f472b6', '#fbbf24', '#34d399', '#60a5fa'].map((hintColor, index) => (
               <View key={index} style={styles.colorCard}>
-                <View style={[styles.colorSwatch, styles.colorSwatchEmpty]} />
+                <View style={[styles.colorSwatch, styles.colorSwatchEmpty, { borderColor: hintColor + '30', backgroundColor: hintColor + '08' }]} />
               </View>
             ))}
           </View>
@@ -819,7 +850,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Ionicons name="download-outline" size={22} color="#e0e0f0" />
+          <Ionicons name="download-outline" size={20} color="#fff" />
           <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
 
@@ -1475,10 +1506,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <View style={[styles.infoModalContent, { backgroundColor: theme.backgroundSecondary }]}>
             <View style={styles.infoModalHeader}>
               <View style={[styles.infoModalIcon, { backgroundColor: theme.accent }]}>
-                <Ionicons name="color-palette" size={32} color="#fff" />
+                <Ionicons name="color-palette" size={28} color="#fff" />
               </View>
               <Text style={[styles.infoModalTitle, { color: theme.textPrimary }]}>Pixel Paw</Text>
-              <Text style={[styles.infoModalVersion, { color: theme.textMuted }]}>v1.0.0</Text>
+              <Text style={[styles.infoModalVersion, { color: theme.textMuted }]}>Game Art Color Extractor</Text>
+              <Text style={[styles.infoModalVersionNum, { color: theme.textMuted }]}>v1.0.0</Text>
             </View>
 
             <TouchableOpacity
@@ -1526,12 +1558,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 60,
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+  },
+  headerLogoMark: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#6366f1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 2,
+    padding: 6,
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  headerLogoDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  headerSubtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  headerAccentLine: {
+    width: 12,
+    height: 2,
+    borderRadius: 1,
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
   headerRight: {
     flexDirection: 'row',
@@ -1539,9 +1609,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#fff',
+    letterSpacing: -0.3,
   },
   headerButton: {
     padding: 8,
@@ -1555,10 +1626,12 @@ const styles = StyleSheet.create({
   // Image Card
   imageCard: {
     marginHorizontal: 16,
-    height: 220,
-    borderRadius: 16,
+    height: 240,
+    borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#16161e',
+    borderWidth: 1,
+    borderColor: '#2a2a3a',
   },
   image: {
     width: '100%',
@@ -1611,35 +1684,75 @@ const styles = StyleSheet.create({
   },
   imageCardEmpty: {
     marginHorizontal: 16,
-    height: 220,
-    borderRadius: 16,
+    height: 260,
+    borderRadius: 20,
     backgroundColor: '#16161e',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#2a2a3a',
+    overflow: 'hidden',
+  },
+  emptyDecoContainer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  emptyDecoDot: {
+    position: 'absolute',
+    borderRadius: 50,
+    opacity: 0.5,
+  },
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptyIconInner: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageCardEmptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#a0a0b0',
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  imageCardEmptySubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
     marginBottom: 20,
   },
   imageSourceButtons: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 12,
   },
   imageSourceButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 100,
-    height: 100,
+    width: 110,
+    height: 80,
     borderRadius: 16,
     backgroundColor: '#1e1e2a',
     gap: 8,
+    borderWidth: 1,
+    borderColor: '#2a2a3a',
+  },
+  imageSourceIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageSourceButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#6366f1',
   },
 
@@ -1650,16 +1763,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 4,
-    gap: 8,
+    gap: 6,
   },
   styleFilterButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     backgroundColor: '#1a1a24',
     gap: 4,
+    borderWidth: 1,
+    borderColor: '#24242e',
   },
   styleFilterButtonActive: {
     backgroundColor: '#6366f1',
@@ -1691,8 +1806,8 @@ const styles = StyleSheet.create({
   },
   colorSwatch: {
     width: '100%',
-    height: 48,
-    borderRadius: 10,
+    height: 52,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#2d2d38',
   },
@@ -1706,11 +1821,12 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   colorCardsEmpty: {
-    opacity: 0.4,
+    opacity: 0.6,
   },
   colorSwatchEmpty: {
     backgroundColor: '#1a1a24',
     borderStyle: 'dashed',
+    borderWidth: 1.5,
   },
 
   // Color Count Slider
@@ -1791,8 +1907,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     backgroundColor: '#16161e',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
+    borderWidth: 1,
+    borderColor: '#1e1e2a',
   },
   extractionTopRow: {
     flexDirection: 'row',
@@ -1907,9 +2025,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingBottom: 36,
     backgroundColor: '#101018',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    gap: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1e1e2a',
   },
   actionButton: {
     flex: 1,
@@ -1917,13 +2037,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#16161e',
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#24242e',
   },
   actionButtonText: {
     color: '#a0a0b0',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   saveButton: {
@@ -1932,14 +2054,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#2d2d40',
+    borderRadius: 14,
+    backgroundColor: '#6366f1',
     gap: 6,
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   saveButtonText: {
-    color: '#e0e0f0',
+    color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   exportButton: {
     flex: 1,
@@ -1947,13 +2074,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#6366f1',
+    borderRadius: 14,
+    backgroundColor: '#16161e',
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#24242e',
   },
   exportButtonText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#6366f1',
+    fontSize: 13,
     fontWeight: '600',
   },
 
@@ -2709,8 +2838,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 4,
     backgroundColor: '#16161e',
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1e1e2a',
   },
   histogramHeader: {
     flexDirection: 'row',
@@ -2879,8 +3010,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   infoModalVersion: {
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 4,
+    letterSpacing: 0.3,
+  },
+  infoModalVersionNum: {
+    fontSize: 11,
+    marginTop: 2,
+    opacity: 0.6,
   },
   infoModalButton: {
     flexDirection: 'row',
