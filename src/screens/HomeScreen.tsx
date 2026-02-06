@@ -717,7 +717,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 <View style={[
                   styles.colorSwatch,
                   { backgroundColor: color },
-                  selectedColorIndex === index && styles.colorSwatchSelected,
+                  selectedColorIndex === index && [styles.colorSwatchSelected, { borderColor: color, shadowColor: color }],
                 ]} />
               </TouchableOpacity>
             ))}
@@ -734,7 +734,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
         {/* Inline Color Detail */}
         {colorInfo && selectedColorIndex !== null && (
-          <View style={[styles.inlineColorDetail, { backgroundColor: theme.backgroundCard }]}>
+          <View style={[styles.inlineColorDetail, { backgroundColor: theme.backgroundCard, borderColor: colorInfo.hex + '60', borderWidth: 1.5 }]}>
             <View style={styles.inlineColorDetailHeader}>
               <View style={[styles.inlineColorSwatch, { backgroundColor: colorInfo.hex }]} />
               <View style={styles.inlineColorValues}>
@@ -762,6 +762,65 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.hsl.h}°, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%</Text>
                   <Ionicons name="copy-outline" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Inline Variations */}
+            <View style={[styles.inlineVariationsSection, { backgroundColor: theme.backgroundTertiary }]}>
+              <View style={styles.variationsHeader}>
+                <Text style={[styles.variationsSectionTitle, { color: theme.textPrimary }]}>Variations</Text>
+                <View style={[styles.hueShiftToggle, { backgroundColor: theme.backgroundSecondary }]}>
+                  <TouchableOpacity
+                    style={[
+                      styles.hueShiftOption,
+                      variationHueShift && { backgroundColor: theme.buttonBg },
+                    ]}
+                    onPress={() => setVariationHueShift(true)}
+                  >
+                    <Text
+                      style={[
+                        styles.hueShiftOptionText,
+                        { color: variationHueShift ? theme.textPrimary : theme.textMuted },
+                      ]}
+                    >
+                      Hue Shift
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.hueShiftOption,
+                      !variationHueShift && { backgroundColor: theme.buttonBg },
+                    ]}
+                    onPress={() => setVariationHueShift(false)}
+                  >
+                    <Text
+                      style={[
+                        styles.hueShiftOptionText,
+                        { color: !variationHueShift ? theme.textPrimary : theme.textMuted },
+                      ]}
+                    >
+                      OFF
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.variationStrip}>
+                {generateColorVariations(colorInfo.hex, variationHueShift).map(
+                  (v, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.variationCell,
+                        v.label === 'Base' && styles.variationCellBase,
+                      ]}
+                      onPress={() => copyColor(v.hex)}
+                    >
+                      <View style={[styles.variationColor, { backgroundColor: v.hex }]} />
+                      <Text style={[styles.variationHex, { color: theme.textMuted }]}>{v.hex}</Text>
+                    </TouchableOpacity>
+                  )
+                )}
               </View>
             </View>
           </View>
@@ -1819,12 +1878,10 @@ const styles = StyleSheet.create({
     borderColor: '#2d2d38',
   },
   colorSwatchSelected: {
-    borderColor: '#fff',
     borderWidth: 3,
-    shadowColor: '#6366f1',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 8,
   },
   colorCardsEmpty: {
@@ -1907,6 +1964,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontFamily: 'monospace',
+  },
+  inlineVariationsSection: {
+    marginTop: 12,
+    borderRadius: 10,
+    padding: 12,
   },
 
   // Extraction Card - Compact
