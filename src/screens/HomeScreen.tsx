@@ -496,7 +496,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!!currentImageUri}
+        scrollEnabled={true}
       >
         {/* Image Card */}
         {currentImageUri ? (
@@ -695,7 +695,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             minimumTrackTintColor={theme.accent}
             maximumTrackTintColor={mode === 'dark' ? '#3d3d4a' : '#c0c0cc'}
             thumbTintColor={theme.accent}
-            disabled={!currentImageUri}
+            disabled={false}
           />
           <View style={[styles.colorCountBadge, { backgroundColor: theme.backgroundTertiary }]}>
             <Text style={[styles.colorCountBadgeText, { color: theme.textPrimary }]}>{colorCount}</Text>
@@ -724,11 +724,17 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         ) : (
           <View style={[styles.colorCardsContainer, styles.colorCardsEmpty]}>
-            {['#6366f1', '#f472b6', '#fbbf24', '#34d399', '#60a5fa'].map((hintColor, index) => (
-              <View key={index} style={styles.colorCard}>
-                <View style={[styles.colorSwatch, styles.colorSwatchEmpty, { borderColor: hintColor + '30', backgroundColor: hintColor + '08' }]} />
-              </View>
-            ))}
+            {Array.from({ length: colorCount }).map((_, index) => {
+              const hintColors = ['#6366f1', '#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#fb923c', '#a78bfa', '#f87171'];
+              const hintColor = hintColors[index % hintColors.length];
+              return (
+                <View key={index} style={styles.colorCard}>
+                  <View style={[styles.colorSwatch, styles.colorSwatchEmpty, { borderColor: hintColor + '30', backgroundColor: hintColor + '08' }]}>
+                    <Ionicons name="paw" size={16} color={hintColor + '35'} />
+                  </View>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -1891,6 +1897,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a24',
     borderStyle: 'dashed',
     borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // Color Count Slider
