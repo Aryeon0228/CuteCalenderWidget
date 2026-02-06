@@ -576,6 +576,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         )}
 
+        {/* ── Stage 1: Input ── */}
+
         {/* Style Filters - Icon Grid */}
         <View style={styles.styleFiltersContainer}>
           {STYLE_FILTER_KEYS.map((filter) => (
@@ -608,7 +610,99 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           ))}
         </View>
 
-        {/* Color Cards - Prominent display */}
+        {/* ── Stage 2: Process ── */}
+
+        {/* Extraction Settings Card */}
+        <View style={[styles.extractionCard, { backgroundColor: theme.backgroundCard }]}>
+          <View style={styles.algorithmSection}>
+            <View style={styles.algorithmHeader}>
+              <Text style={[styles.algorithmLabel, { color: theme.textSecondary }]}>Algorithm</Text>
+              <TouchableOpacity
+                style={[
+                  styles.valueToggleButton,
+                  { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
+                ]}
+                onPress={() => setShowGrayscale(!showGrayscale)}
+              >
+                <Ionicons
+                  name="contrast-outline"
+                  size={16}
+                  color={showGrayscale ? '#fff' : theme.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.methodToggle, { backgroundColor: theme.backgroundTertiary }]}>
+              <TouchableOpacity
+                style={[
+                  styles.methodOption,
+                  extractionMethod === 'histogram' && { backgroundColor: theme.buttonBg },
+                ]}
+                onPress={() => handleMethodChange('histogram')}
+              >
+                <Text
+                  style={[
+                    styles.methodOptionText,
+                    { color: extractionMethod === 'histogram' ? theme.textPrimary : theme.textMuted },
+                  ]}
+                >
+                  Histogram
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.methodOption,
+                  extractionMethod === 'kmeans' && { backgroundColor: theme.buttonBg },
+                ]}
+                onPress={() => handleMethodChange('kmeans')}
+              >
+                <Text
+                  style={[
+                    styles.methodOptionText,
+                    { color: extractionMethod === 'kmeans' ? theme.textPrimary : theme.textMuted },
+                  ]}
+                >
+                  K-Means
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
+              {extractionMethod === 'histogram'
+                ? '🎨 Hue histogram - Fast, good for game art with clear color regions'
+                : '🔬 K-Means clustering - More accurate, better for photos & gradients'}
+            </Text>
+          </View>
+        </View>
+
+        {/* ── Stage 3: Output ── */}
+
+        {/* Color Count Slider */}
+        <View style={[styles.colorCountRow, { backgroundColor: theme.backgroundCard }]}>
+          <Text style={[styles.colorCountLabel, { color: theme.textSecondary }]}>Colors</Text>
+          <Slider
+            style={styles.colorCountSlider}
+            minimumValue={3}
+            maximumValue={8}
+            step={1}
+            value={colorCount}
+            onValueChange={(value) => setColorCount(Math.round(value))}
+            onSlidingComplete={(value) => {
+              const newCount = Math.round(value);
+              setColorCount(newCount);
+              if (currentImageUri) {
+                doExtract(currentImageUri, newCount, extractionMethod);
+              }
+            }}
+            minimumTrackTintColor={theme.accent}
+            maximumTrackTintColor={mode === 'dark' ? '#3d3d4a' : '#c0c0cc'}
+            thumbTintColor={theme.accent}
+            disabled={!currentImageUri}
+          />
+          <View style={[styles.colorCountBadge, { backgroundColor: theme.backgroundTertiary }]}>
+            <Text style={[styles.colorCountBadgeText, { color: theme.textPrimary }]}>{colorCount}</Text>
+          </View>
+        </View>
+
+        {/* Color Cards - Palette Swatches */}
         {processedColors.length > 0 ? (
           <View style={styles.colorCardsContainer}>
             {processedColors.map((color, index) => (
@@ -638,34 +732,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         )}
 
-        {/* Color Count Slider - Below Palette */}
-        <View style={[styles.colorCountRow, { backgroundColor: theme.backgroundCard }]}>
-          <Text style={[styles.colorCountLabel, { color: theme.textSecondary }]}>Colors</Text>
-          <Slider
-            style={styles.colorCountSlider}
-            minimumValue={3}
-            maximumValue={8}
-            step={1}
-            value={colorCount}
-            onValueChange={(value) => setColorCount(Math.round(value))}
-            onSlidingComplete={(value) => {
-              const newCount = Math.round(value);
-              setColorCount(newCount);
-              if (currentImageUri) {
-                doExtract(currentImageUri, newCount, extractionMethod);
-              }
-            }}
-            minimumTrackTintColor={theme.accent}
-            maximumTrackTintColor={mode === 'dark' ? '#3d3d4a' : '#c0c0cc'}
-            thumbTintColor={theme.accent}
-            disabled={!currentImageUri}
-          />
-          <View style={[styles.colorCountBadge, { backgroundColor: theme.backgroundTertiary }]}>
-            <Text style={[styles.colorCountBadgeText, { color: theme.textPrimary }]}>{colorCount}</Text>
-          </View>
-        </View>
-
-        {/* Inline Color Detail - Below Palette */}
+        {/* Inline Color Detail */}
         {colorInfo && selectedColorIndex !== null && (
           <View style={[styles.inlineColorDetail, { backgroundColor: theme.backgroundCard }]}>
             <View style={styles.inlineColorDetailHeader}>
@@ -700,7 +767,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         )}
 
-        {/* Luminosity Histogram - Below color palette */}
+        {/* ── Stage 4: Deep Analysis ── */}
+
+        {/* Luminosity Histogram */}
         <View style={[styles.histogramCard, { opacity: histogram ? 1 : 0.4 }]}>
           <View style={styles.histogramHeader}>
             <View style={styles.histogramTitleRow}>
@@ -775,68 +844,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </View>
             </View>
           )}
-        </View>
-
-        {/* Extraction Settings Card - Compact */}
-        <View style={[styles.extractionCard, { backgroundColor: theme.backgroundCard }]}>
-          {/* Algorithm Section */}
-          <View style={styles.algorithmSection}>
-            <View style={styles.algorithmHeader}>
-              <Text style={[styles.algorithmLabel, { color: theme.textSecondary }]}>Algorithm</Text>
-              <TouchableOpacity
-                style={[
-                  styles.valueToggleButton,
-                  { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
-                ]}
-                onPress={() => setShowGrayscale(!showGrayscale)}
-              >
-                <Ionicons
-                  name="contrast-outline"
-                  size={16}
-                  color={showGrayscale ? '#fff' : theme.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={[styles.methodToggle, { backgroundColor: theme.backgroundTertiary }]}>
-              <TouchableOpacity
-                style={[
-                  styles.methodOption,
-                  extractionMethod === 'histogram' && { backgroundColor: theme.buttonBg },
-                ]}
-                onPress={() => handleMethodChange('histogram')}
-              >
-                <Text
-                  style={[
-                    styles.methodOptionText,
-                    { color: extractionMethod === 'histogram' ? theme.textPrimary : theme.textMuted },
-                  ]}
-                >
-                  Histogram
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.methodOption,
-                  extractionMethod === 'kmeans' && { backgroundColor: theme.buttonBg },
-                ]}
-                onPress={() => handleMethodChange('kmeans')}
-              >
-                <Text
-                  style={[
-                    styles.methodOptionText,
-                    { color: extractionMethod === 'kmeans' ? theme.textPrimary : theme.textMuted },
-                  ]}
-                >
-                  K-Means
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
-              {extractionMethod === 'histogram'
-                ? '🎨 Hue histogram - Fast, good for game art with clear color regions'
-                : '🔬 K-Means clustering - More accurate, better for photos & gradients'}
-            </Text>
-          </View>
         </View>
 
         {currentImageUri && <View style={{ height: 100 }} />}
