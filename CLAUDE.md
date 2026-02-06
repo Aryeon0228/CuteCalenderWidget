@@ -119,6 +119,47 @@ npx expo start --go --clear
 - `/src/store/themeStore.ts` - Dark/light theme state
 - `/src/store/premiumStore.ts` - Premium/ad state
 
+## EAS Build & App Store 제출
+
+### iOS 빌드 번호 (IMPORTANT!)
+
+App Store에 제출할 때마다 **buildNumber를 올려야 함**. 같은 번호로 두 번 제출 불가.
+
+```json
+// app.json
+"ios": {
+  "buildNumber": "3"  // 제출할 때마다 +1
+}
+```
+
+### 빌드 & 제출 명령어
+
+```bash
+# iOS 빌드 후 제출
+eas build --platform ios
+eas submit --platform ios
+
+# Android 빌드 후 제출
+eas build --platform android
+eas submit --platform android
+
+# 둘 다
+eas build --platform all
+```
+
+### 흔한 실수
+
+| 실수 | 해결 |
+|------|------|
+| "Already submitted this build" | `app.json`에서 `ios.buildNumber` 올리고 **다시 빌드** |
+| 빌드는 했는데 번호 안 올림 | 번호 올린 후 **새로 빌드**해야 함 (submit만 다시 하면 안 됨) |
+| git 충돌로 app.json 꼬임 | `git checkout --theirs app.json` 후 번호 확인 |
+
+### slider iOS 빌드 에러
+
+`@react-native-community/slider@5.0.1`은 iOS old arch에서 빌드 에러 발생.
+`patch-package`로 패치 적용됨 (`patches/` 폴더).
+
 ## Common Issues
 
 | Issue | Solution |
