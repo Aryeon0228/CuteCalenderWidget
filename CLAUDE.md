@@ -128,7 +128,7 @@ App Store에 제출할 때마다 **buildNumber를 올려야 함**. 같은 번호
 ```json
 // app.json
 "ios": {
-  "buildNumber": "5"  // 제출할 때마다 +1 (현재 5)
+  "buildNumber": "8"  // 제출할 때마다 +1 (현재 8)
 }
 ```
 
@@ -160,6 +160,25 @@ eas build --platform all
 5. eas submit --platform ios     # 제출
 ```
 
+### 5. appVersionSource는 반드시 "local" (IMPORTANT!)
+
+`eas.json`의 `appVersionSource`가 `"remote"`이면 **app.json의 buildNumber를 무시**하고 EAS 서버 자체 번호를 사용함.
+app.json에서 아무리 번호를 올려도 반영 안 되는 원인.
+
+```json
+// eas.json - 반드시 "local"이어야 함
+{
+  "cli": {
+    "appVersionSource": "local"
+  }
+}
+```
+
+| appVersionSource | 동작 |
+|-----------------|------|
+| `"local"` | app.json의 `buildNumber` 사용 (우리 방식) |
+| `"remote"` | EAS 서버가 자체 관리하는 번호 사용 (app.json 무시!) |
+
 ### 흔한 실수
 
 | 실수 | 해결 |
@@ -171,6 +190,7 @@ eas build --platform all
 | rebase 시 unstaged changes | `git stash && git pull origin main --rebase && git stash pop` |
 | stash pop 후 app.json 충돌 | `git checkout origin/main -- app.json` (--theirs 쓰면 stash 버전 들어감!) |
 | git 충돌로 app.json 꼬임 | `git checkout origin/main -- app.json` 후 번호 확인 |
+| buildNumber 올렸는데 빌드에 반영 안 됨 | `eas.json`의 `appVersionSource`가 `"remote"`인지 확인. `"local"`로 변경 |
 
 ### 브랜치 정리 (주기적으로!)
 
