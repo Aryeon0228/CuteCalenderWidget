@@ -154,10 +154,12 @@ eas build --platform all
 ```bash
 # 빌드 전 반드시 이 순서로:
 1. GitHub에서 PR 머지 확인
-2. git pull origin main          # 최신 코드 받기
-3. grep buildNumber app.json     # 번호 확인
-4. eas build --platform ios      # 빌드
-5. eas submit --platform ios     # 제출
+2. git stash                     # 로컬 변경사항 임시 저장 (unstaged changes 방지)
+3. git pull origin main --rebase # 최신 코드 받기 (divergent branches 방지)
+4. git stash drop                # stash 버리기 (origin/main이 정답이므로 pop 하지 말 것!)
+5. grep buildNumber app.json     # 번호 확인
+6. eas build --platform ios      # 빌드
+7. eas submit --platform ios     # 제출
 ```
 
 ### 5. appVersionSource는 반드시 "local" (IMPORTANT!)
