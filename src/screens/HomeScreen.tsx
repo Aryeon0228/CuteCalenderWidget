@@ -92,7 +92,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [exportFormat, setExportFormat] = useState<'png' | 'json' | 'css'>('png');
   const [isExporting, setIsExporting] = useState(false);
   const paletteCardRef = useRef<ViewShot>(null);
-  const twitterCard2Ref = useRef<ViewShot>(null);
 
   // SNS Card State
   const [snsCardType, setSnsCardType] = useState<'instagram' | 'twitter'>('instagram');
@@ -338,29 +337,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
     setIsExporting(true);
     try {
-      // For Twitter with histogram/stats, capture both cards
-      if (snsCardType === 'twitter' && twitterCard2Ref.current && (cardShowHistogram || cardShowStats)) {
-        const uri1 = await paletteCardRef.current.capture?.();
-        const uri2 = await twitterCard2Ref.current.capture?.();
-        if (uri1 && uri2 && (await Sharing.isAvailableAsync())) {
-          // Share first image, then second
-          await Sharing.shareAsync(uri1, {
-            mimeType: 'image/png',
-            dialogTitle: 'Share Palette (1/2) - Image & Colors',
-          });
-          await Sharing.shareAsync(uri2, {
-            mimeType: 'image/png',
-            dialogTitle: 'Share Palette (2/2) - Analysis',
-          });
-        }
-      } else {
-        const uri = await paletteCardRef.current.capture?.();
-        if (uri && (await Sharing.isAvailableAsync())) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'image/png',
-            dialogTitle: 'Share Palette',
-          });
-        }
+      const uri = await paletteCardRef.current.capture?.();
+      if (uri && (await Sharing.isAvailableAsync())) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share Palette',
+        });
       }
     } catch (error) {
       console.error('PNG export error:', error);
@@ -1308,112 +1290,84 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
               {/* SNS Card Preview */}
               {snsCardType === 'twitter' ? (
-                <>
-                  {/* Twitter Card 1: Image + Palette */}
-                  <Text style={[styles.twitterCardLabel, { color: theme.textMuted }]}>Card 1 — Image & Colors</Text>
-                  <ViewShot
-                    ref={paletteCardRef}
-                    options={{ format: 'png', quality: 1.0 }}
-                    style={[styles.snsCard, styles.snsCardTwitter]}
-                  >
-                    <View style={[styles.snsCardBackground, { backgroundColor: processedColors[0] || '#1a1a24' }]} />
-                    <View style={styles.snsCardOverlay} />
-                    <View style={[styles.snsCardContent, styles.snsCardContentTwitter]}>
+                <ViewShot
+                  ref={paletteCardRef}
+                  options={{ format: 'png', quality: 1.0 }}
+                  style={[styles.snsCard, styles.snsCardTwitter]}
+                >
+                  <View style={[styles.snsCardBackground, { backgroundColor: processedColors[0] || '#1a1a24' }]} />
+                  <View style={styles.snsCardOverlay} />
+                  <View style={[styles.snsCardContent, styles.snsCardContentTwitter]}>
+                    {/* Top: Image + Palette side by side */}
+                    <View style={styles.twitterUnifiedRow}>
                       {currentImageUri && (
-                        <View style={[styles.snsCardImageWrapper, styles.snsCardImageWrapperTwitterCard1]}>
+                        <View style={styles.twitterUnifiedImage}>
                           <Image source={{ uri: currentImageUri }} style={styles.snsCardImage} contentFit="cover" />
                         </View>
                       )}
-                      <View style={[styles.snsCardPalette, styles.snsCardPaletteTwitter]}>
+                      <View style={styles.twitterUnifiedPalette}>
                         {processedColors.map((color, index) => (
-                          <View key={index} style={styles.snsCardColorItem}>
-                            <View style={[styles.snsCardColorSwatch, styles.snsCardColorSwatchTwitterCard1, { backgroundColor: color }]} />
-                            {cardShowHex && <Text style={[styles.snsCardColorHex, styles.snsCardColorHexTwitter]}>{color}</Text>}
+                          <View key={index} style={styles.twitterUnifiedColorItem}>
+                            <View style={[styles.twitterUnifiedColorBar, { backgroundColor: color }]} />
+                            {cardShowHex && <Text style={styles.twitterUnifiedColorHex}>{color}</Text>}
                           </View>
                         ))}
                       </View>
-                      <View style={styles.snsCardWatermark}>
-                        <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
-                      </View>
                     </View>
-                  </ViewShot>
 
-                  {/* Twitter Card 2: Histogram + Stats */}
-                  {(cardShowHistogram || cardShowStats) && (
-                    <>
-                      <Text style={[styles.twitterCardLabel, { color: theme.textMuted }]}>Card 2 — Analysis</Text>
-                      <ViewShot
-                        ref={twitterCard2Ref}
-                        options={{ format: 'png', quality: 1.0 }}
-                        style={[styles.snsCard, styles.snsCardTwitter]}
-                      >
-                        <View style={[styles.snsCardBackground, { backgroundColor: processedColors[0] || '#1a1a24' }]} />
-                        <View style={styles.snsCardOverlay} />
-                        <View style={[styles.snsCardContent, styles.snsCardContentTwitter]}>
-                          {/* Palette strip recap */}
-                          <View style={[styles.snsCardPalette, styles.snsCardPaletteTwitter]}>
-                            {processedColors.map((color, index) => (
-                              <View key={index} style={styles.snsCardColorItem}>
-                                <View style={[styles.snsCardColorSwatch, { height: 24, borderRadius: 4, marginBottom: 2, backgroundColor: color }]} />
-                                <Text style={[styles.snsCardColorHex, { fontSize: 7 }]}>{color}</Text>
-                              </View>
-                            ))}
-                          </View>
-
-                          {/* Histogram - larger on card 2 */}
-                          {cardShowHistogram && histogram && (
-                            <View style={styles.snsCardHistogramTwitterCard2}>
-                              <View style={styles.snsCardHistogramBarsTwitterCard2}>
-                                {histogram.bins.map((value, index) => (
-                                  <View key={index} style={styles.snsCardHistogramBarWrapper}>
-                                    <View
-                                      style={[
-                                        styles.snsCardHistogramBar,
-                                        {
-                                          height: `${Math.max(value, 3)}%`,
-                                          backgroundColor: `rgba(255, 255, 255, ${0.3 + (index / 32) * 0.5})`,
-                                        },
-                                      ]}
-                                    />
-                                  </View>
-                                ))}
-                              </View>
-                              <View style={styles.snsCardHistogramLabels}>
-                                <Text style={[styles.snsCardHistogramLabel, { fontSize: 10 }]}>{histogram.darkPercent}% Dark</Text>
-                                <Text style={[styles.snsCardHistogramLabel, { fontSize: 10 }]}>{histogram.midPercent}% Mid</Text>
-                                <Text style={[styles.snsCardHistogramLabel, { fontSize: 10 }]}>{histogram.brightPercent}% Bright</Text>
-                              </View>
+                    {/* Bottom: Histogram + Stats */}
+                    {(cardShowHistogram || cardShowStats) && histogram && (
+                      <View style={styles.twitterUnifiedAnalysis}>
+                        {cardShowHistogram && (
+                          <View style={[styles.twitterUnifiedHistogram, !cardShowStats && { flex: 1 }]}>
+                            <View style={styles.twitterUnifiedHistogramBars}>
+                              {histogram.bins.map((value, index) => (
+                                <View key={index} style={styles.snsCardHistogramBarWrapper}>
+                                  <View
+                                    style={[
+                                      styles.snsCardHistogramBar,
+                                      {
+                                        height: `${Math.max(value, 3)}%`,
+                                        backgroundColor: `rgba(255, 255, 255, ${0.3 + (index / 32) * 0.5})`,
+                                      },
+                                    ]}
+                                  />
+                                </View>
+                              ))}
                             </View>
-                          )}
-
-                          {/* Stats - larger on card 2 */}
-                          {cardShowStats && histogram && (
-                            <View style={styles.snsCardStatsTwitterCard2}>
-                              <View style={styles.snsCardStatItem}>
-                                <Text style={styles.snsCardStatValue}>{histogram.contrast}%</Text>
-                                <Text style={styles.snsCardStatLabel}>Contrast</Text>
-                              </View>
-                              <View style={styles.snsCardStatDivider} />
-                              <View style={styles.snsCardStatItem}>
-                                <Text style={styles.snsCardStatValue}>{processedColors.length}</Text>
-                                <Text style={styles.snsCardStatLabel}>Colors</Text>
-                              </View>
-                              <View style={styles.snsCardStatDivider} />
-                              <View style={styles.snsCardStatItem}>
-                                <Text style={styles.snsCardStatValue}>{histogram.average}</Text>
-                                <Text style={styles.snsCardStatLabel}>Avg Lum</Text>
-                              </View>
+                            <View style={styles.twitterUnifiedHistogramLabels}>
+                              <Text style={styles.snsCardHistogramLabel}>{histogram.darkPercent}%D</Text>
+                              <Text style={styles.snsCardHistogramLabel}>{histogram.midPercent}%M</Text>
+                              <Text style={styles.snsCardHistogramLabel}>{histogram.brightPercent}%B</Text>
                             </View>
-                          )}
-
-                          <View style={styles.snsCardWatermark}>
-                            <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
                           </View>
-                        </View>
-                      </ViewShot>
-                    </>
-                  )}
-                </>
+                        )}
+                        {cardShowStats && (
+                          <View style={[styles.twitterUnifiedStats, !cardShowHistogram && { flex: 1, justifyContent: 'center' }]}>
+                            <View style={styles.twitterUnifiedStatItem}>
+                              <Text style={styles.twitterUnifiedStatValue}>{histogram.contrast}%</Text>
+                              <Text style={styles.twitterUnifiedStatLabel}>Contrast</Text>
+                            </View>
+                            <View style={[styles.snsCardStatDivider, { height: 16 }]} />
+                            <View style={styles.twitterUnifiedStatItem}>
+                              <Text style={styles.twitterUnifiedStatValue}>{processedColors.length}</Text>
+                              <Text style={styles.twitterUnifiedStatLabel}>Colors</Text>
+                            </View>
+                            <View style={[styles.snsCardStatDivider, { height: 16 }]} />
+                            <View style={styles.twitterUnifiedStatItem}>
+                              <Text style={styles.twitterUnifiedStatValue}>{histogram.average}</Text>
+                              <Text style={styles.twitterUnifiedStatLabel}>Avg Lum</Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    <View style={styles.snsCardWatermark}>
+                      <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                    </View>
+                  </View>
+                </ViewShot>
               ) : (
                 /* Instagram Card: Single square card */
                 <ViewShot
@@ -1533,9 +1487,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <>
                     <Ionicons name="share-outline" size={20} color="#fff" />
                     <Text style={styles.exportConfirmButtonText}>
-                      {snsCardType === 'twitter' && (cardShowHistogram || cardShowStats)
-                        ? 'Share to Twitter (2 images)'
-                        : `Share to ${snsCardType === 'instagram' ? 'Instagram' : 'Twitter'}`}
+                      {`Share to ${snsCardType === 'instagram' ? 'Instagram' : 'Twitter'}`}
                     </Text>
                   </>
                 )}
@@ -2602,7 +2554,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   snsCardContentTwitter: {
-    padding: 12,
+    padding: 10,
   },
   snsCardImageWrapper: {
     flex: 1,
@@ -2610,54 +2562,83 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 12,
   },
-  snsCardImageWrapperTwitter: {
-    flex: 0,
-    height: 60,
-    marginBottom: 6,
-    borderRadius: 8,
-  },
-  snsCardImageWrapperTwitterCard1: {
-    flex: 1,
-    marginBottom: 8,
-    borderRadius: 10,
-  },
-  snsCardColorSwatchTwitterCard1: {
-    height: 40,
-    borderRadius: 6,
-    marginBottom: 3,
-  },
-  snsCardColorHexTwitter: {
-    fontSize: 9,
-  },
-  twitterCardLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 6,
-    marginTop: 4,
-    letterSpacing: 0.3,
-  },
-  snsCardHistogramTwitterCard2: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 8,
-    flex: 1,
-  },
-  snsCardHistogramBarsTwitterCard2: {
+
+  // Twitter unified card styles
+  twitterUnifiedRow: {
     flexDirection: 'row',
     flex: 1,
+    gap: 8,
+  },
+  twitterUnifiedImage: {
+    flex: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  twitterUnifiedPalette: {
+    flex: 3,
+    flexDirection: 'row',
+    gap: 3,
+  },
+  twitterUnifiedColorItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  twitterUnifiedColorBar: {
+    width: '100%',
+    flex: 1,
+    borderRadius: 5,
+    marginBottom: 2,
+  },
+  twitterUnifiedColorHex: {
+    fontSize: 6,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: 'monospace',
+  },
+  twitterUnifiedAnalysis: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+  },
+  twitterUnifiedHistogram: {
+    flex: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 6,
+    padding: 5,
+  },
+  twitterUnifiedHistogramBars: {
+    flexDirection: 'row',
+    height: 22,
     alignItems: 'flex-end',
     gap: 1,
   },
-  snsCardStatsTwitterCard2: {
+  twitterUnifiedHistogramLabels: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  twitterUnifiedStats: {
+    flex: 2,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-evenly',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginTop: 8,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  twitterUnifiedStatItem: {
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  twitterUnifiedStatValue: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  twitterUnifiedStatLabel: {
+    fontSize: 6,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginTop: 1,
   },
   snsCardImage: {
     width: '100%',
@@ -2666,9 +2647,6 @@ const styles = StyleSheet.create({
   snsCardPalette: {
     flexDirection: 'row',
     gap: 8,
-  },
-  snsCardPaletteTwitter: {
-    gap: 6,
   },
   snsCardColorItem: {
     flex: 1,
@@ -2680,11 +2658,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 4,
   },
-  snsCardColorSwatchTwitter: {
-    height: 32,
-    borderRadius: 6,
-    marginBottom: 2,
-  },
   snsCardColorHex: {
     fontSize: 8,
     color: 'rgba(255, 255, 255, 0.8)',
@@ -2695,11 +2668,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginTop: 10,
-  },
-  snsCardHistogramTwitter: {
-    padding: 6,
-    marginTop: 6,
-    borderRadius: 8,
   },
   snsCardHistogramBars: {
     flexDirection: 'row',
@@ -2736,12 +2704,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 12,
   },
-  snsCardStatsTwitter: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginTop: 8,
-    borderRadius: 8,
-  },
   snsCardStatItem: {
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -2751,17 +2713,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-  snsCardStatValueTwitter: {
-    fontSize: 12,
-  },
   snsCardStatLabel: {
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 2,
-  },
-  snsCardStatLabelTwitter: {
-    fontSize: 8,
-    marginTop: 1,
   },
   snsCardStatDivider: {
     width: 1,
