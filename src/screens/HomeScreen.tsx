@@ -1333,7 +1333,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                         ))}
                       </View>
                       <View style={styles.snsCardWatermark}>
-                        <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                        <Text style={styles.snsCardWatermarkText}>Pixel Paw 🐾</Text>
                       </View>
                     </View>
                   </ViewShot>
@@ -1407,7 +1407,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                           )}
 
                           <View style={styles.snsCardWatermark}>
-                            <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                            <Text style={styles.snsCardWatermarkText}>Pixel Paw 🐾</Text>
                           </View>
                         </View>
                       </ViewShot>
@@ -1480,7 +1480,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       </View>
                     )}
                     <View style={styles.snsCardWatermark}>
-                      <Text style={styles.snsCardWatermarkText}>GamePalette</Text>
+                      <Text style={styles.snsCardWatermarkText}>Pixel Paw 🐾</Text>
                     </View>
                   </View>
                 </ViewShot>
