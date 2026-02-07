@@ -1869,7 +1869,10 @@ const styles = StyleSheet.create({
   },
   algorithmToggle: {
     flexDirection: 'row' as const,
-    gap: 4,
+    gap: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 3,
   },
   algorithmOption: {
     paddingHorizontal: 12,
