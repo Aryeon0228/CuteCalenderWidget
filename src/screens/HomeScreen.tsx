@@ -16,7 +16,6 @@ import {
   Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
-import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
@@ -612,94 +611,98 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
         {/* ── Stage 2: Process ── */}
 
-        {/* Extraction Settings Card */}
-        <View style={[styles.extractionCard, { backgroundColor: theme.backgroundCard }]}>
-          <View style={styles.algorithmSection}>
-            <View style={styles.algorithmHeader}>
-              <Text style={[styles.algorithmLabel, { color: theme.textSecondary }]}>Algorithm</Text>
-              <TouchableOpacity
-                style={[
-                  styles.valueToggleButton,
-                  { backgroundColor: showGrayscale ? theme.accent : theme.borderLight },
-                ]}
-                onPress={() => setShowGrayscale(!showGrayscale)}
-              >
-                <Ionicons
-                  name="contrast-outline"
-                  size={16}
-                  color={showGrayscale ? '#fff' : theme.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={[styles.methodToggle, { backgroundColor: theme.backgroundTertiary }]}>
-              <TouchableOpacity
-                style={[
-                  styles.methodOption,
-                  extractionMethod === 'histogram' && { backgroundColor: theme.buttonBg },
-                ]}
-                onPress={() => handleMethodChange('histogram')}
-              >
-                <Text
-                  style={[
-                    styles.methodOptionText,
-                    { color: extractionMethod === 'histogram' ? theme.textPrimary : theme.textMuted },
-                  ]}
-                >
-                  Histogram
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.methodOption,
-                  extractionMethod === 'kmeans' && { backgroundColor: theme.buttonBg },
-                ]}
-                onPress={() => handleMethodChange('kmeans')}
-              >
-                <Text
-                  style={[
-                    styles.methodOptionText,
-                    { color: extractionMethod === 'kmeans' ? theme.textPrimary : theme.textMuted },
-                  ]}
-                >
-                  K-Means
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
-              {extractionMethod === 'histogram'
-                ? '🎨 Hue histogram - Fast, good for game art with clear color regions'
-                : '🔬 K-Means clustering - More accurate, better for photos & gradients'}
+        {/* ── Compact Settings Row ── */}
+        <View style={[styles.settingsRow, { backgroundColor: theme.backgroundCard }]}>
+          {/* Algorithm Dropdown */}
+          <TouchableOpacity
+            style={[styles.settingsDropdown, { backgroundColor: theme.backgroundTertiary }]}
+            onPress={() => {
+              hapticLight();
+              const nextMethod = extractionMethod === 'histogram' ? 'kmeans' : 'histogram';
+              handleMethodChange(nextMethod);
+            }}
+          >
+            <Text style={[styles.settingsDropdownText, { color: theme.textPrimary }]}>
+              {extractionMethod === 'histogram' ? 'Histogram' : 'K-Means'}
             </Text>
-          </View>
-        </View>
+            <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
+          </TouchableOpacity>
 
-        {/* ── Stage 3: Output ── */}
+          {/* Algorithm Info */}
+          <TouchableOpacity
+            style={styles.settingsInfoButton}
+            onPress={() => {
+              hapticLight();
+              Alert.alert(
+                extractionMethod === 'histogram' ? 'Histogram' : 'K-Means',
+                extractionMethod === 'histogram'
+                  ? 'Hue histogram analysis.\nFast, good for game art with clear color regions.'
+                  : 'K-Means clustering.\nMore accurate, better for photos & gradients.',
+              );
+            }}
+          >
+            <Ionicons name="information-circle-outline" size={18} color={theme.textMuted} />
+          </TouchableOpacity>
 
-        {/* Color Count Slider */}
-        <View style={[styles.colorCountRow, { backgroundColor: theme.backgroundCard }]}>
-          <Text style={[styles.colorCountLabel, { color: theme.textSecondary }]}>Colors</Text>
-          <Slider
-            style={styles.colorCountSlider}
-            minimumValue={3}
-            maximumValue={8}
-            step={1}
-            value={colorCount}
-            onValueChange={(value) => setColorCount(Math.round(value))}
-            onSlidingComplete={(value) => {
-              const newCount = Math.round(value);
-              setColorCount(newCount);
-              if (currentImageUri) {
-                doExtract(currentImageUri, newCount, extractionMethod);
+          {/* Divider */}
+          <View style={[styles.settingsDivider, { backgroundColor: theme.borderLight }]} />
+
+          {/* Color Count Dropdown */}
+          <TouchableOpacity
+            style={[styles.settingsDropdown, { backgroundColor: theme.backgroundTertiary }]}
+            onPress={() => {
+              hapticLight();
+              if (Platform.OS === 'ios') {
+                ActionSheetIOS.showActionSheetWithOptions(
+                  {
+                    options: ['Cancel', '3', '4', '5', '6', '7', '8'],
+                    cancelButtonIndex: 0,
+                    title: 'Number of Colors',
+                  },
+                  (buttonIndex) => {
+                    if (buttonIndex > 0) {
+                      const newCount = buttonIndex + 2;
+                      setColorCount(newCount);
+                      if (currentImageUri) {
+                        doExtract(currentImageUri, newCount, extractionMethod);
+                      }
+                    }
+                  }
+                );
+              } else {
+                const nextCount = colorCount >= 8 ? 3 : colorCount + 1;
+                setColorCount(nextCount);
+                if (currentImageUri) {
+                  doExtract(currentImageUri, nextCount, extractionMethod);
+                }
               }
             }}
-            minimumTrackTintColor={theme.accent}
-            maximumTrackTintColor={mode === 'dark' ? '#3d3d4a' : '#c0c0cc'}
-            thumbTintColor={theme.accent}
-            disabled={false}
-          />
-          <View style={[styles.colorCountBadge, { backgroundColor: theme.backgroundTertiary }]}>
-            <Text style={[styles.colorCountBadgeText, { color: theme.textPrimary }]}>{colorCount}</Text>
-          </View>
+          >
+            <Text style={[styles.settingsDropdownLabel, { color: theme.textMuted }]}>Colors</Text>
+            <Text style={[styles.settingsDropdownValue, { color: theme.textPrimary }]}>{colorCount}</Text>
+            <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={[styles.settingsDivider, { backgroundColor: theme.borderLight }]} />
+
+          {/* Value Check Toggle */}
+          <TouchableOpacity
+            style={[
+              styles.settingsValueToggle,
+              { backgroundColor: showGrayscale ? theme.accent : theme.backgroundTertiary },
+            ]}
+            onPress={() => {
+              hapticLight();
+              setShowGrayscale(!showGrayscale);
+            }}
+          >
+            <Ionicons
+              name="contrast-outline"
+              size={16}
+              color={showGrayscale ? '#fff' : theme.textSecondary}
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Color Cards - Palette Swatches */}
@@ -1901,37 +1904,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Color Count Slider
-  colorCountRow: {
+  // Compact Settings Row
+  settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 14,
+    gap: 6,
   },
-  colorCountLabel: {
+  settingsDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 4,
+  },
+  settingsDropdownText: {
     fontSize: 12,
     fontWeight: '600',
-    marginRight: 8,
   },
-  colorCountSlider: {
-    flex: 1,
-    height: 44,
+  settingsDropdownLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginRight: 2,
   },
-  colorCountBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 8,
+  settingsDropdownValue: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  settingsInfoButton: {
+    padding: 4,
+  },
+  settingsDivider: {
+    width: 1,
+    height: 20,
+    opacity: 0.3,
+  },
+  settingsValueToggle: {
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
-  },
-  colorCountBadgeText: {
-    fontSize: 14,
-    fontWeight: '700',
+    borderRadius: 10,
+    marginLeft: 'auto',
   },
 
   // Inline Color Detail
@@ -1979,73 +1999,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 
-  // Extraction Card - Compact
-  extractionCard: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    backgroundColor: '#16161e',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#1e1e2a',
-  },
-  extractionTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  algorithmSection: {
-    marginBottom: 12,
-  },
-  algorithmHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  algorithmLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  algorithmDesc: {
-    fontSize: 11,
-    marginTop: 8,
-    lineHeight: 16,
-  },
-  methodToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#0c0c12',
-    borderRadius: 10,
-    padding: 3,
-  },
-  methodOption: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  methodOptionActive: {
-    backgroundColor: '#2a2a3a',
-  },
-  methodOptionText: {
-    color: '#9090a0',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  methodOptionTextActive: {
-    color: '#fff',
-  },
-  valueToggleButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    backgroundColor: '#24242e',
-  },
-  valueToggleButtonActive: {
-    backgroundColor: '#6366f1',
-  },
+  // (Old extraction card styles removed - replaced by settingsRow)
 
   // Slider - Inline
   sliderRow: {
