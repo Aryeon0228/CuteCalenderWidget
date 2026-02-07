@@ -601,7 +601,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <TouchableOpacity
               style={[
                 styles.algorithmOption,
-                { backgroundColor: extractionMethod === 'histogram' ? theme.accent : theme.backgroundTertiary },
+                { backgroundColor: extractionMethod === 'histogram' ? '#6366f1' : theme.backgroundTertiary },
               ]}
               onPress={() => {
                 hapticLight();
@@ -618,7 +618,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <TouchableOpacity
               style={[
                 styles.algorithmOption,
-                { backgroundColor: extractionMethod === 'kmeans' ? theme.accent : theme.backgroundTertiary },
+                { backgroundColor: extractionMethod === 'kmeans' ? '#6366f1' : theme.backgroundTertiary },
               ]}
               onPress={() => {
                 hapticLight();
@@ -634,11 +634,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Value Toggle - Text label for consistency */}
+          {/* Value Toggle */}
           <TouchableOpacity
             style={[
               styles.algorithmOption,
-              { backgroundColor: showGrayscale ? theme.accent : theme.backgroundTertiary },
+              { backgroundColor: showGrayscale ? '#f472b6' : theme.backgroundTertiary },
             ]}
             onPress={() => {
               hapticLight();
