@@ -442,9 +442,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerLogoMark}>
-            <View style={[styles.headerLogoDot, { backgroundColor: '#f472b6' }]} />
-            <View style={[styles.headerLogoDot, { backgroundColor: '#6366f1' }]} />
-            <View style={[styles.headerLogoDot, { backgroundColor: '#34d399' }]} />
+            <Text style={styles.headerLogoCat}>🐱</Text>
+            <View style={styles.headerLogoPaw}>
+              <Ionicons name="paw" size={10} color="#f472b6" />
+            </View>
           </View>
           <View>
             <Text style={[styles.title, { color: theme.textPrimary }]}>Pixel Paw</Text>
@@ -577,7 +578,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <Ionicons
                 name={STYLE_PRESETS[filter].icon as any}
                 size={20}
-                color={styleFilter === filter ? '#fff' : theme.textSecondary}
+                color={styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color}
               />
               <Text
                 style={[
@@ -652,41 +653,35 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           {/* Spacer */}
           <View style={{ flex: 1 }} />
 
-          {/* Color Count - Far Right */}
-          <TouchableOpacity
-            style={[styles.settingsColorCount, { backgroundColor: theme.backgroundTertiary }]}
-            onPress={() => {
-              hapticLight();
-              if (Platform.OS === 'ios') {
-                ActionSheetIOS.showActionSheetWithOptions(
-                  {
-                    options: ['Cancel', '3', '4', '5', '6', '7', '8'],
-                    cancelButtonIndex: 0,
-                    title: 'Number of Colors',
-                  },
-                  (buttonIndex) => {
-                    if (buttonIndex > 0) {
-                      const newCount = buttonIndex + 2;
-                      setColorCount(newCount);
-                      if (currentImageUri) {
-                        doExtract(currentImageUri, newCount, extractionMethod);
-                      }
-                    }
-                  }
-                );
-              } else {
-                const nextCount = colorCount >= 8 ? 3 : colorCount + 1;
-                setColorCount(nextCount);
-                if (currentImageUri) {
-                  doExtract(currentImageUri, nextCount, extractionMethod);
-                }
-              }
-            }}
-          >
+          {/* Color Count - Stepper */}
+          <View style={styles.settingsColorCount}>
             <Text style={[styles.settingsDropdownLabel, { color: theme.textMuted }]}>Colors</Text>
-            <Text style={[styles.settingsDropdownValue, { color: theme.textPrimary }]}>{colorCount}</Text>
-            <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
+              onPress={() => {
+                hapticLight();
+                const newCount = colorCount <= 3 ? 8 : colorCount - 1;
+                setColorCount(newCount);
+                if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+              }}
+            >
+              <Ionicons name="remove" size={14} color={theme.textSecondary} />
+            </TouchableOpacity>
+            <View style={[styles.colorCountBadge, { backgroundColor: theme.accent }]}>
+              <Text style={styles.colorCountBadgeText}>{colorCount}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
+              onPress={() => {
+                hapticLight();
+                const newCount = colorCount >= 8 ? 3 : colorCount + 1;
+                setColorCount(newCount);
+                if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+              }}
+            >
+              <Ionicons name="add" size={14} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Color Cards - Palette Swatches */}
@@ -766,14 +761,14 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <TouchableOpacity
                     style={[
                       styles.hueShiftOption,
-                      variationHueShift && { backgroundColor: theme.buttonBg },
+                      variationHueShift && { backgroundColor: theme.accent },
                     ]}
                     onPress={() => setVariationHueShift(true)}
                   >
                     <Text
                       style={[
                         styles.hueShiftOptionText,
-                        { color: variationHueShift ? theme.textPrimary : theme.textMuted },
+                        { color: variationHueShift ? '#fff' : theme.textMuted },
                       ]}
                     >
                       Hue Shift
@@ -1595,26 +1590,27 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerLogoMark: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     backgroundColor: '#6366f1',
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 2,
-    padding: 6,
     shadowColor: '#6366f1',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
   },
-  headerLogoDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  headerLogoCat: {
+    fontSize: 20,
+    lineHeight: 24,
+    marginTop: -1,
+  },
+  headerLogoPaw: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
   },
   headerSubtitleRow: {
     flexDirection: 'row',
@@ -1809,9 +1805,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#6366f1',
   },
   styleFilterText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#a0a0b0',
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   styleFilterTextActive: {
     color: '#fff',
@@ -1886,19 +1883,31 @@ const styles = StyleSheet.create({
   settingsColorCount: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 4,
+    gap: 6,
   },
   settingsDropdownLabel: {
     fontSize: 11,
     fontWeight: '500' as const,
     marginRight: 2,
   },
-  settingsDropdownValue: {
+  colorStepperBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  colorCountBadge: {
+    width: 28,
+    height: 26,
+    borderRadius: 7,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  colorCountBadgeText: {
     fontSize: 13,
     fontWeight: '700' as const,
+    color: '#fff',
   },
 
   // Inline Color Detail

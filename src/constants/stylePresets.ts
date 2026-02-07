@@ -10,6 +10,7 @@ export interface StylePreset {
   saturation: number;
   brightness: number;
   icon: string;
+  color: string;
 }
 
 export const STYLE_PRESETS: Record<StyleFilter, StylePreset> = {
@@ -18,24 +19,28 @@ export const STYLE_PRESETS: Record<StyleFilter, StylePreset> = {
     saturation: 1.0,
     brightness: 1.0,
     icon: 'ellipse-outline',
+    color: '#a0a0b0',
   },
   hypercasual: {
     name: 'Hyper',
     saturation: 1.3,
     brightness: 1.1,
     icon: 'sparkles-outline',
+    color: '#fbbf24',
   },
   stylized: {
     name: 'Stylized',
     saturation: 1.15,
     brightness: 1.05,
     icon: 'brush-outline',
+    color: '#c084fc',
   },
   realistic: {
     name: 'Realistic',
     saturation: 0.9,
     brightness: 0.95,
-    icon: 'camera-outline',
+    icon: 'eye-outline',
+    color: '#34d399',
   },
 };
 
