@@ -613,43 +613,66 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
         {/* ── Compact Settings Row ── */}
         <View style={[styles.settingsRow, { backgroundColor: theme.backgroundCard }]}>
-          {/* Algorithm Dropdown */}
+          {/* Algorithm Toggle - Both visible */}
+          <View style={styles.algorithmToggle}>
+            <TouchableOpacity
+              style={[
+                styles.algorithmOption,
+                { backgroundColor: extractionMethod === 'histogram' ? theme.accent : theme.backgroundTertiary },
+              ]}
+              onPress={() => {
+                hapticLight();
+                handleMethodChange('histogram');
+              }}
+              onLongPress={() => {
+                Alert.alert('Histogram', 'Hue histogram analysis.\nFast, good for game art with clear color regions.');
+              }}
+            >
+              <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'histogram' ? '#fff' : theme.textSecondary }]}>
+                Histogram
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.algorithmOption,
+                { backgroundColor: extractionMethod === 'kmeans' ? theme.accent : theme.backgroundTertiary },
+              ]}
+              onPress={() => {
+                hapticLight();
+                handleMethodChange('kmeans');
+              }}
+              onLongPress={() => {
+                Alert.alert('K-Means', 'K-Means clustering.\nMore accurate, better for photos & gradients.');
+              }}
+            >
+              <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textSecondary }]}>
+                K-Means
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Value Toggle - Text label for consistency */}
           <TouchableOpacity
-            style={[styles.settingsDropdown, { backgroundColor: theme.backgroundTertiary }]}
+            style={[
+              styles.algorithmOption,
+              { backgroundColor: showGrayscale ? theme.accent : theme.backgroundTertiary },
+            ]}
             onPress={() => {
               hapticLight();
-              const nextMethod = extractionMethod === 'histogram' ? 'kmeans' : 'histogram';
-              handleMethodChange(nextMethod);
+              setShowGrayscale(!showGrayscale);
             }}
           >
-            <Text style={[styles.settingsDropdownText, { color: theme.textPrimary }]}>
-              {extractionMethod === 'histogram' ? 'Histogram' : 'K-Means'}
+            <Text style={[styles.algorithmOptionText, { color: showGrayscale ? '#fff' : theme.textSecondary }]}>
+              Value
             </Text>
-            <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
           </TouchableOpacity>
 
-          {/* Algorithm Info */}
-          <TouchableOpacity
-            style={styles.settingsInfoButton}
-            onPress={() => {
-              hapticLight();
-              Alert.alert(
-                extractionMethod === 'histogram' ? 'Histogram' : 'K-Means',
-                extractionMethod === 'histogram'
-                  ? 'Hue histogram analysis.\nFast, good for game art with clear color regions.'
-                  : 'K-Means clustering.\nMore accurate, better for photos & gradients.',
-              );
-            }}
-          >
-            <Ionicons name="information-circle-outline" size={18} color={theme.textMuted} />
-          </TouchableOpacity>
+          {/* Spacer */}
+          <View style={{ flex: 1 }} />
 
-          {/* Divider */}
-          <View style={[styles.settingsDivider, { backgroundColor: theme.borderLight }]} />
-
-          {/* Color Count Dropdown */}
+          {/* Color Count - Far Right */}
           <TouchableOpacity
-            style={[styles.settingsDropdown, { backgroundColor: theme.backgroundTertiary }]}
+            style={[styles.settingsColorCount, { backgroundColor: theme.backgroundTertiary }]}
             onPress={() => {
               hapticLight();
               if (Platform.OS === 'ios') {
@@ -681,27 +704,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <Text style={[styles.settingsDropdownLabel, { color: theme.textMuted }]}>Colors</Text>
             <Text style={[styles.settingsDropdownValue, { color: theme.textPrimary }]}>{colorCount}</Text>
             <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={[styles.settingsDivider, { backgroundColor: theme.borderLight }]} />
-
-          {/* Value Check Toggle */}
-          <TouchableOpacity
-            style={[
-              styles.settingsValueToggle,
-              { backgroundColor: showGrayscale ? theme.accent : theme.backgroundTertiary },
-            ]}
-            onPress={() => {
-              hapticLight();
-              setShowGrayscale(!showGrayscale);
-            }}
-          >
-            <Ionicons
-              name="contrast-outline"
-              size={16}
-              color={showGrayscale ? '#fff' : theme.textSecondary}
-            />
           </TouchableOpacity>
         </View>
 
@@ -1916,42 +1918,35 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     gap: 6,
   },
-  settingsDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  algorithmToggle: {
+    flexDirection: 'row' as const,
+    gap: 4,
+  },
+  algorithmOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  algorithmOptionText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  settingsColorCount: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 10,
     gap: 4,
   },
-  settingsDropdownText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   settingsDropdownLabel: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     marginRight: 2,
   },
   settingsDropdownValue: {
     fontSize: 13,
-    fontWeight: '700',
-  },
-  settingsInfoButton: {
-    padding: 4,
-  },
-  settingsDivider: {
-    width: 1,
-    height: 20,
-    opacity: 0.3,
-  },
-  settingsValueToggle: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    marginLeft: 'auto',
+    fontWeight: '700' as const,
   },
 
   // Inline Color Detail
