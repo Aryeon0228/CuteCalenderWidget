@@ -286,13 +286,15 @@ export interface ColorBlindnessInfo {
   shortLabel: string;
   description: string;
   icon: string;
+  /** Two colors this type confuses — shown as dot pair on the button */
+  confusedPair: [string, string];
 }
 
 export const COLOR_BLINDNESS_TYPES: ColorBlindnessInfo[] = [
-  { type: 'none', label: 'Normal', shortLabel: 'Off', description: 'Normal vision', icon: 'eye-outline' },
-  { type: 'protanopia', label: 'Protan', shortLabel: 'P', description: 'Red-blind', icon: 'eye-off-outline' },
-  { type: 'deuteranopia', label: 'Deutan', shortLabel: 'D', description: 'Green-blind', icon: 'eye-off-outline' },
-  { type: 'tritanopia', label: 'Tritan', shortLabel: 'T', description: 'Blue-blind', icon: 'eye-off-outline' },
+  { type: 'none', label: 'Normal', shortLabel: 'Off', description: 'Normal vision', icon: 'eye-outline', confusedPair: ['#34d399', '#60a5fa'] },
+  { type: 'protanopia', label: 'Protan', shortLabel: 'P', description: 'Red-weak', icon: 'eye-off-outline', confusedPair: ['#ef4444', '#22c55e'] },
+  { type: 'deuteranopia', label: 'Deutan', shortLabel: 'D', description: 'Green-weak', icon: 'eye-off-outline', confusedPair: ['#22c55e', '#ef4444'] },
+  { type: 'tritanopia', label: 'Tritan', shortLabel: 'T', description: 'Blue-weak', icon: 'eye-off-outline', confusedPair: ['#3b82f6', '#eab308'] },
 ];
 
 // sRGB gamma correction

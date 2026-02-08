@@ -135,19 +135,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   // COMPUTED VALUES
   // ============================================
 
-  const processedColors = useMemo(() =>
+  // Colors WITHOUT CVD (for comparison display)
+  const styledColors = useMemo(() =>
     currentColors.map((hex) => {
       if (showGrayscale) {
         return toGrayscale(hex);
       }
       const preset = STYLE_PRESETS[styleFilter];
-      let color = adjustColor(hex, preset.saturation, preset.brightness);
+      return adjustColor(hex, preset.saturation, preset.brightness);
+    }),
+    [currentColors, showGrayscale, styleFilter]
+  );
+
+  // Colors WITH CVD applied (final display)
+  const processedColors = useMemo(() =>
+    styledColors.map((color) => {
       if (colorBlindMode !== 'none') {
-        color = simulateColorBlindness(color, colorBlindMode);
+        return simulateColorBlindness(color, colorBlindMode);
       }
       return color;
     }),
-    [currentColors, showGrayscale, styleFilter, colorBlindMode]
+    [styledColors, colorBlindMode]
   );
 
   const colorInfo = useMemo((): ColorInfo | null => {
@@ -636,6 +644,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <View style={styles.colorCardsContainer}>
             {processedColors.map((color, index) => {
               const isSelected = selectedColorIndex === index;
+              const originalColor = styledColors[index];
+              const isCvdActive = colorBlindMode !== 'none' && originalColor !== color;
               return (
                 <TouchableOpacity
                   key={index}
@@ -647,13 +657,15 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 >
                   <View style={[
                     styles.colorSwatch,
-                    { backgroundColor: color },
+                    { backgroundColor: color, overflow: 'hidden' },
                     isSelected && [styles.colorSwatchSelected, { borderColor: color, shadowColor: color }],
-                  ]} />
+                  ]}>
+                    {isCvdActive && (
+                      <View style={[styles.cvdSplitOriginal, { backgroundColor: originalColor }]} />
+                    )}
+                  </View>
                   {isSelected && (
-                    <View style={[styles.chipIndicator, { backgroundColor: color }]}>
-                      <View style={styles.chipIndicatorInner} />
-                    </View>
+                    <View style={[styles.chipTriangle, { borderBottomColor: color }]} />
                   )}
                   <Text style={[styles.chipRank, { color: isSelected ? theme.textPrimary : theme.textMuted }]}>
                     #{index + 1}
@@ -716,6 +728,42 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               ))}
             </View>
 
+            {/* Channel Bars (RGB or HSL) */}
+            {colorFormat === 'RGB' && (
+              <View style={[styles.channelBarsContainer, { backgroundColor: theme.backgroundTertiary }]}>
+                {[
+                  { label: 'R', value: colorInfo.rgb.r, max: 255, color: '#ef4444' },
+                  { label: 'G', value: colorInfo.rgb.g, max: 255, color: '#22c55e' },
+                  { label: 'B', value: colorInfo.rgb.b, max: 255, color: '#3b82f6' },
+                ].map((ch) => (
+                  <View key={ch.label} style={styles.channelRow}>
+                    <Text style={[styles.channelLabel, { color: ch.color }]}>{ch.label}</Text>
+                    <View style={styles.channelBarTrack}>
+                      <View style={[styles.channelBarFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.color }]} />
+                    </View>
+                    <Text style={[styles.channelValue, { color: theme.textSecondary }]}>{ch.value}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {colorFormat === 'HSL' && (
+              <View style={[styles.channelBarsContainer, { backgroundColor: theme.backgroundTertiary }]}>
+                {[
+                  { label: 'H', value: colorInfo.hsl.h, max: 360, color: '#f472b6', display: `${colorInfo.hsl.h}°` },
+                  { label: 'S', value: colorInfo.hsl.s, max: 100, color: '#a78bfa', display: `${colorInfo.hsl.s}%` },
+                  { label: 'L', value: colorInfo.hsl.l, max: 100, color: '#fbbf24', display: `${colorInfo.hsl.l}%` },
+                ].map((ch) => (
+                  <View key={ch.label} style={styles.channelRow}>
+                    <Text style={[styles.channelLabel, { color: ch.color }]}>{ch.label}</Text>
+                    <View style={styles.channelBarTrack}>
+                      <View style={[styles.channelBarFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.color }]} />
+                    </View>
+                    <Text style={[styles.channelValue, { color: theme.textSecondary }]}>{ch.display}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* Inline Variations */}
             <View style={[styles.inlineVariationsSection, { backgroundColor: theme.backgroundTertiary }]}>
               <View style={styles.variationsHeader}>
@@ -750,7 +798,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                         { color: variationHueShift ? '#fff' : theme.textMuted },
                       ]}
                     >
-                      Hue
+                      Hue Shift
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1545,23 +1593,23 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </View>
 
               {/* CVD Simulation */}
-              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>CVD Simulation</Text>
-              <View style={styles.advancedCvdRow}>
+              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>Color Vision Simulation</Text>
+              <View style={styles.advancedCvdGrid}>
                 {COLOR_BLINDNESS_TYPES.map((cvd) => {
                   const isActive = colorBlindMode === cvd.type;
                   return (
                     <TouchableOpacity
                       key={cvd.type}
                       style={[
-                        styles.advancedCvdOption,
+                        styles.advancedCvdCard,
                         {
                           backgroundColor: isActive
-                            ? (cvd.type === 'none' ? theme.backgroundTertiary : '#f59e0b')
+                            ? (cvd.type === 'none' ? theme.accent + '20' : '#f59e0b' + '20')
                             : theme.backgroundTertiary,
-                          borderWidth: isActive ? 1.5 : 0,
+                          borderWidth: isActive ? 1.5 : 1,
                           borderColor: isActive
-                            ? (cvd.type === 'none' ? theme.textMuted : '#f59e0b')
-                            : 'transparent',
+                            ? (cvd.type === 'none' ? theme.accent : '#f59e0b')
+                            : theme.backgroundTertiary,
                         },
                       ]}
                       onPress={() => {
@@ -1569,19 +1617,29 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                         setColorBlindMode(cvd.type);
                       }}
                     >
+                      {/* Confused color pair dots */}
+                      <View style={styles.cvdDotPair}>
+                        <View style={[styles.cvdDot, { backgroundColor: cvd.confusedPair[0] }]} />
+                        <View style={[styles.cvdDotSlash, { backgroundColor: theme.textMuted }]} />
+                        <View style={[styles.cvdDot, { backgroundColor: cvd.confusedPair[1] }]} />
+                      </View>
                       <Text
                         style={[
-                          styles.advancedCvdText,
+                          styles.advancedCvdLabel,
                           {
                             color: isActive
-                              ? (cvd.type === 'none' ? theme.textPrimary : '#fff')
-                              : theme.textMuted,
-                            fontWeight: isActive ? '700' : '500',
+                              ? (cvd.type === 'none' ? theme.accent : '#f59e0b')
+                              : theme.textPrimary,
+                            fontWeight: isActive ? '700' : '600',
                           },
                         ]}
                       >
                         {cvd.label}
                       </Text>
+                      <Text style={[styles.advancedCvdDesc, { color: theme.textMuted }]}>
+                        {cvd.description}
+                      </Text>
+                      {isActive && <Ionicons name="checkmark-circle" size={14} color={cvd.type === 'none' ? theme.accent : '#f59e0b'} style={styles.cvdCheck} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -2013,19 +2071,22 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
   },
-  chipIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 4,
+  cvdSplitOriginal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '50%',
   },
-  chipIndicatorInner: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#fff',
+  chipTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: 4,
   },
   chipRank: {
     fontSize: 9,
@@ -2213,6 +2274,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  // Channel Bars
+  channelBarsContainer: {
+    borderRadius: 10,
+    padding: 12,
+    gap: 8,
+    marginBottom: 8,
+  },
+  channelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  channelLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    width: 14,
+    textAlign: 'center',
+  },
+  channelBarTrack: {
+    flex: 1,
+    height: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  channelBarFill: {
+    height: '100%',
+    borderRadius: 5,
+    opacity: 0.85,
+  },
+  channelValue: {
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: 'monospace',
+    width: 32,
+    textAlign: 'right',
+  },
+
   inlineVariationsSection: {
     marginTop: 0,
     borderRadius: 10,
@@ -3502,18 +3601,49 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  advancedCvdRow: {
+  advancedCvdGrid: {
     flexDirection: 'row',
-    gap: 6,
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 16,
   },
-  advancedCvdOption: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
+  advancedCvdCard: {
+    width: '47%' as any,
+    flexGrow: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     alignItems: 'center',
+    gap: 4,
+    position: 'relative',
   },
-  advancedCvdText: {
-    fontSize: 12,
+  cvdDotPair: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginBottom: 2,
+  },
+  cvdDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  cvdDotSlash: {
+    width: 1,
+    height: 10,
+    transform: [{ rotate: '20deg' }],
+    opacity: 0.3,
+  },
+  advancedCvdLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  advancedCvdDesc: {
+    fontSize: 10,
+  },
+  cvdCheck: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
   },
 });
