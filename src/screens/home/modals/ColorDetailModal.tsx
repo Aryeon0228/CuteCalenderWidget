@@ -48,6 +48,10 @@ export default function ColorDetailModal({
     RGB: '#3b82f6',
     HSL: '#22c55e',
   };
+  const variationToggleColors = {
+    lightness: '#38bdf8',
+    hueShift: '#f97316',
+  };
 
   return (
     <Modal
@@ -120,7 +124,7 @@ export default function ColorDetailModal({
                       <TouchableOpacity
                         style={[
                           styles.hueShiftOption,
-                          !variationHueShift && { backgroundColor: theme.accent },
+                          !variationHueShift && { backgroundColor: variationToggleColors.lightness },
                         ]}
                         onPress={() => onVariationHueShiftChange(false)}
                       >
@@ -136,7 +140,7 @@ export default function ColorDetailModal({
                       <TouchableOpacity
                         style={[
                           styles.hueShiftOption,
-                          variationHueShift && { backgroundColor: theme.accent },
+                          variationHueShift && { backgroundColor: variationToggleColors.hueShift },
                         ]}
                         onPress={() => onVariationHueShiftChange(true)}
                       >
