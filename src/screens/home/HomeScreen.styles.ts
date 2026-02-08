@@ -1281,7 +1281,11 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
   },
   snsCardColorHex: {
-    fontSize: 10,
+    width: '100%',
+    textAlign: 'center',
+    fontSize: 9,
+    lineHeight: 11,
+    minHeight: 11,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: 'monospace',
