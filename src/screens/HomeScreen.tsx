@@ -182,8 +182,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {
     switch (format) {
       case 'HEX': return info.hex.toUpperCase();
-      case 'RGB': return `rgb(${info.rgb.r}, ${info.rgb.g}, ${info.rgb.b})`;
-      case 'HSL': return `hsl(${info.hsl.h}, ${info.hsl.s}%, ${info.hsl.l}%)`;
+      case 'RGB': return `RGB(${info.rgb.r}, ${info.rgb.g}, ${info.rgb.b})`;
+      case 'HSL': return `HSL(${info.hsl.h}, ${info.hsl.s}%, ${info.hsl.l}%)`;
     }
   };
 
@@ -669,25 +669,50 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       ))}
                     </View>
                   )}
-                  {colorFormat === 'HSL' && (() => {
-                    const { h, s, l } = colorInfo.hsl;
-                    const hueRgb = hslToRgb(h, 100, 50);
-                    const hueHex = rgbToHex(hueRgb.r, hueRgb.g, hueRgb.b);
-                    const satRgb = hslToRgb(h, s, 50);
-                    const satHex = rgbToHex(satRgb.r, satRgb.g, satRgb.b);
-                    const lightnessGray = Math.round((l / 100) * 255);
-                    const lightnessHex = rgbToHex(lightnessGray, lightnessGray, lightnessGray);
-                    return (
-                      <View style={styles.previewChannelBars}>
-                        {[
-                          { label: 'H', value: h, max: 360, barColor: hueHex, display: `${h}°` },
-                          { label: 'S', value: s, max: 100, barColor: satHex, display: `${s}%` },
-                          { label: 'L', value: l, max: 100, barColor: lightnessHex, display: `${l}%` },
-                        ].map((ch) => (
+                {colorFormat === 'HSL' && (() => {
+                  const { h, s, l } = colorInfo.hsl;
+                  const hueRgb = hslToRgb(h, 100, 50);
+                  const hueHex = rgbToHex(hueRgb.r, hueRgb.g, hueRgb.b);
+                  const satRgb = hslToRgb(h, s, 50);
+                  const satHex = rgbToHex(satRgb.r, satRgb.g, satRgb.b);
+                  const lightnessGray = Math.round((l / 100) * 255);
+                  const boostedGray = lightnessGray < 128
+                    ? Math.max(0, lightnessGray - 35)
+                    : Math.min(255, lightnessGray + 35);
+                  const lightnessHex = rgbToHex(boostedGray, boostedGray, boostedGray);
+                  const lightnessBorder = boostedGray >= 180
+                    ? 'rgba(0,0,0,0.6)'
+                    : 'rgba(255,255,255,0.75)';
+                  const hslTrackBg = isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
+                  const hslChannels: Array<{
+                    label: string;
+                    value: number;
+                    max: number;
+                    barColor: string;
+                    display: string;
+                    borderColor?: string;
+                  }> = [
+                    { label: 'H', value: h, max: 360, barColor: hueHex, display: `${h}°` },
+                    { label: 'S', value: s, max: 100, barColor: satHex, display: `${s}%` },
+                    { label: 'L', value: l, max: 100, barColor: lightnessHex, display: `${l}%`, borderColor: lightnessBorder },
+                  ];
+                  return (
+                    <View style={styles.previewChannelBars}>
+                      {hslChannels.map((ch) => (
                           <View key={ch.label} style={styles.previewChannelRow}>
                             <Text style={[styles.previewChannelLabel, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.label}</Text>
-                            <View style={[styles.previewChannelTrack, { backgroundColor: trackBg }]}>
-                              <View style={[styles.previewChannelFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.barColor }]} />
+                            <View style={[styles.previewChannelTrack, { backgroundColor: hslTrackBg }]}>
+                              <View
+                                style={[
+                                  styles.previewChannelFill,
+                                  {
+                                    width: `${(ch.value / ch.max) * 100}%`,
+                                    minWidth: ch.value > 0 ? 6 : 0,
+                                    backgroundColor: ch.barColor,
+                                  },
+                                  ch.borderColor && { borderWidth: 1, borderColor: ch.borderColor },
+                                ]}
+                              />
                             </View>
                             <Text style={[styles.previewChannelValue, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.display}</Text>
                           </View>
