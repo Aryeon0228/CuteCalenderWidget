@@ -629,7 +629,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               </TouchableOpacity>
             </View>
             <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
-              {extractionMethod === 'histogram' ? 'Fast · Game art' : 'Accurate · Photos'}
+              {extractionMethod === 'histogram' ? 'Hue 분포 기반 · 빠름' : '클러스터링 · 정밀'}
             </Text>
           </View>
 
