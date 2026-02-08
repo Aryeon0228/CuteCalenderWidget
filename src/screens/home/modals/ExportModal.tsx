@@ -295,7 +295,10 @@ export default function ExportModal({
                           {cardShowHex && (
                             <Text
                               style={styles.twitterUnifiedColorHex}
+                              allowFontScaling={false}
                               numberOfLines={1}
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.72}
                               ellipsizeMode="clip"
                             >
                               {normalizeHexLabel(color)}
@@ -378,7 +381,18 @@ export default function ExportModal({
                     {processedColors.map((color, index) => (
                       <View key={index} style={styles.snsCardColorItem}>
                         <View style={[styles.snsCardColorSwatch, { backgroundColor: color }]} />
-                        {cardShowHex && <Text style={styles.snsCardColorHex}>{normalizeHexLabel(color)}</Text>}
+                        {cardShowHex && (
+                          <Text
+                            style={styles.snsCardColorHex}
+                            allowFontScaling={false}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.72}
+                            ellipsizeMode="clip"
+                          >
+                            {normalizeHexLabel(color)}
+                          </Text>
+                        )}
                       </View>
                     ))}
                   </View>
