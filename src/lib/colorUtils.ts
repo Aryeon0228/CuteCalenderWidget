@@ -19,6 +19,12 @@ export interface HslColor {
   l: number;
 }
 
+export interface ColorInfo {
+  hex: string;
+  rgb: RgbColor;
+  hsl: HslColor;
+}
+
 /**
  * Convert HEX color string to RGB object
  */
@@ -101,6 +107,34 @@ export function hslToRgb(h: number, s: number, l: number): RgbColor {
 }
 
 // ============================================
+// COLOR INFO & FORMATTING
+// ============================================
+
+/**
+ * Get full color info from HEX
+ */
+export function getColorInfo(hex: string): ColorInfo {
+  const rgb = hexToRgb(hex);
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  return { hex, rgb, hsl };
+}
+
+/**
+ * Format color for display
+ */
+export function formatHex(hex: string): string {
+  return hex.toUpperCase();
+}
+
+export function formatRgb(r: number, g: number, b: number): string {
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+export function formatHsl(h: number, s: number, l: number): string {
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+// ============================================
 // COLOR MANIPULATION
 // ============================================
 
@@ -119,6 +153,14 @@ export function toGrayscale(hex: string): string {
 export function getLuminance(hex: string): number {
   const rgb = hexToRgb(hex);
   return Math.round(0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
+}
+
+/**
+ * Get contrasting text color (black or white) for a background
+ */
+export function getContrastColor(hex: string): string {
+  const luminance = getLuminance(hex) / 255;
+  return luminance > 0.5 ? '#000000' : '#FFFFFF';
 }
 
 /**
@@ -150,6 +192,27 @@ export function shiftHue(hex: string, shift: number): string {
   const newH = (h + shift + 360) % 360;
   const newRgb = hslToRgb(newH, s, l);
   return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+}
+
+/**
+ * Generate value (lightness) variations of a color
+ */
+export function generateValueVariations(hex: string, steps: number = 5): string[] {
+  const rgb = hexToRgb(hex);
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  const variations: string[] = [];
+  const minL = 10;
+  const maxL = 90;
+  const stepSize = (maxL - minL) / (steps - 1);
+
+  for (let i = 0; i < steps; i++) {
+    const newL = minL + (stepSize * i);
+    const newRgb = hslToRgb(hsl.h, hsl.s, newL);
+    variations.push(rgbToHex(newRgb.r, newRgb.g, newRgb.b));
+  }
+
+  return variations;
 }
 
 // ============================================
@@ -272,6 +335,20 @@ function rotateHue(hex: string, degrees: number): string {
   const newH = (h + degrees + 360) % 360;
   const newRgb = hslToRgb(newH, s, l);
   return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+}
+
+/**
+ * Generate complementary color
+ */
+export function getComplementary(hex: string): string {
+  return rotateHue(hex, 180);
+}
+
+/**
+ * Generate analogous colors
+ */
+export function getAnalogous(hex: string): string[] {
+  return [rotateHue(hex, -30), hex, rotateHue(hex, 30)];
 }
 
 // ============================================

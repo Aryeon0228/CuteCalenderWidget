@@ -1,3 +1,4 @@
+import 'expo-dev-client';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
