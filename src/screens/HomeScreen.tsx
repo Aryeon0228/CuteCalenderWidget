@@ -594,50 +594,49 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
         {/* ── Stage 2: Process ── */}
 
-        {/* ── Compact Settings Row ── */}
+        {/* ── Settings Row (2-row layout) ── */}
         <View style={[styles.settingsRow, { backgroundColor: theme.backgroundCard }]}>
-          {/* Algorithm Toggle - Both visible */}
-          <View style={styles.algorithmToggle}>
-            <TouchableOpacity
-              style={[
-                styles.algorithmOption,
-                { backgroundColor: extractionMethod === 'histogram' ? '#6366f1' : theme.backgroundTertiary },
-              ]}
-              onPress={() => {
-                hapticLight();
-                handleMethodChange('histogram');
-              }}
-              onLongPress={() => {
-                Alert.alert('Histogram', 'Hue histogram analysis.\nFast, good for game art with clear color regions.');
-              }}
-            >
-              <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'histogram' ? '#fff' : theme.textSecondary }]}>
-                Histogram
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.algorithmOption,
-                { backgroundColor: extractionMethod === 'kmeans' ? '#6366f1' : theme.backgroundTertiary },
-              ]}
-              onPress={() => {
-                hapticLight();
-                handleMethodChange('kmeans');
-              }}
-              onLongPress={() => {
-                Alert.alert('K-Means', 'K-Means clustering.\nMore accurate, better for photos & gradients.');
-              }}
-            >
-              <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textSecondary }]}>
-                K-Means
-              </Text>
-            </TouchableOpacity>
+          {/* Left: Algorithm Toggle + Description */}
+          <View style={styles.settingsColumn}>
+            <View style={styles.algorithmToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.algorithmOption,
+                  { backgroundColor: extractionMethod === 'histogram' ? '#6366f1' : theme.backgroundTertiary },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  handleMethodChange('histogram');
+                }}
+              >
+                <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'histogram' ? '#fff' : theme.textSecondary }]}>
+                  Histogram
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.algorithmOption,
+                  { backgroundColor: extractionMethod === 'kmeans' ? '#6366f1' : theme.backgroundTertiary },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  handleMethodChange('kmeans');
+                }}
+              >
+                <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textSecondary }]}>
+                  K-Means
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
+              {extractionMethod === 'histogram' ? 'Fast · Game art' : 'Accurate · Photos'}
+            </Text>
           </View>
 
-          {/* Value Toggle */}
+          {/* Center: Value Check (stacked) */}
           <TouchableOpacity
             style={[
-              styles.algorithmOption,
+              styles.valueCheckButton,
               { backgroundColor: showGrayscale ? '#f472b6' : theme.backgroundTertiary },
             ]}
             onPress={() => {
@@ -645,42 +644,44 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               setShowGrayscale(!showGrayscale);
             }}
           >
-            <Text style={[styles.algorithmOptionText, { color: showGrayscale ? '#fff' : theme.textSecondary }]}>
+            <Text style={[styles.valueCheckText, { color: showGrayscale ? '#fff' : theme.textSecondary }]}>
               Value
+            </Text>
+            <Text style={[styles.valueCheckSubtext, { color: showGrayscale ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
+              Check
             </Text>
           </TouchableOpacity>
 
-          {/* Spacer */}
-          <View style={{ flex: 1 }} />
-
-          {/* Color Count - Stepper */}
-          <View style={styles.settingsColorCount}>
+          {/* Right: Colors Stepper (stacked) */}
+          <View style={styles.settingsColorColumn}>
             <Text style={[styles.settingsDropdownLabel, { color: theme.textMuted }]}>Colors</Text>
-            <TouchableOpacity
-              style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
-              onPress={() => {
-                hapticLight();
-                const newCount = colorCount <= 3 ? 8 : colorCount - 1;
-                setColorCount(newCount);
-                if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
-              }}
-            >
-              <Ionicons name="remove" size={14} color={theme.textSecondary} />
-            </TouchableOpacity>
-            <View style={[styles.colorCountBadge, { backgroundColor: theme.accent }]}>
-              <Text style={styles.colorCountBadgeText}>{colorCount}</Text>
+            <View style={styles.settingsColorStepper}>
+              <TouchableOpacity
+                style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
+                onPress={() => {
+                  hapticLight();
+                  const newCount = colorCount <= 3 ? 8 : colorCount - 1;
+                  setColorCount(newCount);
+                  if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+                }}
+              >
+                <Ionicons name="remove" size={14} color={theme.textSecondary} />
+              </TouchableOpacity>
+              <View style={[styles.colorCountBadge, { backgroundColor: theme.accent }]}>
+                <Text style={styles.colorCountBadgeText}>{colorCount}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
+                onPress={() => {
+                  hapticLight();
+                  const newCount = colorCount >= 8 ? 3 : colorCount + 1;
+                  setColorCount(newCount);
+                  if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+                }}
+              >
+                <Ionicons name="add" size={14} color={theme.textSecondary} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
-              onPress={() => {
-                hapticLight();
-                const newCount = colorCount >= 8 ? 3 : colorCount + 1;
-                setColorCount(newCount);
-                if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
-              }}
-            >
-              <Ionicons name="add" size={14} color={theme.textSecondary} />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -1855,7 +1856,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Compact Settings Row
+  // Settings Row (2-row layout)
   settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1865,7 +1866,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 14,
-    gap: 6,
+    gap: 10,
+  },
+  settingsColumn: {
+    flex: 1,
+    gap: 4,
   },
   algorithmToggle: {
     flexDirection: 'row' as const,
@@ -1883,15 +1888,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600' as const,
   },
-  settingsColorCount: {
+  algorithmDesc: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    marginLeft: 6,
+  },
+  valueCheckButton: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 1,
+  },
+  valueCheckText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  valueCheckSubtext: {
+    fontSize: 9,
+    fontWeight: '500' as const,
+  },
+  settingsColorColumn: {
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  settingsColorStepper: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: 6,
+    gap: 4,
   },
   settingsDropdownLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500' as const,
-    marginRight: 2,
   },
   colorStepperBtn: {
     width: 26,
