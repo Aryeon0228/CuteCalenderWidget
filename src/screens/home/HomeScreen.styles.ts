@@ -55,10 +55,10 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 22,
+    fontSize: 23,
     fontFamily: 'SpaceGrotesk_700Bold',
     color: '#fff',
-    letterSpacing: -0.2,
+    letterSpacing: -0.45,
   },
   headerButton: {
     padding: 8,
