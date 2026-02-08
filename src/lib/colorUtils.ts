@@ -320,11 +320,15 @@ export function generateColorVariations(
 
   const isWarmYellowHue = h >= 35 && h <= 100;
   const isYellowFamilyHue = h >= 25 && h <= 75;
+  const isBlueFamilyHue = h >= 190 && h <= 280;
   const YELLOW_HUE_MAX = 60;
   const YELLOW_HUE_MIN = 42;
+  const CYAN_HUE_MIN = 185;
+  const CYAN_HUE_MAX = 240;
   const shadowTargetHue = isWarmYellowHue ? 300 : 240;
   const shadowDir = getDirection(h, shadowTargetHue, isWarmYellowHue);
-  const highlightDir = getDirection(h, 60);
+  const highlightTargetHue = isBlueFamilyHue ? 190 : 60;
+  const highlightDir = getDirection(h, highlightTargetHue);
 
   // Create variation with proportional lightness distribution
   const createVar = (
@@ -361,6 +365,14 @@ export function generateColorVariations(
         newH = Math.min(newH, YELLOW_HUE_MAX);
       } else {
         newH = Math.max(newH, YELLOW_HUE_MIN);
+      }
+    }
+    // Guardrail: when blue-family colors are brightened, stop at cyan (no yellow cast).
+    if (isBlueFamilyHue && lightnessOffset > 0 && useHueShift) {
+      if (highlightDir <= 0) {
+        newH = Math.max(newH, CYAN_HUE_MIN);
+      } else {
+        newH = Math.min(newH, CYAN_HUE_MAX);
       }
     }
     let newS = s;
