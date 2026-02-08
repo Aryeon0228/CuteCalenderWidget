@@ -1195,7 +1195,7 @@ export const styles = StyleSheet.create({
   },
   twitterUnifiedColorItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
   twitterUnifiedColorBar: {
     width: '100%',
@@ -1204,7 +1204,11 @@ export const styles = StyleSheet.create({
     marginBottom: 2,
   },
   twitterUnifiedColorHex: {
-    fontSize: 8,
+    width: '100%',
+    textAlign: 'center',
+    fontSize: 7,
+    lineHeight: 9,
+    minHeight: 9,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: 'monospace',
