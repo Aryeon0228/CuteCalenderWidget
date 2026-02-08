@@ -442,10 +442,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerLogoMark}>
-            <Text style={styles.headerLogoCat}>🐱</Text>
-            <View style={styles.headerLogoPaw}>
-              <Ionicons name="paw" size={10} color="#f472b6" />
-            </View>
+            <Ionicons name="paw" size={20} color="#fff" />
           </View>
           <View>
             <Text style={[styles.title, { color: theme.textPrimary }]}>Pixel Paw</Text>
@@ -1602,16 +1599,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
-  },
-  headerLogoCat: {
-    fontSize: 20,
-    lineHeight: 24,
-    marginTop: -1,
-  },
-  headerLogoPaw: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
   },
   headerSubtitleRow: {
     flexDirection: 'row',
