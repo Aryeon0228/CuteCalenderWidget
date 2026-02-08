@@ -590,23 +590,46 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         )}
 
         {/* ── Settings Summary Bar ── */}
-        <TouchableOpacity
-          style={[styles.summaryBar, { backgroundColor: theme.backgroundCard }]}
-          onPress={() => setShowAdvanced(true)}
-        >
-          <View style={styles.summaryBarContent}>
-            <Text style={[styles.summaryBarText, { color: theme.textSecondary }]}>
-              {STYLE_PRESETS[styleFilter].name}
-              {' · '}
-              {extractionMethod === 'histogram' ? 'Hue Regions' : 'Clustering'}
-              {' · '}
-              {colorCount} colors
-              {showGrayscale ? ' · Grayscale' : ''}
-              {colorBlindMode !== 'none' ? ` · CVD` : ''}
-            </Text>
-          </View>
-          <Ionicons name="settings-outline" size={18} color={theme.textMuted} />
-        </TouchableOpacity>
+        <View style={[styles.summaryBar, { backgroundColor: theme.backgroundCard }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.summaryChipsScroll}
+          >
+            <View style={[styles.summaryChip, { backgroundColor: theme.accent + '20' }]}>
+              <Ionicons name={STYLE_PRESETS[styleFilter].icon as any} size={13} color={theme.accent} />
+              <Text style={[styles.summaryChipText, { color: theme.accent }]}>{STYLE_PRESETS[styleFilter].name}</Text>
+            </View>
+            <View style={[styles.summaryChip, { backgroundColor: theme.backgroundTertiary }]}>
+              <Ionicons name="flask-outline" size={13} color={theme.textSecondary} />
+              <Text style={[styles.summaryChipText, { color: theme.textSecondary }]}>
+                {extractionMethod === 'histogram' ? 'Histogram' : 'K-Means'}
+              </Text>
+            </View>
+            <View style={[styles.summaryChip, { backgroundColor: theme.backgroundTertiary }]}>
+              <Ionicons name="color-palette-outline" size={13} color={theme.textSecondary} />
+              <Text style={[styles.summaryChipText, { color: theme.textSecondary }]}>{colorCount}</Text>
+            </View>
+            {showGrayscale && (
+              <View style={[styles.summaryChip, { backgroundColor: '#f472b6' + '25' }]}>
+                <Ionicons name="contrast-outline" size={13} color="#f472b6" />
+                <Text style={[styles.summaryChipText, { color: '#f472b6' }]}>Value</Text>
+              </View>
+            )}
+            {colorBlindMode !== 'none' && (
+              <View style={[styles.summaryChip, { backgroundColor: '#f59e0b' + '25' }]}>
+                <Ionicons name="eye-outline" size={13} color="#f59e0b" />
+                <Text style={[styles.summaryChipText, { color: '#f59e0b' }]}>CVD</Text>
+              </View>
+            )}
+          </ScrollView>
+          <TouchableOpacity
+            style={[styles.summaryEditButton, { backgroundColor: theme.backgroundTertiary }]}
+            onPress={() => setShowAdvanced(true)}
+          >
+            <Ionicons name="options-outline" size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
 
         {/* Color Cards - Palette Swatches */}
         {processedColors.length > 0 ? (
@@ -3309,17 +3332,36 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingLeft: 10,
+    paddingRight: 6,
+    paddingVertical: 8,
     borderRadius: 12,
-    gap: 8,
+    gap: 6,
   },
-  summaryBarContent: {
-    flex: 1,
+  summaryChipsScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingRight: 4,
   },
-  summaryBarText: {
-    fontSize: 12,
-    fontWeight: '500',
+  summaryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 5,
+  },
+  summaryChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  summaryEditButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // Advanced Settings Sheet
