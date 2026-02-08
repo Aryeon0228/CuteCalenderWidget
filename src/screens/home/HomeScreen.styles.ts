@@ -494,14 +494,14 @@ export const styles = StyleSheet.create({
   },
   previewChannelContainer: {
     marginTop: 10,
-    minHeight: 44,
+    minHeight: 56,
     justifyContent: 'center',
   },
   previewChannelBars: {
     gap: 5,
   },
   previewChannelBarsPlaceholder: {
-    height: 44,
+    height: 56,
   },
   previewChannelRow: {
     flexDirection: 'row',
@@ -1699,13 +1699,13 @@ export const styles = StyleSheet.create({
   summaryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 8,
     gap: 5,
   },
   summaryChipText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
   summaryEditButton: {

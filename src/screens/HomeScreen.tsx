@@ -542,7 +542,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <View style={[styles.summaryChip, { backgroundColor: theme.backgroundTertiary }]}>
               <Ionicons name="flask-outline" size={13} color={theme.textSecondary} />
               <Text style={[styles.summaryChipText, { color: theme.textSecondary }]}>
-                {extractionMethod === 'histogram' ? 'Histogram' : 'K-Means'}
+                {extractionMethod === 'histogram' ? 'Hist' : 'KM'}
               </Text>
             </View>
             <View style={[styles.summaryChip, { backgroundColor: theme.backgroundTertiary }]}>
