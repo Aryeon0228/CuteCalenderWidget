@@ -556,9 +556,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               ]}
             >
               <Ionicons name="contrast-outline" size={13} color={showGrayscale ? '#34d399' : theme.textMuted} />
-              <Text style={[styles.summaryChipText, { color: showGrayscale ? '#34d399' : theme.textMuted }]}>
-                {showGrayscale ? 'Value On' : 'Value Off'}
-              </Text>
+              <Text style={[styles.summaryChipText, { color: showGrayscale ? '#34d399' : theme.textMuted }]}>Val</Text>
             </View>
             {colorBlindMode !== 'none' && (
               <View style={[styles.summaryChip, { backgroundColor: '#f59e0b' + '25' }]}>
