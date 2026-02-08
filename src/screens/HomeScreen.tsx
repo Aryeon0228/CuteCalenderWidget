@@ -179,6 +179,17 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
   }, [colorBlindMode]);
 
+  const formatAccentColors: Record<'HEX' | 'RGB' | 'HSL', string> = {
+    HEX: '#64748b',
+    RGB: '#3b82f6',
+    HSL: '#22c55e',
+  };
+
+  const styleChipColor = STYLE_PRESETS[styleFilter].color;
+  const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : '#fb923c';
+  const countChipColor = '#a78bfa';
+  const valueChipColor = showGrayscale ? '#34d399' : '#6b7280';
+
   const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {
     switch (format) {
       case 'HEX': return info.hex.toUpperCase();
@@ -535,31 +546,31 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.summaryChipsScroll}
           >
-            <View style={[styles.summaryChip, { backgroundColor: theme.accent + '20' }]}>
-              <Ionicons name={STYLE_PRESETS[styleFilter].icon as any} size={13} color={theme.accent} />
-              <Text style={[styles.summaryChipText, { color: theme.accent }]}>{STYLE_PRESETS[styleFilter].name}</Text>
+            <View style={[styles.summaryChip, { backgroundColor: styleChipColor + '24', borderColor: styleChipColor + '55', borderWidth: 1 }]}>
+              <Ionicons name={STYLE_PRESETS[styleFilter].icon as any} size={13} color={styleChipColor} />
+              <Text style={[styles.summaryChipText, { color: styleChipColor }]}>{STYLE_PRESETS[styleFilter].name}</Text>
             </View>
-            <View style={[styles.summaryChip, { backgroundColor: theme.backgroundTertiary }]}>
-              <Ionicons name="flask-outline" size={13} color={theme.textSecondary} />
-              <Text style={[styles.summaryChipText, { color: theme.textSecondary }]}>
+            <View style={[styles.summaryChip, { backgroundColor: methodChipColor + '24', borderColor: methodChipColor + '55', borderWidth: 1 }]}>
+              <Ionicons name="flask-outline" size={13} color={methodChipColor} />
+              <Text style={[styles.summaryChipText, { color: methodChipColor }]}>
                 {extractionMethod === 'histogram' ? 'Hist' : 'KM'}
               </Text>
             </View>
-            <View style={[styles.summaryChip, { backgroundColor: theme.backgroundTertiary }]}>
-              <Ionicons name="color-palette-outline" size={13} color={theme.textSecondary} />
-              <Text style={[styles.summaryChipText, { color: theme.textSecondary }]}>{colorCount}</Text>
+            <View style={[styles.summaryChip, { backgroundColor: countChipColor + '24', borderColor: countChipColor + '55', borderWidth: 1 }]}>
+              <Ionicons name="color-palette-outline" size={13} color={countChipColor} />
+              <Text style={[styles.summaryChipText, { color: countChipColor }]}>{colorCount}</Text>
             </View>
             <View
               style={[
                 styles.summaryChip,
-                { backgroundColor: showGrayscale ? '#34d399' + '25' : theme.backgroundTertiary },
+                { backgroundColor: valueChipColor + '24', borderColor: valueChipColor + '55', borderWidth: 1 },
               ]}
             >
-              <Ionicons name="contrast-outline" size={13} color={showGrayscale ? '#34d399' : theme.textMuted} />
-              <Text style={[styles.summaryChipText, { color: showGrayscale ? '#34d399' : theme.textMuted }]}>Val</Text>
+              <Ionicons name="contrast-outline" size={13} color={valueChipColor} />
+              <Text style={[styles.summaryChipText, { color: valueChipColor }]}>Val</Text>
             </View>
             {colorBlindMode !== 'none' && (
-              <View style={[styles.summaryChip, { backgroundColor: '#f59e0b' + '25' }]}>
+              <View style={[styles.summaryChip, { backgroundColor: '#f59e0b' + '25', borderColor: '#f59e0b' + '55', borderWidth: 1 }]}>
                 <Ionicons name="eye-outline" size={13} color="#f59e0b" />
                 <Text style={[styles.summaryChipText, { color: '#f59e0b' }]}>{cvdShortLabel}</Text>
               </View>
@@ -733,7 +744,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   key={fmt}
                   style={[
                     styles.formatSegmentButton,
-                    colorFormat === fmt && { backgroundColor: theme.accent },
+                    colorFormat === fmt && { backgroundColor: formatAccentColors[fmt] },
                   ]}
                   onPress={() => setColorFormat(fmt)}
                 >

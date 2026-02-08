@@ -37,6 +37,11 @@ export default function AdvancedSettingsModal({
   onClose,
   onHapticLight,
 }: AdvancedSettingsModalProps) {
+  const methodAccentColors: Record<ExtractionMethod, string> = {
+    histogram: '#38bdf8',
+    kmeans: '#fb923c',
+  };
+
   return (
     <Modal
       visible={visible}
@@ -68,7 +73,7 @@ export default function AdvancedSettingsModal({
                   style={[
                     styles.advancedPresetButton,
                     {
-                      backgroundColor: styleFilter === filter ? theme.accent : theme.backgroundTertiary,
+                      backgroundColor: styleFilter === filter ? STYLE_PRESETS[filter].color : theme.backgroundTertiary,
                     },
                   ]}
                   onPress={() => {
@@ -76,7 +81,7 @@ export default function AdvancedSettingsModal({
                     onStyleFilterChange(filter);
                   }}
                 >
-                  <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : theme.textSecondary }]}>
+                  <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color }]}>
                     {STYLE_PRESETS[filter].name}
                   </Text>
                 </TouchableOpacity>
@@ -89,7 +94,7 @@ export default function AdvancedSettingsModal({
               <TouchableOpacity
                 style={[
                   styles.advancedMethodButton,
-                  { backgroundColor: extractionMethod === 'histogram' ? theme.accent : theme.backgroundTertiary },
+                  { backgroundColor: extractionMethod === 'histogram' ? methodAccentColors.histogram : theme.backgroundTertiary },
                 ]}
                 onPress={() => {
                   onHapticLight();
@@ -99,14 +104,14 @@ export default function AdvancedSettingsModal({
                 <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'histogram' ? '#fff' : theme.textPrimary }]}>
                   Histogram
                 </Text>
-                <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'histogram' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
+                <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'histogram' ? 'rgba(255,255,255,0.78)' : theme.textMuted }]}>
                   Hue region-based (fast)
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.advancedMethodButton,
-                  { backgroundColor: extractionMethod === 'kmeans' ? theme.accent : theme.backgroundTertiary },
+                  { backgroundColor: extractionMethod === 'kmeans' ? methodAccentColors.kmeans : theme.backgroundTertiary },
                 ]}
                 onPress={() => {
                   onHapticLight();
@@ -116,7 +121,7 @@ export default function AdvancedSettingsModal({
                 <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textPrimary }]}>
                   K-Means
                 </Text>
-                <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'kmeans' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
+                <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'kmeans' ? 'rgba(255,255,255,0.78)' : theme.textMuted }]}>
                   Pixel clustering (accurate)
                 </Text>
               </TouchableOpacity>
