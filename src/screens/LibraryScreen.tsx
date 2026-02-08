@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,15 @@ import {
   TextInput,
   Modal,
   Share,
-  Clipboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import ViewShot from 'react-native-view-shot';
 import { usePaletteStore, SavedPalette } from '../store/paletteStore';
 import { useThemeStore } from '../store/themeStore';
+import ExportModal from './home/modals/ExportModal';
 
 interface LibraryScreenProps {
   onNavigateBack: () => void;
@@ -35,6 +39,14 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
   };
   const [menuPalette, setMenuPalette] = useState<SavedPalette | null>(null);
   const [exportPalette, setExportPalette] = useState<SavedPalette | null>(null);
+  const [snsExportPalette, setSnsExportPalette] = useState<SavedPalette | null>(null);
+  const [snsCardType, setSnsCardType] = useState<'instagram' | 'twitter'>('instagram');
+  const [cardShowHex, setCardShowHex] = useState(true);
+  const [cardShowStats, setCardShowStats] = useState(true);
+  const [cardShowHistogram, setCardShowHistogram] = useState(true);
+  const [exportFormat, setExportFormat] = useState<'png' | 'json' | 'css'>('png');
+  const [isExporting, setIsExporting] = useState(false);
+  const paletteCardRef = useRef<ViewShot>(null);
 
   // Filter palettes based on search
   const filteredPalettes = useMemo(() => {
@@ -77,7 +89,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
   };
 
   // Export functions
-  const exportAsJSON = (palette: SavedPalette) => {
+  const exportAsJSON = async (palette: SavedPalette) => {
     const json = JSON.stringify(
       {
         name: palette.name,
@@ -87,23 +99,23 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
       null,
       2
     );
-    Clipboard.setString(json);
+    await Clipboard.setStringAsync(json);
     Alert.alert('Copied!', 'JSON copied to clipboard');
     setExportPalette(null);
   };
 
-  const exportAsCSS = (palette: SavedPalette) => {
+  const exportAsCSS = async (palette: SavedPalette) => {
     const css = `:root {\n${palette.colors
       .map((c, i) => `  --color-${i + 1}: ${c};`)
       .join('\n')}\n}`;
-    Clipboard.setString(css);
+    await Clipboard.setStringAsync(css);
     Alert.alert('Copied!', 'CSS variables copied to clipboard');
     setExportPalette(null);
   };
 
-  const exportAsHEX = (palette: SavedPalette) => {
+  const exportAsHEX = async (palette: SavedPalette) => {
     const hex = palette.colors.join('\n');
-    Clipboard.setString(hex);
+    await Clipboard.setStringAsync(hex);
     Alert.alert('Copied!', 'HEX values copied to clipboard');
     setExportPalette(null);
   };
@@ -117,6 +129,105 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
       console.error(error);
     }
     setExportPalette(null);
+  };
+
+  const sanitizeName = (name: string): string => {
+    const cleaned = name.toLowerCase().replace(/[^a-z0-9-_]+/g, '-').replace(/^-+|-+$/g, '');
+    return cleaned || 'palette';
+  };
+
+  const buildPaletteExport = (
+    palette: SavedPalette,
+    format: 'json' | 'css' | 'text'
+  ): { content: string; filename: string } => {
+    const base = sanitizeName(palette.name);
+    if (format === 'json') {
+      return {
+        content: JSON.stringify(
+          {
+            name: palette.name,
+            colors: palette.colors,
+            createdAt: new Date(palette.createdAt).toISOString(),
+          },
+          null,
+          2
+        ),
+        filename: `${base}.json`,
+      };
+    }
+    if (format === 'css') {
+      return {
+        content: `:root {\n${palette.colors.map((c, i) => `  --color-${i + 1}: ${c};`).join('\n')}\n}`,
+        filename: `${base}.css`,
+      };
+    }
+    return {
+      content: palette.colors.join('\n'),
+      filename: `${base}.txt`,
+    };
+  };
+
+  const exportSnsAsPng = async () => {
+    if (!paletteCardRef.current) return;
+    setIsExporting(true);
+    try {
+      const uri = await paletteCardRef.current.capture?.();
+      if (uri && (await Sharing.isAvailableAsync())) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share Palette',
+        });
+      }
+    } catch (error) {
+      console.error('SNS PNG export error:', error);
+      Alert.alert('Error', 'Failed to export palette image.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportSnsAsText = async (format: 'json' | 'css') => {
+    if (!snsExportPalette) return;
+    setIsExporting(true);
+    try {
+      const { content, filename } = buildPaletteExport(snsExportPalette, format);
+      const fileUri = FileSystem.cacheDirectory + filename;
+      await FileSystem.writeAsStringAsync(fileUri, content);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+      }
+    } catch (error) {
+      console.error('SNS text export error:', error);
+      Alert.alert('Error', 'Failed to export palette.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleSnsExportConfirm = async () => {
+    if (!snsExportPalette) return;
+    if (exportFormat === 'png') {
+      await exportSnsAsPng();
+    } else {
+      await exportSnsAsText(exportFormat);
+    }
+    setSnsExportPalette(null);
+  };
+
+  const copySnsToClipboard = async (format: string) => {
+    if (!snsExportPalette) return;
+
+    let content = '';
+    if (format === 'json') {
+      content = buildPaletteExport(snsExportPalette, 'json').content;
+    } else if (format === 'css') {
+      content = buildPaletteExport(snsExportPalette, 'css').content;
+    } else {
+      content = snsExportPalette.colors.join('\n');
+    }
+
+    await Clipboard.setStringAsync(content);
+    Alert.alert('Copied!', `${format.toUpperCase()} copied to clipboard`);
   };
 
   const renderPaletteCard = ({ item }: { item: SavedPalette }) => (
@@ -365,10 +476,66 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 </View>
                 <Text style={styles.exportOptionText}>Share</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.exportOption}
+                onPress={() => {
+                  if (!exportPalette) return;
+                  setSnsCardType('instagram');
+                  setExportFormat('png');
+                  setSnsExportPalette(exportPalette);
+                  setExportPalette(null);
+                }}
+              >
+                <View style={[styles.exportIcon, { backgroundColor: '#c13584' }]}>
+                  <Ionicons name="logo-instagram" size={20} color="#fff" />
+                </View>
+                <Text style={styles.exportOptionText}>Instagram</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.exportOption}
+                onPress={() => {
+                  if (!exportPalette) return;
+                  setSnsCardType('twitter');
+                  setExportFormat('png');
+                  setSnsExportPalette(exportPalette);
+                  setExportPalette(null);
+                }}
+              >
+                <View style={[styles.exportIcon, { backgroundColor: '#1d9bf0' }]}>
+                  <Ionicons name="logo-twitter" size={20} color="#fff" />
+                </View>
+                <Text style={styles.exportOptionText}>Twitter</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <ExportModal
+        visible={snsExportPalette !== null}
+        theme={theme}
+        snsCardType={snsCardType}
+        onSnsCardTypeChange={setSnsCardType}
+        cardShowHex={cardShowHex}
+        onCardShowHexChange={setCardShowHex}
+        cardShowStats={cardShowStats}
+        onCardShowStatsChange={setCardShowStats}
+        cardShowHistogram={cardShowHistogram}
+        onCardShowHistogramChange={setCardShowHistogram}
+        paletteCardRef={paletteCardRef}
+        processedColors={snsExportPalette?.colors ?? []}
+        currentImageUri={snsExportPalette?.imageUri ?? null}
+        histogram={null}
+        exportFormat={exportFormat}
+        onExportFormatChange={setExportFormat}
+        isExporting={isExporting}
+        onExportConfirm={handleSnsExportConfirm}
+        onCopyToClipboard={copySnsToClipboard}
+        onClose={() => setSnsExportPalette(null)}
+        onHapticLight={() => {}}
+      />
     </View>
   );
 }
@@ -645,11 +812,14 @@ const styles = StyleSheet.create({
   },
   exportOptions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   exportOption: {
     alignItems: 'center',
     gap: 8,
+    width: '30%',
+    marginBottom: 14,
   },
   exportIcon: {
     width: 56,

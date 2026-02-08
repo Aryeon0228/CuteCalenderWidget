@@ -25,18 +25,56 @@ export interface ColorInfo {
   hsl: HslColor;
 }
 
+const HEX_SHORT_RE = /^#?([a-f\d]{3})$/i;
+const HEX_FULL_RE = /^#?([a-f\d]{6})$/i;
+const MAX_CACHE_SIZE = 512;
+const HEX_RGB_CACHE = new Map<string, RgbColor>();
+const RGB_HSL_CACHE = new Map<string, HslColor>();
+const HEX_LUMINANCE_CACHE = new Map<string, number>();
+
+function setLimitedCache<T>(cache: Map<string, T>, key: string, value: T): void {
+  if (cache.size >= MAX_CACHE_SIZE) {
+    const first = cache.keys().next().value as string | undefined;
+    if (first) cache.delete(first);
+  }
+  cache.set(key, value);
+}
+
+function normalizeHex(hex: string): string | null {
+  const value = hex.trim();
+  const shortMatch = HEX_SHORT_RE.exec(value);
+  if (shortMatch) {
+    const short = shortMatch[1].toLowerCase();
+    return `#${short[0]}${short[0]}${short[1]}${short[1]}${short[2]}${short[2]}`;
+  }
+  const fullMatch = HEX_FULL_RE.exec(value);
+  if (fullMatch) {
+    return `#${fullMatch[1].toLowerCase()}`;
+  }
+  return null;
+}
+
 /**
  * Convert HEX color string to RGB object
  */
 export function hexToRgb(hex: string): RgbColor {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : { r: 0, g: 0, b: 0 };
+  const normalized = normalizeHex(hex);
+  if (!normalized) {
+    return { r: 0, g: 0, b: 0 };
+  }
+
+  const cached = HEX_RGB_CACHE.get(normalized);
+  if (cached) {
+    return cached;
+  }
+
+  const rgb: RgbColor = {
+    r: parseInt(normalized.slice(1, 3), 16),
+    g: parseInt(normalized.slice(3, 5), 16),
+    b: parseInt(normalized.slice(5, 7), 16),
+  };
+  setLimitedCache(HEX_RGB_CACHE, normalized, rgb);
+  return rgb;
 }
 
 /**
@@ -58,11 +96,20 @@ export function rgbToHex(r: number, g: number, b: number): string {
  * Convert RGB to HSL color space
  */
 export function rgbToHsl(r: number, g: number, b: number): HslColor {
-  r /= 255;
-  g /= 255;
-  b /= 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
+  const cr = Math.max(0, Math.min(255, Math.round(r)));
+  const cg = Math.max(0, Math.min(255, Math.round(g)));
+  const cb = Math.max(0, Math.min(255, Math.round(b)));
+  const cacheKey = `${cr},${cg},${cb}`;
+  const cached = RGB_HSL_CACHE.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const rr = cr / 255;
+  const gg = cg / 255;
+  const bb = cb / 255;
+  const max = Math.max(rr, gg, bb);
+  const min = Math.min(rr, gg, bb);
   let h = 0,
     s = 0;
   const l = (max + min) / 2;
@@ -71,23 +118,25 @@ export function rgbToHsl(r: number, g: number, b: number): HslColor {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r:
-        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      case rr:
+        h = ((gg - bb) / d + (gg < bb ? 6 : 0)) / 6;
         break;
-      case g:
-        h = ((b - r) / d + 2) / 6;
+      case gg:
+        h = ((bb - rr) / d + 2) / 6;
         break;
-      case b:
-        h = ((r - g) / d + 4) / 6;
+      case bb:
+        h = ((rr - gg) / d + 4) / 6;
         break;
     }
   }
 
-  return {
+  const hsl = {
     h: Math.round(h * 360),
     s: Math.round(s * 100),
     l: Math.round(l * 100),
   };
+  setLimitedCache(RGB_HSL_CACHE, cacheKey, hsl);
+  return hsl;
 }
 
 /**
@@ -114,9 +163,10 @@ export function hslToRgb(h: number, s: number, l: number): RgbColor {
  * Get full color info from HEX
  */
 export function getColorInfo(hex: string): ColorInfo {
+  const normalized = normalizeHex(hex) ?? hex;
   const rgb = hexToRgb(hex);
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  return { hex, rgb, hsl };
+  return { hex: normalized, rgb, hsl };
 }
 
 /**
@@ -142,8 +192,7 @@ export function formatHsl(h: number, s: number, l: number): string {
  * Convert color to grayscale using luminance formula
  */
 export function toGrayscale(hex: string): string {
-  const rgb = hexToRgb(hex);
-  const gray = Math.round(0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
+  const gray = getLuminance(hex);
   return rgbToHex(gray, gray, gray);
 }
 
@@ -151,8 +200,20 @@ export function toGrayscale(hex: string): string {
  * Calculate luminance value (0-255) from HEX color
  */
 export function getLuminance(hex: string): number {
+  const normalized = normalizeHex(hex);
+  if (!normalized) {
+    return 0;
+  }
+
+  const cached = HEX_LUMINANCE_CACHE.get(normalized);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const rgb = hexToRgb(hex);
-  return Math.round(0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
+  const luminance = Math.round(0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
+  setLimitedCache(HEX_LUMINANCE_CACHE, normalized, luminance);
+  return luminance;
 }
 
 /**

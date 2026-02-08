@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -7,6 +7,7 @@ import ViewShot from 'react-native-view-shot';
 import { styles } from '../HomeScreen.styles';
 import { ThemeColors } from '../../../store/themeStore';
 import { LuminosityHistogram } from '../../../lib/colorExtractor';
+import { getLuminance } from '../../../lib/colorUtils';
 
 interface ExportModalProps {
   visible: boolean;
@@ -32,6 +33,48 @@ interface ExportModalProps {
   onHapticLight: () => void;
 }
 
+function buildHistogramFromPalette(colors: string[]): LuminosityHistogram | null {
+  if (colors.length === 0) {
+    return null;
+  }
+
+  const bins = Array.from({ length: 32 }, () => 0);
+  let sum = 0;
+  let minValue = 255;
+  let maxValue = 0;
+  let darkCount = 0;
+  let midCount = 0;
+  let brightCount = 0;
+
+  colors.forEach((hex) => {
+    const lum = getLuminance(hex);
+    const binIndex = Math.min(31, Math.floor((lum / 256) * 32));
+    bins[binIndex] += 1;
+    sum += lum;
+    if (lum < minValue) minValue = lum;
+    if (lum > maxValue) maxValue = lum;
+
+    if (lum < 85) darkCount += 1;
+    else if (lum < 170) midCount += 1;
+    else brightCount += 1;
+  });
+
+  const maxBin = Math.max(...bins, 1);
+  const normalizedBins = bins.map((value) => Math.round((value / maxBin) * 100));
+  const total = colors.length;
+
+  return {
+    bins: normalizedBins,
+    average: Math.round(sum / total),
+    contrast: Math.round(((maxValue - minValue) / 255) * 100),
+    darkPercent: Math.round((darkCount / total) * 100),
+    midPercent: Math.round((midCount / total) * 100),
+    brightPercent: Math.round((brightCount / total) * 100),
+    minValue,
+    maxValue,
+  };
+}
+
 export default function ExportModal({
   visible,
   theme,
@@ -55,6 +98,11 @@ export default function ExportModal({
   onClose,
   onHapticLight,
 }: ExportModalProps) {
+  const effectiveHistogram = useMemo(
+    () => histogram ?? buildHistogramFromPalette(processedColors),
+    [histogram, processedColors]
+  );
+
   return (
     <Modal
       visible={visible}
@@ -191,19 +239,19 @@ export default function ExportModal({
                       {processedColors.map((color, index) => (
                         <View key={index} style={styles.twitterUnifiedColorItem}>
                           <View style={[styles.twitterUnifiedColorBar, { backgroundColor: color }]} />
-                          {cardShowHex && <Text style={styles.twitterUnifiedColorHex}>{color}</Text>}
+                          {cardShowHex && <Text style={styles.twitterUnifiedColorHex}>{color.toUpperCase()}</Text>}
                         </View>
                       ))}
                     </View>
                   </View>
 
                   {/* Bottom: Histogram + Stats */}
-                  {(cardShowHistogram || cardShowStats) && histogram && (
+                  {(cardShowHistogram || cardShowStats) && effectiveHistogram && (
                     <View style={styles.twitterUnifiedAnalysis}>
                       {cardShowHistogram && (
                         <View style={[styles.twitterUnifiedHistogram, !cardShowStats && { flex: 1 }]}>
                           <View style={styles.twitterUnifiedHistogramBars}>
-                            {histogram.bins.map((value, index) => (
+                            {effectiveHistogram.bins.map((value, index) => (
                               <View key={index} style={styles.snsCardHistogramBarWrapper}>
                                 <View
                                   style={[
@@ -218,16 +266,16 @@ export default function ExportModal({
                             ))}
                           </View>
                           <View style={styles.twitterUnifiedHistogramLabels}>
-                            <Text style={styles.snsCardHistogramLabel}>{histogram.darkPercent}%D</Text>
-                            <Text style={styles.snsCardHistogramLabel}>{histogram.midPercent}%M</Text>
-                            <Text style={styles.snsCardHistogramLabel}>{histogram.brightPercent}%B</Text>
+                            <Text style={styles.snsCardHistogramLabel}>{effectiveHistogram.darkPercent}%D</Text>
+                            <Text style={styles.snsCardHistogramLabel}>{effectiveHistogram.midPercent}%M</Text>
+                            <Text style={styles.snsCardHistogramLabel}>{effectiveHistogram.brightPercent}%B</Text>
                           </View>
                         </View>
                       )}
                       {cardShowStats && (
                         <View style={[styles.twitterUnifiedStats, !cardShowHistogram && { flex: 1, justifyContent: 'center' }]}>
                           <View style={styles.twitterUnifiedStatItem}>
-                            <Text style={styles.twitterUnifiedStatValue}>{histogram.contrast}%</Text>
+                            <Text style={styles.twitterUnifiedStatValue}>{effectiveHistogram.contrast}%</Text>
                             <Text style={styles.twitterUnifiedStatLabel}>Contrast</Text>
                           </View>
                           <View style={[styles.snsCardStatDivider, { height: 16 }]} />
@@ -237,7 +285,7 @@ export default function ExportModal({
                           </View>
                           <View style={[styles.snsCardStatDivider, { height: 16 }]} />
                           <View style={styles.twitterUnifiedStatItem}>
-                            <Text style={styles.twitterUnifiedStatValue}>{histogram.average}</Text>
+                            <Text style={styles.twitterUnifiedStatValue}>{effectiveHistogram.average}</Text>
                             <Text style={styles.twitterUnifiedStatLabel}>Avg Lum</Text>
                           </View>
                         </View>
@@ -269,14 +317,14 @@ export default function ExportModal({
                     {processedColors.map((color, index) => (
                       <View key={index} style={styles.snsCardColorItem}>
                         <View style={[styles.snsCardColorSwatch, { backgroundColor: color }]} />
-                        {cardShowHex && <Text style={styles.snsCardColorHex}>{color}</Text>}
+                        {cardShowHex && <Text style={styles.snsCardColorHex}>{color.toUpperCase()}</Text>}
                       </View>
                     ))}
                   </View>
-                  {cardShowHistogram && histogram && (
+                  {cardShowHistogram && effectiveHistogram && (
                     <View style={styles.snsCardHistogram}>
                       <View style={styles.snsCardHistogramBars}>
-                        {histogram.bins.map((value, index) => (
+                        {effectiveHistogram.bins.map((value, index) => (
                           <View key={index} style={styles.snsCardHistogramBarWrapper}>
                             <View
                               style={[
@@ -291,16 +339,16 @@ export default function ExportModal({
                         ))}
                       </View>
                       <View style={styles.snsCardHistogramLabels}>
-                        <Text style={styles.snsCardHistogramLabel}>{histogram.darkPercent}% Dark</Text>
-                        <Text style={styles.snsCardHistogramLabel}>{histogram.midPercent}% Mid</Text>
-                        <Text style={styles.snsCardHistogramLabel}>{histogram.brightPercent}% Bright</Text>
+                        <Text style={styles.snsCardHistogramLabel}>{effectiveHistogram.darkPercent}% Dark</Text>
+                        <Text style={styles.snsCardHistogramLabel}>{effectiveHistogram.midPercent}% Mid</Text>
+                        <Text style={styles.snsCardHistogramLabel}>{effectiveHistogram.brightPercent}% Bright</Text>
                       </View>
                     </View>
                   )}
-                  {cardShowStats && histogram && (
+                  {cardShowStats && effectiveHistogram && (
                     <View style={styles.snsCardStats}>
                       <View style={styles.snsCardStatItem}>
-                        <Text style={styles.snsCardStatValue}>{histogram.contrast}%</Text>
+                        <Text style={styles.snsCardStatValue}>{effectiveHistogram.contrast}%</Text>
                         <Text style={styles.snsCardStatLabel}>Contrast</Text>
                       </View>
                       <View style={styles.snsCardStatDivider} />
@@ -310,7 +358,7 @@ export default function ExportModal({
                       </View>
                       <View style={styles.snsCardStatDivider} />
                       <View style={styles.snsCardStatItem}>
-                        <Text style={styles.snsCardStatValue}>{histogram.average}</Text>
+                        <Text style={styles.snsCardStatValue}>{effectiveHistogram.average}</Text>
                         <Text style={styles.snsCardStatLabel}>Avg Lum</Text>
                       </View>
                     </View>

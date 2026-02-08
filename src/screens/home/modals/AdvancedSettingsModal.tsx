@@ -17,8 +17,6 @@ interface AdvancedSettingsModalProps {
   onMethodChange: (value: ExtractionMethod) => void;
   colorCount: number;
   onColorCountChange: (value: number) => void;
-  showGrayscale: boolean;
-  onShowGrayscaleChange: (value: boolean) => void;
   colorBlindMode: ColorBlindnessType;
   onColorBlindModeChange: (value: ColorBlindnessType) => void;
   onClose: () => void;
@@ -34,8 +32,6 @@ export default function AdvancedSettingsModal({
   onMethodChange,
   colorCount,
   onColorCountChange,
-  showGrayscale,
-  onShowGrayscaleChange,
   colorBlindMode,
   onColorBlindModeChange,
   onClose,
@@ -153,29 +149,6 @@ export default function AdvancedSettingsModal({
                 }}
               >
                 <Ionicons name="add" size={18} color={theme.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Value Check */}
-            <View style={styles.advancedToggleRow}>
-              <View>
-                <Text style={[styles.advancedToggleLabel, { color: theme.textPrimary }]}>Value Check</Text>
-                <Text style={[styles.advancedToggleDesc, { color: theme.textMuted }]}>Show grayscale values</Text>
-              </View>
-              <TouchableOpacity
-                style={[
-                  styles.advancedToggleButton,
-                  { backgroundColor: showGrayscale ? '#34d399' : theme.backgroundTertiary },
-                ]}
-                onPress={() => {
-                  onHapticLight();
-                  onShowGrayscaleChange(!showGrayscale);
-                }}
-              >
-                <Text style={[styles.advancedToggleButtonText, { color: showGrayscale ? '#fff' : theme.textMuted }]}>
-                  {showGrayscale ? 'ON' : 'OFF'}
-                </Text>
-                {showGrayscale && <Ionicons name="checkmark" size={14} color="#fff" />}
               </TouchableOpacity>
             </View>
 
