@@ -95,7 +95,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   // Histogram State
   const [histogram, setHistogram] = useState<LuminosityHistogram | null>(null);
-  const [showHistogram, setShowHistogram] = useState(true);
+
 
   // Export State
   const [exportFormat, setExportFormat] = useState<'png' | 'json' | 'css'>('png');
@@ -844,6 +844,71 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     </TouchableOpacity>
                   )
                 )}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Luminosity Histogram */}
+        {histogram && currentImageUri && (
+          <View style={[styles.histogramCard, { backgroundColor: theme.backgroundCard, borderColor: theme.border }]}>
+            <View style={styles.histogramHeader}>
+              <View style={styles.histogramTitleRow}>
+                <Ionicons name="analytics-outline" size={14} color={theme.textMuted} />
+                <Text style={[styles.histogramTitle, { color: theme.textMuted }]}>LUMINOSITY</Text>
+              </View>
+              <View style={styles.histogramStats}>
+                <Text style={styles.histogramStatText}>{histogram.contrast}%</Text>
+                <Text style={styles.histogramContrastLabel}>contrast</Text>
+              </View>
+            </View>
+
+            <View style={styles.histogramBars}>
+              {histogram.bins.map((value, index) => (
+                <View key={index} style={styles.histogramBarWrapper}>
+                  <View
+                    style={[
+                      styles.histogramBar,
+                      {
+                        height: `${Math.max(value, 2)}%`,
+                        backgroundColor: index < 11 ? '#6a6a80' : index < 21 ? '#8a8aa0' : '#b0b0c8',
+                      },
+                    ]}
+                  />
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.histogramScale}>
+              <View style={styles.histogramGradient}>
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.histogramGradientStep,
+                      { backgroundColor: `rgb(${i * 17}, ${i * 17}, ${i * 17})` },
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.histogramStatsRow}>
+              <View style={styles.histogramStatItem}>
+                <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
+                <Text style={styles.histogramStatLabel}>Dark</Text>
+              </View>
+              <View style={styles.histogramStatItem}>
+                <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
+                <Text style={styles.histogramStatLabel}>Mid</Text>
+              </View>
+              <View style={styles.histogramStatItem}>
+                <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
+                <Text style={styles.histogramStatLabel}>Bright</Text>
+              </View>
+              <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
+                <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
+                <Text style={styles.histogramStatLabel}>Avg</Text>
               </View>
             </View>
           </View>
@@ -1668,82 +1733,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   );
                 })}
               </View>
-
-              {/* Luminosity Histogram */}
-              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted, marginTop: 4 }]}>Luminosity</Text>
-              {histogram ? (
-                <View style={[styles.histogramCard, { marginHorizontal: 0 }]}>
-                  <View style={styles.histogramHeader}>
-                    <View style={styles.histogramTitleRow}>
-                      <Ionicons name="analytics-outline" size={14} color="#888" />
-                      <Text style={styles.histogramTitle}>HISTOGRAM</Text>
-                    </View>
-                    <View style={styles.histogramStats}>
-                      <Text style={styles.histogramStatText}>{histogram.contrast}%</Text>
-                      <Text style={styles.histogramContrastLabel}>contrast</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.histogramBars}>
-                    {histogram.bins.map((value, index) => (
-                      <View key={index} style={styles.histogramBarWrapper}>
-                        <View
-                          style={[
-                            styles.histogramBar,
-                            {
-                              height: `${Math.max(value, 2)}%`,
-                              backgroundColor: index < 11 ? '#6a6a80' : index < 21 ? '#8a8aa0' : '#b0b0c8',
-                            },
-                          ]}
-                        />
-                      </View>
-                    ))}
-                  </View>
-
-                  <View style={styles.histogramScale}>
-                    <View style={styles.histogramGradient}>
-                      {Array.from({ length: 16 }).map((_, i) => (
-                        <View
-                          key={i}
-                          style={[
-                            styles.histogramGradientStep,
-                            { backgroundColor: `rgb(${i * 17}, ${i * 17}, ${i * 17})` },
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  </View>
-
-                  <View style={styles.histogramStatsRow}>
-                    <View style={styles.histogramStatItem}>
-                      <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
-                      <Text style={styles.histogramStatLabel}>Dark</Text>
-                    </View>
-                    <View style={styles.histogramStatItem}>
-                      <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
-                      <Text style={styles.histogramStatLabel}>Mid</Text>
-                    </View>
-                    <View style={styles.histogramStatItem}>
-                      <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
-                      <Text style={styles.histogramStatLabel}>Bright</Text>
-                    </View>
-                    <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
-                      <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
-                      <Text style={styles.histogramStatLabel}>Avg</Text>
-                    </View>
-                  </View>
-                </View>
-              ) : (
-                <View style={[styles.histogramCard, { marginHorizontal: 0, opacity: 0.4 }]}>
-                  <View style={styles.histogramHeader}>
-                    <View style={styles.histogramTitleRow}>
-                      <Ionicons name="analytics-outline" size={14} color="#888" />
-                      <Text style={styles.histogramTitle}>HISTOGRAM</Text>
-                    </View>
-                    <Text style={styles.histogramEmptyText}>Extract an image first</Text>
-                  </View>
-                </View>
-              )}
 
               <View style={{ height: 30 }} />
             </ScrollView>
