@@ -56,9 +56,9 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'SpaceGrotesk_700Bold',
     color: '#fff',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   headerButton: {
     padding: 8,
@@ -1332,7 +1332,7 @@ export const styles = StyleSheet.create({
   snsCardWatermarkText: {
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.4)',
-    fontWeight: '600',
+    fontFamily: 'SpaceGrotesk_500Medium',
     letterSpacing: 1,
   },
 
