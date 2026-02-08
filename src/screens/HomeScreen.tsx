@@ -516,7 +516,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <TouchableOpacity style={styles.imageCard} onPress={showImageSourceOptions}>
             <Image
               source={{ uri: currentImageUri }}
-              style={styles.image}
+              style={[styles.image, showGrayscale && { filter: 'grayscale(1)' }]}
               contentFit="cover"
             />
             <View style={styles.sourceImageBadge}>
