@@ -119,6 +119,21 @@ export default function ExportModal({
   onClose,
   onHapticLight,
 }: ExportModalProps) {
+  const snsAccentColors: Record<'instagram' | 'twitter', string> = {
+    instagram: '#e1306c',
+    twitter: '#1d9bf0',
+  };
+  const cardOptionColors = {
+    hex: '#60a5fa',
+    stats: '#34d399',
+    histogram: '#f59e0b',
+  };
+  const exportFormatColors: Record<'png' | 'json' | 'css', string> = {
+    png: '#f472b6',
+    json: '#22c55e',
+    css: '#3b82f6',
+  };
+
   const effectiveHistogram = useMemo(
     () => histogram ?? buildHistogramFromPalette(processedColors),
     [histogram, processedColors]
@@ -156,7 +171,11 @@ export default function ExportModal({
               <TouchableOpacity
                 style={[
                   styles.snsTypeButton,
-                  { backgroundColor: snsCardType === 'instagram' ? theme.accent : theme.backgroundTertiary },
+                  {
+                    backgroundColor: snsCardType === 'instagram'
+                      ? snsAccentColors.instagram
+                      : theme.backgroundTertiary,
+                  },
                 ]}
                 onPress={() => {
                   onHapticLight();
@@ -184,7 +203,11 @@ export default function ExportModal({
               <TouchableOpacity
                 style={[
                   styles.snsTypeButton,
-                  { backgroundColor: snsCardType === 'twitter' ? theme.accent : theme.backgroundTertiary },
+                  {
+                    backgroundColor: snsCardType === 'twitter'
+                      ? snsAccentColors.twitter
+                      : theme.backgroundTertiary,
+                  },
                 ]}
                 onPress={() => {
                   onHapticLight();
@@ -214,7 +237,10 @@ export default function ExportModal({
             {/* Card Options */}
             <View style={styles.cardOptionsRow}>
               <TouchableOpacity
-                style={[styles.cardOptionButton, { backgroundColor: cardShowHex ? theme.accent : theme.backgroundTertiary }]}
+                style={[
+                  styles.cardOptionButton,
+                  { backgroundColor: cardShowHex ? cardOptionColors.hex : theme.backgroundTertiary },
+                ]}
                 onPress={() => onCardShowHexChange(!cardShowHex)}
               >
                 <Text style={[styles.cardOptionText, { color: cardShowHex ? '#fff' : theme.textSecondary }]}>
@@ -222,7 +248,10 @@ export default function ExportModal({
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.cardOptionButton, { backgroundColor: cardShowStats ? theme.accent : theme.backgroundTertiary }]}
+                style={[
+                  styles.cardOptionButton,
+                  { backgroundColor: cardShowStats ? cardOptionColors.stats : theme.backgroundTertiary },
+                ]}
                 onPress={() => onCardShowStatsChange(!cardShowStats)}
               >
                 <Text style={[styles.cardOptionText, { color: cardShowStats ? '#fff' : theme.textSecondary }]}>
@@ -230,7 +259,10 @@ export default function ExportModal({
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.cardOptionButton, { backgroundColor: cardShowHistogram ? theme.accent : theme.backgroundTertiary }]}
+                style={[
+                  styles.cardOptionButton,
+                  { backgroundColor: cardShowHistogram ? cardOptionColors.histogram : theme.backgroundTertiary },
+                ]}
                 onPress={() => onCardShowHistogramChange(!cardShowHistogram)}
               >
                 <Text style={[styles.cardOptionText, { color: cardShowHistogram ? '#fff' : theme.textSecondary }]}>
@@ -412,7 +444,11 @@ export default function ExportModal({
                     key={format.id}
                     style={[
                       styles.formatOption,
-                      { backgroundColor: exportFormat === format.id ? theme.accent : theme.backgroundTertiary },
+                      {
+                        backgroundColor: exportFormat === format.id
+                          ? exportFormatColors[format.id as 'png' | 'json' | 'css']
+                          : theme.backgroundTertiary,
+                      },
                     ]}
                     onPress={() => onExportFormatChange(format.id as 'png' | 'json' | 'css')}
                   >

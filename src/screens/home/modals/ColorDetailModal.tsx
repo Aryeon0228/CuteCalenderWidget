@@ -43,6 +43,12 @@ export default function ColorDetailModal({
   onHarmonyChange,
   onHapticLight,
 }: ColorDetailModalProps) {
+  const formatAccentColors: Record<'HEX' | 'RGB' | 'HSL', string> = {
+    HEX: '#64748b',
+    RGB: '#3b82f6',
+    HSL: '#22c55e',
+  };
+
   return (
     <Modal
       visible={visible}
@@ -89,7 +95,7 @@ export default function ColorDetailModal({
                       key={fmt}
                       style={[
                         styles.modalFormatSegmentButton,
-                        colorFormat === fmt && { backgroundColor: theme.accent },
+                        colorFormat === fmt && { backgroundColor: formatAccentColors[fmt] },
                       ]}
                       onPress={() => onFormatChange(fmt)}
                     >
