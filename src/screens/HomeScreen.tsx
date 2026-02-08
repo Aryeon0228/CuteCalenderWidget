@@ -36,7 +36,10 @@ import {
 import {
   hexToRgb,
   rgbToHsl,
+  rgbToHex,
+  hslToRgb,
   toGrayscale,
+  getLuminance,
   adjustColor,
   generateColorVariations,
   generateColorHarmonies,
@@ -693,19 +696,76 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         {/* Inline Color Detail */}
         {colorInfo && selectedColorIndex !== null && (
           <View style={[styles.inlineColorDetail, { backgroundColor: theme.backgroundCard, borderColor: colorInfo.hex + '60', borderWidth: 1.5 }]}>
-            {/* Color Preview + Value + Copy */}
-            <View style={[styles.inlineColorPreview, { backgroundColor: colorInfo.hex }]}>
-              <Text style={[styles.inlineColorPreviewValue, { color: parseInt(colorInfo.hex.replace('#', ''), 16) > 0x888888 ? '#000' : '#fff' }]}>
-                {getFormattedColor(colorInfo, colorFormat)}
-              </Text>
-              <TouchableOpacity
-                style={styles.inlineColorCopyButton}
-                onPress={() => copyColor(getFormattedColor(colorInfo, colorFormat), colorFormat)}
-              >
-                <Ionicons name="copy-outline" size={16} color="#fff" />
-                <Text style={styles.inlineColorCopyText}>Copy</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Color Preview + Value + Copy + Channel Bars */}
+            {(() => {
+              const isLight = getLuminance(colorInfo.hex) > 140;
+              const fgColor = isLight ? '#000' : '#fff';
+              const fgMuted = isLight ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.85)';
+              const shadowColor = isLight ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+              const trackBg = isLight ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.25)';
+              const copyBg = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.3)';
+              return (
+              <View style={[styles.inlineColorPreview, { backgroundColor: colorInfo.hex }]}>
+                <View style={styles.previewTopRow}>
+                  <Text style={[styles.inlineColorPreviewValue, { color: fgColor }]}>
+                    {getFormattedColor(colorInfo, colorFormat)}
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.inlineColorCopyButton, { backgroundColor: copyBg }]}
+                    onPress={() => copyColor(getFormattedColor(colorInfo, colorFormat), colorFormat)}
+                  >
+                    <Ionicons name="copy-outline" size={16} color={fgColor} />
+                    <Text style={[styles.inlineColorCopyText, { color: fgColor }]}>Copy</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Channel Bars inside preview */}
+                {colorFormat === 'RGB' && (
+                  <View style={styles.previewChannelBars}>
+                    {[
+                      { label: 'R', value: colorInfo.rgb.r, max: 255, color: '#ef4444' },
+                      { label: 'G', value: colorInfo.rgb.g, max: 255, color: '#22c55e' },
+                      { label: 'B', value: colorInfo.rgb.b, max: 255, color: '#3b82f6' },
+                    ].map((ch) => (
+                      <View key={ch.label} style={styles.previewChannelRow}>
+                        <Text style={[styles.previewChannelLabel, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.label}</Text>
+                        <View style={[styles.previewChannelTrack, { backgroundColor: trackBg }]}>
+                          <View style={[styles.previewChannelFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.color }]} />
+                        </View>
+                        <Text style={[styles.previewChannelValue, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                {colorFormat === 'HSL' && (() => {
+                  const { h, s, l } = colorInfo.hsl;
+                  const hueRgb = hslToRgb(h, 100, 50);
+                  const hueHex = rgbToHex(hueRgb.r, hueRgb.g, hueRgb.b);
+                  const satRgb = hslToRgb(h, s, 50);
+                  const satHex = rgbToHex(satRgb.r, satRgb.g, satRgb.b);
+                  const litRgb = hslToRgb(h, s, l);
+                  const litHex = rgbToHex(litRgb.r, litRgb.g, litRgb.b);
+                  return (
+                    <View style={styles.previewChannelBars}>
+                      {[
+                        { label: 'H', value: h, max: 360, barColor: hueHex, display: `${h}°` },
+                        { label: 'S', value: s, max: 100, barColor: satHex, display: `${s}%` },
+                        { label: 'L', value: l, max: 100, barColor: litHex, display: `${l}%` },
+                      ].map((ch) => (
+                        <View key={ch.label} style={styles.previewChannelRow}>
+                          <Text style={[styles.previewChannelLabel, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.label}</Text>
+                          <View style={[styles.previewChannelTrack, { backgroundColor: trackBg }]}>
+                            <View style={[styles.previewChannelFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.barColor }]} />
+                          </View>
+                          <Text style={[styles.previewChannelValue, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.display}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
+              </View>
+              );
+            })()}
 
             {/* Format Segment Toggle */}
             <View style={[styles.formatSegment, { backgroundColor: theme.backgroundTertiary }]}>
@@ -727,42 +787,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </TouchableOpacity>
               ))}
             </View>
-
-            {/* Channel Bars (RGB or HSL) */}
-            {colorFormat === 'RGB' && (
-              <View style={[styles.channelBarsContainer, { backgroundColor: theme.backgroundTertiary }]}>
-                {[
-                  { label: 'R', value: colorInfo.rgb.r, max: 255, color: '#ef4444' },
-                  { label: 'G', value: colorInfo.rgb.g, max: 255, color: '#22c55e' },
-                  { label: 'B', value: colorInfo.rgb.b, max: 255, color: '#3b82f6' },
-                ].map((ch) => (
-                  <View key={ch.label} style={styles.channelRow}>
-                    <Text style={[styles.channelLabel, { color: ch.color }]}>{ch.label}</Text>
-                    <View style={styles.channelBarTrack}>
-                      <View style={[styles.channelBarFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.color }]} />
-                    </View>
-                    <Text style={[styles.channelValue, { color: theme.textSecondary }]}>{ch.value}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            {colorFormat === 'HSL' && (
-              <View style={[styles.channelBarsContainer, { backgroundColor: theme.backgroundTertiary }]}>
-                {[
-                  { label: 'H', value: colorInfo.hsl.h, max: 360, color: '#f472b6', display: `${colorInfo.hsl.h}°` },
-                  { label: 'S', value: colorInfo.hsl.s, max: 100, color: '#a78bfa', display: `${colorInfo.hsl.s}%` },
-                  { label: 'L', value: colorInfo.hsl.l, max: 100, color: '#fbbf24', display: `${colorInfo.hsl.l}%` },
-                ].map((ch) => (
-                  <View key={ch.label} style={styles.channelRow}>
-                    <Text style={[styles.channelLabel, { color: ch.color }]}>{ch.label}</Text>
-                    <View style={styles.channelBarTrack}>
-                      <View style={[styles.channelBarFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.color }]} />
-                    </View>
-                    <Text style={[styles.channelValue, { color: theme.textSecondary }]}>{ch.display}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
 
             {/* Inline Variations */}
             <View style={[styles.inlineVariationsSection, { backgroundColor: theme.backgroundTertiary }]}>
@@ -866,7 +890,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 <>
                   {/* Color Preview + Copy */}
                   <View style={[styles.modalColorPreview, { backgroundColor: colorInfo.hex }]}>
-                    <Text style={[styles.modalColorPreviewValue, { color: parseInt(colorInfo.hex.replace('#', ''), 16) > 0x888888 ? '#000' : '#fff' }]}>
+                    <Text style={[styles.modalColorPreviewValue, { color: getLuminance(colorInfo.hex) > 140 ? '#000' : '#fff' }]}>
                       {getFormattedColor(colorInfo, colorFormat)}
                     </Text>
                     <TouchableOpacity
@@ -2230,13 +2254,14 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   inlineColorPreview: {
-    height: 80,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    paddingHorizontal: 16,
+    padding: 14,
     marginBottom: 10,
+  },
+  previewTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   inlineColorPreviewValue: {
     flex: 1,
@@ -2258,6 +2283,47 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  previewChannelBars: {
+    marginTop: 10,
+    gap: 5,
+  },
+  previewChannelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  previewChannelLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    width: 14,
+    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.85)',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  previewChannelTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  previewChannelFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  previewChannelValue: {
+    fontSize: 10,
+    fontWeight: '600',
+    fontFamily: 'monospace',
+    width: 32,
+    textAlign: 'right',
+    color: 'rgba(255, 255, 255, 0.85)',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   formatSegment: {
     flexDirection: 'row',
     borderRadius: 10,
@@ -2273,43 +2339,6 @@ const styles = StyleSheet.create({
   formatSegmentText: {
     fontSize: 12,
     fontWeight: '700',
-  },
-  // Channel Bars
-  channelBarsContainer: {
-    borderRadius: 10,
-    padding: 12,
-    gap: 8,
-    marginBottom: 8,
-  },
-  channelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  channelLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    width: 14,
-    textAlign: 'center',
-  },
-  channelBarTrack: {
-    flex: 1,
-    height: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  channelBarFill: {
-    height: '100%',
-    borderRadius: 5,
-    opacity: 0.85,
-  },
-  channelValue: {
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: 'monospace',
-    width: 32,
-    textAlign: 'right',
   },
 
   inlineVariationsSection: {
