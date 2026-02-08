@@ -15,28 +15,28 @@ export interface StylePreset {
 
 export const STYLE_PRESETS: Record<StyleFilter, StylePreset> = {
   original: {
-    name: 'Original',
+    name: 'Balanced',
     saturation: 1.0,
     brightness: 1.0,
     icon: 'ellipse-outline',
     color: '#a0a0b0',
   },
   hypercasual: {
-    name: 'Hyper',
+    name: 'Vivid',
     saturation: 1.3,
     brightness: 1.1,
     icon: 'sparkles-outline',
     color: '#fbbf24',
   },
   stylized: {
-    name: 'Stylized',
+    name: 'Artistic',
     saturation: 1.15,
     brightness: 1.05,
     icon: 'brush-outline',
     color: '#c084fc',
   },
   realistic: {
-    name: 'Realistic',
+    name: 'Accurate',
     saturation: 0.9,
     brightness: 0.95,
     icon: 'eye-outline',

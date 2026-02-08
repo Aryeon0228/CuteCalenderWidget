@@ -80,6 +80,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
+  // Color Format State
+  const [colorFormat, setColorFormat] = useState<'HEX' | 'RGB' | 'HSL'>('HEX');
+
   // Filter & Display State
   const [styleFilter, setStyleFilter] = useState<StyleFilter>('original');
   const [showGrayscale, setShowGrayscale] = useState(false);
@@ -104,6 +107,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   // Info Modal State
   const [showInfo, setShowInfo] = useState(false);
+
+  // Advanced Settings Sheet State
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Toast State
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Theme & Store
   const { mode, colors: theme, toggleTheme } = useThemeStore();
@@ -149,6 +159,14 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
     return { hex, rgb, hsl };
   }, [processedColors, selectedColorIndex]);
+
+  const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {
+    switch (format) {
+      case 'HEX': return info.hex.toUpperCase();
+      case 'RGB': return `rgb(${info.rgb.r}, ${info.rgb.g}, ${info.rgb.b})`;
+      case 'HSL': return `hsl(${info.hsl.h}, ${info.hsl.s}%, ${info.hsl.l}%)`;
+    }
+  };
 
   // ============================================
   // HAPTIC FEEDBACK
@@ -302,9 +320,16 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
   };
 
-  const copyColor = async (value: string) => {
+  const showToast = (message: string) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToastMessage(message);
+    toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 1800);
+  };
+
+  const copyColor = async (value: string, label?: string) => {
     await Clipboard.setStringAsync(value);
-    Alert.alert('Copied!', `${value} copied to clipboard`);
+    hapticSuccess();
+    showToast(`Copied ${label || value}`);
   };
 
   // ============================================
@@ -436,7 +461,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
 
     await Clipboard.setStringAsync(content);
-    Alert.alert('Copied!', `${format.toUpperCase()} copied to clipboard`);
+    hapticSuccess();
+    showToast(`Copied ${format.toUpperCase()}`);
     setShowExportModal(false);
   };
 
@@ -563,195 +589,55 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         )}
 
-        {/* ── Stage 1: Input ── */}
-
-        {/* Style Filters - Icon Grid */}
-        <View style={styles.styleFiltersContainer}>
-          {STYLE_FILTER_KEYS.map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.styleFilterButton,
-                {
-                  backgroundColor: styleFilter === filter ? theme.accent : theme.backgroundCard,
-                  opacity: processedColors.length > 0 ? 1 : 0.4,
-                },
-              ]}
-              onPress={() => setStyleFilter(filter)}
-              disabled={processedColors.length === 0}
-            >
-              <Ionicons
-                name={STYLE_PRESETS[filter].icon as any}
-                size={20}
-                color={styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color}
-              />
-              <Text
-                style={[
-                  styles.styleFilterText,
-                  { color: styleFilter === filter ? '#fff' : theme.textSecondary },
-                ]}
-              >
-                {STYLE_PRESETS[filter].name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* ── Stage 2: Process ── */}
-
-        {/* ── Settings Row (2-row layout) ── */}
-        <View style={[styles.settingsRow, { backgroundColor: theme.backgroundCard }]}>
-          {/* Left: Algorithm Toggle + Description */}
-          <View style={styles.settingsColumn}>
-            <View style={styles.algorithmToggle}>
-              <TouchableOpacity
-                style={[
-                  styles.algorithmOption,
-                  { backgroundColor: extractionMethod === 'histogram' ? theme.accent : theme.backgroundTertiary },
-                ]}
-                onPress={() => {
-                  hapticLight();
-                  handleMethodChange('histogram');
-                }}
-              >
-                <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'histogram' ? '#fff' : theme.textSecondary }]}>
-                  Histogram
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.algorithmOption,
-                  { backgroundColor: extractionMethod === 'kmeans' ? theme.accent : theme.backgroundTertiary },
-                ]}
-                onPress={() => {
-                  hapticLight();
-                  handleMethodChange('kmeans');
-                }}
-              >
-                <Text style={[styles.algorithmOptionText, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textSecondary }]}>
-                  K-Means
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.algorithmDesc, { color: theme.textMuted }]}>
-              {extractionMethod === 'histogram' ? 'Extract by hue regions' : 'Group pixels into colors'}
+        {/* ── Settings Summary Bar ── */}
+        <TouchableOpacity
+          style={[styles.summaryBar, { backgroundColor: theme.backgroundCard }]}
+          onPress={() => setShowAdvanced(true)}
+        >
+          <View style={styles.summaryBarContent}>
+            <Text style={[styles.summaryBarText, { color: theme.textSecondary }]}>
+              {STYLE_PRESETS[styleFilter].name}
+              {' · '}
+              {extractionMethod === 'histogram' ? 'Hue Regions' : 'Clustering'}
+              {' · '}
+              {colorCount} colors
+              {showGrayscale ? ' · Grayscale' : ''}
+              {colorBlindMode !== 'none' ? ` · CVD` : ''}
             </Text>
           </View>
-
-          {/* Center: Value Check (stacked) */}
-          <TouchableOpacity
-            style={[
-              styles.valueCheckButton,
-              { backgroundColor: showGrayscale ? '#f472b6' : theme.backgroundTertiary },
-            ]}
-            onPress={() => {
-              hapticLight();
-              setShowGrayscale(!showGrayscale);
-            }}
-          >
-            <Text style={[styles.valueCheckText, { color: showGrayscale ? '#fff' : theme.textSecondary }]}>
-              Value
-            </Text>
-            <Text style={[styles.valueCheckSubtext, { color: showGrayscale ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
-              Check
-            </Text>
-          </TouchableOpacity>
-
-          {/* Right: Colors Stepper (stacked) */}
-          <View style={styles.settingsColorColumn}>
-            <Text style={[styles.settingsDropdownLabel, { color: theme.textMuted }]}>Colors</Text>
-            <View style={styles.settingsColorStepper}>
-              <TouchableOpacity
-                style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
-                onPress={() => {
-                  hapticLight();
-                  const newCount = colorCount <= 3 ? 8 : colorCount - 1;
-                  setColorCount(newCount);
-                  if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
-                }}
-              >
-                <Ionicons name="remove" size={14} color={theme.textSecondary} />
-              </TouchableOpacity>
-              <View style={[styles.colorCountBadge, { backgroundColor: theme.accent }]}>
-                <Text style={styles.colorCountBadgeText}>{colorCount}</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.colorStepperBtn, { backgroundColor: theme.backgroundTertiary }]}
-                onPress={() => {
-                  hapticLight();
-                  const newCount = colorCount >= 8 ? 3 : colorCount + 1;
-                  setColorCount(newCount);
-                  if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
-                }}
-              >
-                <Ionicons name="add" size={14} color={theme.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        {/* ── CVD (Color Vision Deficiency) Simulation ── */}
-        {processedColors.length > 0 && (
-          <View style={[styles.cvdRow, { backgroundColor: theme.backgroundCard }]}>
-            <Ionicons name="accessibility-outline" size={14} color={theme.textMuted} style={{ marginRight: 4 }} />
-            <Text style={[styles.cvdLabel, { color: theme.textMuted }]}>CVD</Text>
-            <View style={styles.cvdToggleGroup}>
-              {COLOR_BLINDNESS_TYPES.map((cvd) => {
-                const isActive = colorBlindMode === cvd.type;
-                return (
-                  <TouchableOpacity
-                    key={cvd.type}
-                    style={[
-                      styles.cvdOption,
-                      {
-                        backgroundColor: isActive
-                          ? (cvd.type === 'none' ? theme.backgroundTertiary : '#f59e0b')
-                          : theme.backgroundTertiary,
-                      },
-                    ]}
-                    onPress={() => {
-                      hapticLight();
-                      setColorBlindMode(cvd.type);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.cvdOptionText,
-                        {
-                          color: isActive
-                            ? (cvd.type === 'none' ? theme.textPrimary : '#fff')
-                            : theme.textMuted,
-                        },
-                      ]}
-                    >
-                      {cvd.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
+          <Ionicons name="settings-outline" size={18} color={theme.textMuted} />
+        </TouchableOpacity>
 
         {/* Color Cards - Palette Swatches */}
         {processedColors.length > 0 ? (
           <View style={styles.colorCardsContainer}>
-            {processedColors.map((color, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.colorCard,
-                  selectedColorIndex === index && styles.colorCardSelected,
-                ]}
-                onPress={() => handleColorPress(index)}
-              >
-                <View style={[
-                  styles.colorSwatch,
-                  { backgroundColor: color },
-                  selectedColorIndex === index && [styles.colorSwatchSelected, { borderColor: color, shadowColor: color }],
-                ]} />
-              </TouchableOpacity>
-            ))}
+            {processedColors.map((color, index) => {
+              const isSelected = selectedColorIndex === index;
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.colorCard,
+                    isSelected && styles.colorCardSelected,
+                  ]}
+                  onPress={() => handleColorPress(index)}
+                >
+                  <View style={[
+                    styles.colorSwatch,
+                    { backgroundColor: color },
+                    isSelected && [styles.colorSwatchSelected, { borderColor: color, shadowColor: color }],
+                  ]} />
+                  {isSelected && (
+                    <View style={[styles.chipIndicator, { backgroundColor: color }]}>
+                      <View style={styles.chipIndicatorInner} />
+                    </View>
+                  )}
+                  <Text style={[styles.chipRank, { color: isSelected ? theme.textPrimary : theme.textMuted }]}>
+                    #{index + 1}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         ) : (
           <View style={[styles.colorCardsContainer, styles.colorCardsEmpty]}>
@@ -772,34 +658,39 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         {/* Inline Color Detail */}
         {colorInfo && selectedColorIndex !== null && (
           <View style={[styles.inlineColorDetail, { backgroundColor: theme.backgroundCard, borderColor: colorInfo.hex + '60', borderWidth: 1.5 }]}>
-            <View style={styles.inlineColorDetailHeader}>
-              <View style={[styles.inlineColorSwatch, { backgroundColor: colorInfo.hex }]} />
-              <View style={styles.inlineColorValues}>
+            {/* Color Preview + Value + Copy */}
+            <View style={[styles.inlineColorPreview, { backgroundColor: colorInfo.hex }]}>
+              <Text style={[styles.inlineColorPreviewValue, { color: parseInt(colorInfo.hex.replace('#', ''), 16) > 0x888888 ? '#000' : '#fff' }]}>
+                {getFormattedColor(colorInfo, colorFormat)}
+              </Text>
+              <TouchableOpacity
+                style={styles.inlineColorCopyButton}
+                onPress={() => copyColor(getFormattedColor(colorInfo, colorFormat), colorFormat)}
+              >
+                <Ionicons name="copy-outline" size={16} color="#fff" />
+                <Text style={styles.inlineColorCopyText}>Copy</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Format Segment Toggle */}
+            <View style={[styles.formatSegment, { backgroundColor: theme.backgroundTertiary }]}>
+              {(['HEX', 'RGB', 'HSL'] as const).map((fmt) => (
                 <TouchableOpacity
-                  style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
-                  onPress={() => copyColor(colorInfo.hex)}
+                  key={fmt}
+                  style={[
+                    styles.formatSegmentButton,
+                    colorFormat === fmt && { backgroundColor: theme.accent },
+                  ]}
+                  onPress={() => setColorFormat(fmt)}
                 >
-                  <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>HEX</Text>
-                  <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.hex}</Text>
-                  <Ionicons name="copy-outline" size={16} color={theme.textMuted} />
+                  <Text style={[
+                    styles.formatSegmentText,
+                    { color: colorFormat === fmt ? '#fff' : theme.textMuted },
+                  ]}>
+                    {fmt}
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
-                  onPress={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}
-                >
-                  <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>RGB</Text>
-                  <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b}</Text>
-                  <Ionicons name="copy-outline" size={16} color={theme.textMuted} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.inlineColorValueRow, { backgroundColor: theme.backgroundTertiary }]}
-                  onPress={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}
-                >
-                  <Text style={[styles.inlineColorLabel, { color: theme.textMuted }]}>HSL</Text>
-                  <Text style={[styles.inlineColorValue, { color: theme.textPrimary }]}>{colorInfo.hsl.h}°, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%</Text>
-                  <Ionicons name="copy-outline" size={16} color={theme.textMuted} />
-                </TouchableOpacity>
-              </View>
+              ))}
             </View>
 
             {/* Inline Variations */}
@@ -807,6 +698,22 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <View style={styles.variationsHeader}>
                 <Text style={[styles.variationsSectionTitle, { color: theme.textPrimary }]}>Variations</Text>
                 <View style={[styles.hueShiftToggle, { backgroundColor: theme.backgroundSecondary }]}>
+                  <TouchableOpacity
+                    style={[
+                      styles.hueShiftOption,
+                      !variationHueShift && { backgroundColor: theme.accent },
+                    ]}
+                    onPress={() => setVariationHueShift(false)}
+                  >
+                    <Text
+                      style={[
+                        styles.hueShiftOptionText,
+                        { color: !variationHueShift ? '#fff' : theme.textMuted },
+                      ]}
+                    >
+                      Lightness
+                    </Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       styles.hueShiftOption,
@@ -820,23 +727,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                         { color: variationHueShift ? '#fff' : theme.textMuted },
                       ]}
                     >
-                      Hue Shift
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.hueShiftOption,
-                      !variationHueShift && { backgroundColor: theme.buttonBg },
-                    ]}
-                    onPress={() => setVariationHueShift(false)}
-                  >
-                    <Text
-                      style={[
-                        styles.hueShiftOptionText,
-                        { color: !variationHueShift ? theme.textPrimary : theme.textMuted },
-                      ]}
-                    >
-                      OFF
+                      Hue
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -862,85 +753,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
           </View>
         )}
-
-        {/* ── Stage 4: Deep Analysis ── */}
-
-        {/* Luminosity Histogram */}
-        <View style={[styles.histogramCard, { opacity: histogram ? 1 : 0.4 }]}>
-          <View style={styles.histogramHeader}>
-            <View style={styles.histogramTitleRow}>
-              <Ionicons name="analytics-outline" size={14} color="#888" />
-              <Text style={styles.histogramTitle}>LUMINOSITY</Text>
-            </View>
-            {histogram ? (
-              <View style={styles.histogramStats}>
-                <Text style={styles.histogramStatText}>{histogram.contrast}%</Text>
-                <Text style={styles.histogramContrastLabel}>contrast</Text>
-              </View>
-            ) : (
-              <Text style={styles.histogramEmptyText}>No data</Text>
-            )}
-          </View>
-
-          <View style={styles.histogramBars}>
-            {histogram ? (
-              histogram.bins.map((value, index) => (
-                <View key={index} style={styles.histogramBarWrapper}>
-                  <View
-                    style={[
-                      styles.histogramBar,
-                      {
-                        height: `${Math.max(value, 2)}%`,
-                        backgroundColor: index < 11 ? '#6a6a80' : index < 21 ? '#8a8aa0' : '#b0b0c8',
-                      },
-                    ]}
-                  />
-                </View>
-              ))
-            ) : (
-              Array.from({ length: 32 }).map((_, index) => (
-                <View key={index} style={styles.histogramBarWrapper}>
-                  <View style={[styles.histogramBar, styles.histogramBarEmpty]} />
-                </View>
-              ))
-            )}
-          </View>
-
-          <View style={styles.histogramScale}>
-            <View style={styles.histogramGradient}>
-              {Array.from({ length: 16 }).map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.histogramGradientStep,
-                    { backgroundColor: `rgb(${i * 17}, ${i * 17}, ${i * 17})` },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-
-          {histogram && (
-            <View style={styles.histogramStatsRow}>
-              <View style={styles.histogramStatItem}>
-                <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
-                <Text style={styles.histogramStatLabel}>Dark</Text>
-              </View>
-              <View style={styles.histogramStatItem}>
-                <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
-                <Text style={styles.histogramStatLabel}>Mid</Text>
-              </View>
-              <View style={styles.histogramStatItem}>
-                <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
-                <Text style={styles.histogramStatLabel}>Bright</Text>
-              </View>
-              <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
-                <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
-                <Text style={styles.histogramStatLabel}>Avg</Text>
-              </View>
-            </View>
-          )}
-        </View>
 
         {currentImageUri && <View style={{ height: 100 }} />}
       </ScrollView>
@@ -981,44 +793,42 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <ScrollView showsVerticalScrollIndicator={false}>
               {colorInfo && (
                 <>
-                  {/* Color Preview + Values Compact */}
-                  <View style={styles.colorDetailHeader}>
-                    <View
-                      style={[styles.colorDetailSwatch, { backgroundColor: colorInfo.hex }]}
-                    />
-                    <View style={styles.colorDetailValues}>
-                      <TouchableOpacity
-                        style={[styles.colorValueCompact, { backgroundColor: theme.backgroundTertiary }]}
-                        onPress={() => copyColor(colorInfo.hex)}
-                      >
-                        <Text style={[styles.colorValueCompactLabel, { color: theme.textMuted }]}>HEX</Text>
-                        <Text style={[styles.colorValueCompactText, { color: theme.textPrimary }]}>{colorInfo.hex}</Text>
-                        <Ionicons name="copy-outline" size={14} color={theme.textMuted} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.colorValueCompact, { backgroundColor: theme.backgroundTertiary }]}
-                        onPress={() => copyColor(`rgb(${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b})`)}
-                      >
-                        <Text style={[styles.colorValueCompactLabel, { color: theme.textMuted }]}>RGB</Text>
-                        <Text style={[styles.colorValueCompactText, { color: theme.textPrimary }]}>
-                          {colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b}
-                        </Text>
-                        <Ionicons name="copy-outline" size={14} color={theme.textMuted} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.colorValueCompact, { backgroundColor: theme.backgroundTertiary }]}
-                        onPress={() => copyColor(`hsl(${colorInfo.hsl.h}, ${colorInfo.hsl.s}%, ${colorInfo.hsl.l}%)`)}
-                      >
-                        <Text style={[styles.colorValueCompactLabel, { color: theme.textMuted }]}>HSL</Text>
-                        <Text style={[styles.colorValueCompactText, { color: theme.textPrimary }]}>
-                          {colorInfo.hsl.h}°, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%
-                        </Text>
-                        <Ionicons name="copy-outline" size={14} color={theme.textMuted} />
-                      </TouchableOpacity>
-                    </View>
+                  {/* Color Preview + Copy */}
+                  <View style={[styles.modalColorPreview, { backgroundColor: colorInfo.hex }]}>
+                    <Text style={[styles.modalColorPreviewValue, { color: parseInt(colorInfo.hex.replace('#', ''), 16) > 0x888888 ? '#000' : '#fff' }]}>
+                      {getFormattedColor(colorInfo, colorFormat)}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.modalColorCopyButton}
+                      onPress={() => copyColor(getFormattedColor(colorInfo, colorFormat), colorFormat)}
+                    >
+                      <Ionicons name="copy-outline" size={18} color="#fff" />
+                      <Text style={styles.modalColorCopyText}>Copy</Text>
+                    </TouchableOpacity>
                   </View>
 
-                  {/* Value Variations */}
+                  {/* Format Segment Toggle */}
+                  <View style={[styles.modalFormatSegment, { backgroundColor: theme.backgroundTertiary }]}>
+                    {(['HEX', 'RGB', 'HSL'] as const).map((fmt) => (
+                      <TouchableOpacity
+                        key={fmt}
+                        style={[
+                          styles.modalFormatSegmentButton,
+                          colorFormat === fmt && { backgroundColor: theme.accent },
+                        ]}
+                        onPress={() => setColorFormat(fmt)}
+                      >
+                        <Text style={[
+                          styles.modalFormatSegmentText,
+                          { color: colorFormat === fmt ? '#fff' : theme.textMuted },
+                        ]}>
+                          {fmt}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Variations */}
                   <View style={[styles.variationsSection, { backgroundColor: theme.backgroundTertiary }]}>
                     <View style={styles.variationsHeader}>
                       <Text style={[styles.variationsSectionTitle, { color: theme.textPrimary }]}>Variations</Text>
@@ -1026,33 +836,33 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                         <TouchableOpacity
                           style={[
                             styles.hueShiftOption,
-                            variationHueShift && { backgroundColor: theme.buttonBg },
-                          ]}
-                          onPress={() => setVariationHueShift(true)}
-                        >
-                          <Text
-                            style={[
-                              styles.hueShiftOptionText,
-                              { color: variationHueShift ? theme.textPrimary : theme.textMuted },
-                            ]}
-                          >
-                            Hue Shift
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.hueShiftOption,
-                            !variationHueShift && { backgroundColor: theme.buttonBg },
+                            !variationHueShift && { backgroundColor: theme.accent },
                           ]}
                           onPress={() => setVariationHueShift(false)}
                         >
                           <Text
                             style={[
                               styles.hueShiftOptionText,
-                              { color: !variationHueShift ? theme.textPrimary : theme.textMuted },
+                              { color: !variationHueShift ? '#fff' : theme.textMuted },
                             ]}
                           >
-                            OFF
+                            Lightness
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.hueShiftOption,
+                            variationHueShift && { backgroundColor: theme.accent },
+                          ]}
+                          onPress={() => setVariationHueShift(true)}
+                        >
+                          <Text
+                            style={[
+                              styles.hueShiftOptionText,
+                              { color: variationHueShift ? '#fff' : theme.textMuted },
+                            ]}
+                          >
+                            Hue
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -1568,6 +1378,274 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         </View>
       </Modal>
 
+      {/* Advanced Settings Bottom Sheet */}
+      <Modal
+        visible={showAdvanced}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAdvanced(false)}
+      >
+        <View style={[styles.advancedOverlay, { backgroundColor: theme.modalOverlay }]}>
+          <TouchableOpacity
+            style={styles.advancedBackground}
+            onPress={() => setShowAdvanced(false)}
+          />
+          <View style={[styles.advancedContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={[styles.advancedHandle, { backgroundColor: theme.border }]} />
+            <View style={styles.advancedHeader}>
+              <Text style={[styles.advancedTitle, { color: theme.textPrimary }]}>Settings</Text>
+              <TouchableOpacity onPress={() => setShowAdvanced(false)}>
+                <Ionicons name="close" size={24} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.advancedScroll}>
+              {/* Style Preset */}
+              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>Style Preset</Text>
+              <View style={styles.advancedPresetRow}>
+                {STYLE_FILTER_KEYS.map((filter) => (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[
+                      styles.advancedPresetButton,
+                      {
+                        backgroundColor: styleFilter === filter ? theme.accent : theme.backgroundTertiary,
+                      },
+                    ]}
+                    onPress={() => {
+                      hapticLight();
+                      setStyleFilter(filter);
+                    }}
+                  >
+                    <Ionicons
+                      name={STYLE_PRESETS[filter].icon as any}
+                      size={18}
+                      color={styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color}
+                    />
+                    <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : theme.textSecondary }]}>
+                      {STYLE_PRESETS[filter].name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Extraction Method */}
+              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>Extraction Method</Text>
+              <View style={styles.advancedMethodRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.advancedMethodButton,
+                    { backgroundColor: extractionMethod === 'histogram' ? theme.accent : theme.backgroundTertiary },
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    handleMethodChange('histogram');
+                  }}
+                >
+                  <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'histogram' ? '#fff' : theme.textPrimary }]}>
+                    Hue Regions
+                  </Text>
+                  <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'histogram' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
+                    Region-based (fast)
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.advancedMethodButton,
+                    { backgroundColor: extractionMethod === 'kmeans' ? theme.accent : theme.backgroundTertiary },
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    handleMethodChange('kmeans');
+                  }}
+                >
+                  <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textPrimary }]}>
+                    Clustering
+                  </Text>
+                  <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'kmeans' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
+                    Pixel grouping (accurate)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Color Count */}
+              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>Color Count</Text>
+              <View style={[styles.advancedColorCount, { backgroundColor: theme.backgroundTertiary }]}>
+                <TouchableOpacity
+                  style={[styles.advancedStepperBtn, { backgroundColor: theme.backgroundSecondary }]}
+                  onPress={() => {
+                    hapticLight();
+                    const newCount = colorCount <= 3 ? 8 : colorCount - 1;
+                    setColorCount(newCount);
+                    if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+                  }}
+                >
+                  <Ionicons name="remove" size={18} color={theme.textSecondary} />
+                </TouchableOpacity>
+                <View style={[styles.advancedCountBadge, { backgroundColor: theme.accent }]}>
+                  <Text style={styles.advancedCountText}>{colorCount}</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.advancedStepperBtn, { backgroundColor: theme.backgroundSecondary }]}
+                  onPress={() => {
+                    hapticLight();
+                    const newCount = colorCount >= 8 ? 3 : colorCount + 1;
+                    setColorCount(newCount);
+                    if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+                  }}
+                >
+                  <Ionicons name="add" size={18} color={theme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Value Check */}
+              <View style={styles.advancedToggleRow}>
+                <View>
+                  <Text style={[styles.advancedToggleLabel, { color: theme.textPrimary }]}>Value Check</Text>
+                  <Text style={[styles.advancedToggleDesc, { color: theme.textMuted }]}>Show grayscale values</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.advancedToggleButton,
+                    { backgroundColor: showGrayscale ? '#34d399' : theme.backgroundTertiary },
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    setShowGrayscale(!showGrayscale);
+                  }}
+                >
+                  <Text style={[styles.advancedToggleButtonText, { color: showGrayscale ? '#fff' : theme.textMuted }]}>
+                    {showGrayscale ? 'ON' : 'OFF'}
+                  </Text>
+                  {showGrayscale && <Ionicons name="checkmark" size={14} color="#fff" />}
+                </TouchableOpacity>
+              </View>
+
+              {/* CVD Simulation */}
+              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>CVD Simulation</Text>
+              <View style={styles.advancedCvdRow}>
+                {COLOR_BLINDNESS_TYPES.map((cvd) => {
+                  const isActive = colorBlindMode === cvd.type;
+                  return (
+                    <TouchableOpacity
+                      key={cvd.type}
+                      style={[
+                        styles.advancedCvdOption,
+                        {
+                          backgroundColor: isActive
+                            ? (cvd.type === 'none' ? theme.backgroundTertiary : '#f59e0b')
+                            : theme.backgroundTertiary,
+                          borderWidth: isActive ? 1.5 : 0,
+                          borderColor: isActive
+                            ? (cvd.type === 'none' ? theme.textMuted : '#f59e0b')
+                            : 'transparent',
+                        },
+                      ]}
+                      onPress={() => {
+                        hapticLight();
+                        setColorBlindMode(cvd.type);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.advancedCvdText,
+                          {
+                            color: isActive
+                              ? (cvd.type === 'none' ? theme.textPrimary : '#fff')
+                              : theme.textMuted,
+                            fontWeight: isActive ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {cvd.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Luminosity Histogram */}
+              <Text style={[styles.advancedSectionLabel, { color: theme.textMuted, marginTop: 4 }]}>Luminosity</Text>
+              {histogram ? (
+                <View style={[styles.histogramCard, { marginHorizontal: 0 }]}>
+                  <View style={styles.histogramHeader}>
+                    <View style={styles.histogramTitleRow}>
+                      <Ionicons name="analytics-outline" size={14} color="#888" />
+                      <Text style={styles.histogramTitle}>HISTOGRAM</Text>
+                    </View>
+                    <View style={styles.histogramStats}>
+                      <Text style={styles.histogramStatText}>{histogram.contrast}%</Text>
+                      <Text style={styles.histogramContrastLabel}>contrast</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.histogramBars}>
+                    {histogram.bins.map((value, index) => (
+                      <View key={index} style={styles.histogramBarWrapper}>
+                        <View
+                          style={[
+                            styles.histogramBar,
+                            {
+                              height: `${Math.max(value, 2)}%`,
+                              backgroundColor: index < 11 ? '#6a6a80' : index < 21 ? '#8a8aa0' : '#b0b0c8',
+                            },
+                          ]}
+                        />
+                      </View>
+                    ))}
+                  </View>
+
+                  <View style={styles.histogramScale}>
+                    <View style={styles.histogramGradient}>
+                      {Array.from({ length: 16 }).map((_, i) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.histogramGradientStep,
+                            { backgroundColor: `rgb(${i * 17}, ${i * 17}, ${i * 17})` },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </View>
+
+                  <View style={styles.histogramStatsRow}>
+                    <View style={styles.histogramStatItem}>
+                      <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
+                      <Text style={styles.histogramStatLabel}>Dark</Text>
+                    </View>
+                    <View style={styles.histogramStatItem}>
+                      <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
+                      <Text style={styles.histogramStatLabel}>Mid</Text>
+                    </View>
+                    <View style={styles.histogramStatItem}>
+                      <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
+                      <Text style={styles.histogramStatLabel}>Bright</Text>
+                    </View>
+                    <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
+                      <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
+                      <Text style={styles.histogramStatLabel}>Avg</Text>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View style={[styles.histogramCard, { marginHorizontal: 0, opacity: 0.4 }]}>
+                  <View style={styles.histogramHeader}>
+                    <View style={styles.histogramTitleRow}>
+                      <Ionicons name="analytics-outline" size={14} color="#888" />
+                      <Text style={styles.histogramTitle}>HISTOGRAM</Text>
+                    </View>
+                    <Text style={styles.histogramEmptyText}>Extract an image first</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={{ height: 30 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Info Modal */}
       <Modal
         visible={showInfo}
@@ -1611,6 +1689,16 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </View>
         </View>
       </Modal>
+
+      {/* Inline Toast */}
+      {toastMessage && (
+        <View style={styles.toastContainer} pointerEvents="none">
+          <View style={styles.toastContent}>
+            <Ionicons name="checkmark-circle" size={16} color="#34d399" />
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        </View>
+      )}
 
     </View>
   );
@@ -1896,11 +1984,30 @@ const styles = StyleSheet.create({
     borderColor: '#2d2d38',
   },
   colorSwatchSelected: {
-    borderWidth: 3,
+    borderWidth: 2.5,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  chipIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  chipIndicatorInner: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#fff',
+  },
+  chipRank: {
+    fontSize: 9,
+    fontWeight: '600',
+    marginTop: 2,
   },
   colorCardsEmpty: {
     opacity: 0.6,
@@ -2038,8 +2145,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'monospace',
   },
+  inlineColorPreview: {
+    height: 80,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  inlineColorPreviewValue: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  inlineColorCopyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  inlineColorCopyText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  formatSegment: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 12,
+  },
+  formatSegmentButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  formatSegmentText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   inlineVariationsSection: {
-    marginTop: 12,
+    marginTop: 0,
     borderRadius: 10,
     padding: 12,
   },
@@ -2206,6 +2358,53 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'monospace',
   },
+  // Modal Color Preview
+  modalColorPreview: {
+    height: 100,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  modalColorPreviewValue: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  modalColorCopyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  modalColorCopyText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalFormatSegment: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 16,
+  },
+  modalFormatSegmentButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalFormatSegmentText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
   // Value Variations
   variationsSection: {
     backgroundColor: '#0c0c12',
@@ -3070,5 +3269,209 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+
+  // Toast
+  toastContainer: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  toastContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(22, 22, 30, 0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#34d399' + '40',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Settings Summary Bar
+  summaryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  summaryBarContent: {
+    flex: 1,
+  },
+  summaryBarText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  // Advanced Settings Sheet
+  advancedOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  advancedBackground: {
+    flex: 1,
+  },
+  advancedContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  advancedHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  advancedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  advancedTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  advancedScroll: {
+    maxHeight: 500,
+  },
+  advancedSectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  advancedPresetRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  advancedPresetButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 4,
+  },
+  advancedPresetText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  advancedMethodRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  advancedMethodButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    gap: 2,
+  },
+  advancedMethodTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  advancedMethodDesc: {
+    fontSize: 11,
+  },
+  advancedColorCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 12,
+    marginBottom: 20,
+  },
+  advancedStepperBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  advancedCountBadge: {
+    width: 44,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  advancedCountText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  advancedToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    marginBottom: 16,
+  },
+  advancedToggleLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  advancedToggleDesc: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  advancedToggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  advancedToggleButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  advancedCvdRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 16,
+  },
+  advancedCvdOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  advancedCvdText: {
+    fontSize: 12,
   },
 });
