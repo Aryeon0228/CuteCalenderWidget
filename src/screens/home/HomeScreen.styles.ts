@@ -1357,7 +1357,7 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.4)',
     fontFamily: 'SpaceGrotesk_500Medium',
-    letterSpacing: 1,
+    letterSpacing: 0.25,
   },
 
   // Format Selection
