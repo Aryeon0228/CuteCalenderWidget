@@ -66,9 +66,7 @@ export default function ImageCard({
           }}
         >
           <Ionicons name="contrast-outline" size={14} color="#fff" />
-          <Text style={styles.valueOverlayButtonText}>
-            {showGrayscale ? 'VALUE ON' : 'VALUE'}
-          </Text>
+          <Text style={styles.valueOverlayButtonText}>Val</Text>
         </TouchableOpacity>
         {/* Re-extract button */}
         <TouchableOpacity
