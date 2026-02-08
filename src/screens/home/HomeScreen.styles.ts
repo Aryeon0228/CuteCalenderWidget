@@ -472,9 +472,16 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  previewChannelBars: {
+  previewChannelContainer: {
     marginTop: 10,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  previewChannelBars: {
     gap: 5,
+  },
+  previewChannelBarsPlaceholder: {
+    height: 44,
   },
   previewChannelRow: {
     flexDirection: 'row',
@@ -1177,9 +1184,13 @@ export const styles = StyleSheet.create({
     marginBottom: 2,
   },
   twitterUnifiedColorHex: {
-    fontSize: 6,
+    fontSize: 8,
+    fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: 'monospace',
+    textShadowColor: 'rgba(0, 0, 0, 0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   twitterUnifiedAnalysis: {
     flexDirection: 'row',
@@ -1246,9 +1257,13 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
   },
   snsCardColorHex: {
-    fontSize: 8,
+    fontSize: 10,
+    fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: 'monospace',
+    textShadowColor: 'rgba(0, 0, 0, 0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   snsCardHistogram: {
     backgroundColor: 'rgba(0, 0, 0, 0.3)',

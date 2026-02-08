@@ -637,50 +637,53 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   </TouchableOpacity>
                 </View>
 
-                {/* Channel Bars inside preview */}
-                {colorFormat === 'RGB' && (
-                  <View style={styles.previewChannelBars}>
-                    {[
-                      { label: 'R', value: colorInfo.rgb.r, max: 255, color: '#ef4444' },
-                      { label: 'G', value: colorInfo.rgb.g, max: 255, color: '#22c55e' },
-                      { label: 'B', value: colorInfo.rgb.b, max: 255, color: '#3b82f6' },
-                    ].map((ch) => (
-                      <View key={ch.label} style={styles.previewChannelRow}>
-                        <Text style={[styles.previewChannelLabel, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.label}</Text>
-                        <View style={[styles.previewChannelTrack, { backgroundColor: trackBg }]}>
-                          <View style={[styles.previewChannelFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.color }]} />
-                        </View>
-                        <Text style={[styles.previewChannelValue, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.value}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {colorFormat === 'HSL' && (() => {
-                  const { h, s, l } = colorInfo.hsl;
-                  const hueRgb = hslToRgb(h, 100, 50);
-                  const hueHex = rgbToHex(hueRgb.r, hueRgb.g, hueRgb.b);
-                  const satRgb = hslToRgb(h, s, 50);
-                  const satHex = rgbToHex(satRgb.r, satRgb.g, satRgb.b);
-                  const litRgb = hslToRgb(h, s, l);
-                  const litHex = rgbToHex(litRgb.r, litRgb.g, litRgb.b);
-                  return (
+                {/* Fixed-height channel section: keep HEX/RGB/HSL card height stable */}
+                <View style={styles.previewChannelContainer}>
+                  {colorFormat === 'RGB' && (
                     <View style={styles.previewChannelBars}>
                       {[
-                        { label: 'H', value: h, max: 360, barColor: hueHex, display: `${h}°` },
-                        { label: 'S', value: s, max: 100, barColor: satHex, display: `${s}%` },
-                        { label: 'L', value: l, max: 100, barColor: litHex, display: `${l}%` },
+                        { label: 'R', value: colorInfo.rgb.r, max: 255, color: '#ef4444', display: `${colorInfo.rgb.r}` },
+                        { label: 'G', value: colorInfo.rgb.g, max: 255, color: '#22c55e', display: `${colorInfo.rgb.g}` },
+                        { label: 'B', value: colorInfo.rgb.b, max: 255, color: '#3b82f6', display: `${colorInfo.rgb.b}` },
                       ].map((ch) => (
                         <View key={ch.label} style={styles.previewChannelRow}>
                           <Text style={[styles.previewChannelLabel, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.label}</Text>
                           <View style={[styles.previewChannelTrack, { backgroundColor: trackBg }]}>
-                            <View style={[styles.previewChannelFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.barColor }]} />
+                            <View style={[styles.previewChannelFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.color }]} />
                           </View>
                           <Text style={[styles.previewChannelValue, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.display}</Text>
                         </View>
                       ))}
                     </View>
-                  );
-                })()}
+                  )}
+                  {colorFormat === 'HSL' && (() => {
+                    const { h, s, l } = colorInfo.hsl;
+                    const hueRgb = hslToRgb(h, 100, 50);
+                    const hueHex = rgbToHex(hueRgb.r, hueRgb.g, hueRgb.b);
+                    const satRgb = hslToRgb(h, s, 50);
+                    const satHex = rgbToHex(satRgb.r, satRgb.g, satRgb.b);
+                    const lightnessGray = Math.round((l / 100) * 255);
+                    const lightnessHex = rgbToHex(lightnessGray, lightnessGray, lightnessGray);
+                    return (
+                      <View style={styles.previewChannelBars}>
+                        {[
+                          { label: 'H', value: h, max: 360, barColor: hueHex, display: `${h}°` },
+                          { label: 'S', value: s, max: 100, barColor: satHex, display: `${s}%` },
+                          { label: 'L', value: l, max: 100, barColor: lightnessHex, display: `${l}%` },
+                        ].map((ch) => (
+                          <View key={ch.label} style={styles.previewChannelRow}>
+                            <Text style={[styles.previewChannelLabel, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.label}</Text>
+                            <View style={[styles.previewChannelTrack, { backgroundColor: trackBg }]}>
+                              <View style={[styles.previewChannelFill, { width: `${(ch.value / ch.max) * 100}%`, backgroundColor: ch.barColor }]} />
+                            </View>
+                            <Text style={[styles.previewChannelValue, { color: fgMuted, textShadowColor: shadowColor }]}>{ch.display}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  })()}
+                  {colorFormat === 'HEX' && <View style={styles.previewChannelBarsPlaceholder} />}
+                </View>
               </View>
               );
             })()}
@@ -938,8 +941,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           setColorCount(newCount);
           if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
         }}
-        showGrayscale={showGrayscale}
-        onShowGrayscaleChange={setShowGrayscale}
         colorBlindMode={colorBlindMode}
         onColorBlindModeChange={setColorBlindMode}
         onClose={() => setShowAdvanced(false)}
