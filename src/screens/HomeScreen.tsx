@@ -525,13 +525,11 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         {/* Image Card */}
         {currentImageUri ? (
           <TouchableOpacity style={styles.imageCard} onPress={showImageSourceOptions}>
-            <View style={[{ width: '100%', height: '100%' }, showGrayscale && { filter: [{ grayscale: 1 }] }]}>
-              <Image
-                source={{ uri: currentImageUri }}
-                style={styles.image}
-                contentFit="cover"
-              />
-            </View>
+            <Image
+              source={{ uri: currentImageUri }}
+              style={styles.image}
+              contentFit="cover"
+            />
             <View style={styles.sourceImageBadge}>
               <Text style={styles.sourceImageText}>Source Image</Text>
             </View>
@@ -623,12 +621,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <Ionicons name="color-palette-outline" size={13} color={theme.textSecondary} />
               <Text style={[styles.summaryChipText, { color: theme.textSecondary }]}>{colorCount}</Text>
             </View>
-            {showGrayscale && (
-              <View style={[styles.summaryChip, { backgroundColor: '#f472b6' + '25' }]}>
-                <Ionicons name="contrast-outline" size={13} color="#f472b6" />
-                <Text style={[styles.summaryChipText, { color: '#f472b6' }]}>Value</Text>
-              </View>
-            )}
+            <TouchableOpacity
+              style={[
+                styles.summaryChip,
+                { backgroundColor: showGrayscale ? '#34d399' + '25' : theme.backgroundTertiary },
+              ]}
+              onPress={() => {
+                hapticLight();
+                setShowGrayscale(!showGrayscale);
+              }}
+            >
+              <Ionicons name="contrast-outline" size={13} color={showGrayscale ? '#34d399' : theme.textMuted} />
+              <Text style={[styles.summaryChipText, { color: showGrayscale ? '#34d399' : theme.textMuted }]}>Value</Text>
+            </TouchableOpacity>
             {colorBlindMode !== 'none' && (
               <View style={[styles.summaryChip, { backgroundColor: '#f59e0b' + '25' }]}>
                 <Ionicons name="eye-outline" size={13} color="#f59e0b" />
@@ -1657,29 +1662,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   }}
                 >
                   <Ionicons name="add" size={18} color={theme.textSecondary} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Value Check */}
-              <View style={styles.advancedToggleRow}>
-                <View>
-                  <Text style={[styles.advancedToggleLabel, { color: theme.textPrimary }]}>Value Check</Text>
-                  <Text style={[styles.advancedToggleDesc, { color: theme.textMuted }]}>Show grayscale values</Text>
-                </View>
-                <TouchableOpacity
-                  style={[
-                    styles.advancedToggleButton,
-                    { backgroundColor: showGrayscale ? '#34d399' : theme.backgroundTertiary },
-                  ]}
-                  onPress={() => {
-                    hapticLight();
-                    setShowGrayscale(!showGrayscale);
-                  }}
-                >
-                  <Text style={[styles.advancedToggleButtonText, { color: showGrayscale ? '#fff' : theme.textMuted }]}>
-                    {showGrayscale ? 'ON' : 'OFF'}
-                  </Text>
-                  {showGrayscale && <Ionicons name="checkmark" size={14} color="#fff" />}
                 </TouchableOpacity>
               </View>
 
