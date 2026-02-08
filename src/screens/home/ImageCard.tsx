@@ -13,6 +13,7 @@ interface ImageCardProps {
   theme: ThemeColors;
   isExtracting: boolean;
   onImagePress: () => void;
+  onToggleGrayscale: () => void;
   onReExtractPress: () => void;
   onOpenCamera: () => void;
   onPickFromGallery: () => void;
@@ -24,6 +25,7 @@ export default function ImageCard({
   theme,
   isExtracting,
   onImagePress,
+  onToggleGrayscale,
   onReExtractPress,
   onOpenCamera,
   onPickFromGallery,
@@ -51,6 +53,23 @@ export default function ImageCard({
         <View style={styles.sourceImageBadge}>
           <Text style={styles.sourceImageText}>Source Image</Text>
         </View>
+        <TouchableOpacity
+          style={[
+            styles.valueOverlayButton,
+            {
+              backgroundColor: showGrayscale ? '#34d399' + 'CC' : 'rgba(0, 0, 0, 0.6)',
+            },
+          ]}
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleGrayscale();
+          }}
+        >
+          <Ionicons name="contrast-outline" size={14} color="#fff" />
+          <Text style={styles.valueOverlayButtonText}>
+            {showGrayscale ? 'VALUE ON' : 'VALUE'}
+          </Text>
+        </TouchableOpacity>
         {/* Re-extract button */}
         <TouchableOpacity
           style={styles.reExtractIconButton}
