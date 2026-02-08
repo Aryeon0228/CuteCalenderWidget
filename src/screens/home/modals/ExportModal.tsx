@@ -33,6 +33,27 @@ interface ExportModalProps {
   onHapticLight: () => void;
 }
 
+function normalizeHexLabel(hex: string): string {
+  const cleaned = hex.trim().replace(/^#/, '').toUpperCase();
+
+  if (/^[0-9A-F]{6}$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  if (/^[0-9A-F]{3}$/.test(cleaned)) {
+    return cleaned
+      .split('')
+      .map((ch) => ch + ch)
+      .join('');
+  }
+
+  if (/^[0-9A-F]{8}$/.test(cleaned)) {
+    return cleaned.slice(0, 6);
+  }
+
+  return cleaned.slice(0, 6).padEnd(6, '0');
+}
+
 function buildHistogramFromPalette(colors: string[]): LuminosityHistogram | null {
   if (colors.length === 0) {
     return null;
@@ -239,7 +260,15 @@ export default function ExportModal({
                       {processedColors.map((color, index) => (
                         <View key={index} style={styles.twitterUnifiedColorItem}>
                           <View style={[styles.twitterUnifiedColorBar, { backgroundColor: color }]} />
-                          {cardShowHex && <Text style={styles.twitterUnifiedColorHex}>{color.toUpperCase()}</Text>}
+                          {cardShowHex && (
+                            <Text
+                              style={styles.twitterUnifiedColorHex}
+                              numberOfLines={1}
+                              ellipsizeMode="clip"
+                            >
+                              {normalizeHexLabel(color)}
+                            </Text>
+                          )}
                         </View>
                       ))}
                     </View>
@@ -317,7 +346,7 @@ export default function ExportModal({
                     {processedColors.map((color, index) => (
                       <View key={index} style={styles.snsCardColorItem}>
                         <View style={[styles.snsCardColorSwatch, { backgroundColor: color }]} />
-                        {cardShowHex && <Text style={styles.snsCardColorHex}>{color.toUpperCase()}</Text>}
+                        {cardShowHex && <Text style={styles.snsCardColorHex}>{normalizeHexLabel(color)}</Text>}
                       </View>
                     ))}
                   </View>
