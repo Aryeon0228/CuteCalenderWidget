@@ -1466,10 +1466,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   }}
                 >
                   <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'histogram' ? '#fff' : theme.textPrimary }]}>
-                    Hue Regions
+                    Histogram
                   </Text>
                   <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'histogram' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
-                    Region-based (fast)
+                    Hue region-based (fast)
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1483,10 +1483,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   }}
                 >
                   <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textPrimary }]}>
-                    Clustering
+                    K-Means
                   </Text>
                   <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'kmeans' ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
-                    Pixel grouping (accurate)
+                    Pixel clustering (accurate)
                   </Text>
                 </TouchableOpacity>
               </View>
