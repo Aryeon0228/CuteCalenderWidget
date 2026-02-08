@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -43,7 +43,6 @@ import {
   HarmonyType,
 } from '../lib/colorUtils';
 import { StyleFilter, STYLE_PRESETS, STYLE_FILTER_KEYS } from '../constants/stylePresets';
-import { ColorChannelBar } from '../components/ColorChannelBar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -122,15 +121,18 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   // COMPUTED VALUES
   // ============================================
 
-  const processedColors = currentColors.map((hex) => {
-    if (showGrayscale) {
-      return toGrayscale(hex);
-    }
-    const preset = STYLE_PRESETS[styleFilter];
-    return adjustColor(hex, preset.saturation, preset.brightness);
-  });
+  const processedColors = useMemo(() =>
+    currentColors.map((hex) => {
+      if (showGrayscale) {
+        return toGrayscale(hex);
+      }
+      const preset = STYLE_PRESETS[styleFilter];
+      return adjustColor(hex, preset.saturation, preset.brightness);
+    }),
+    [currentColors, showGrayscale, styleFilter]
+  );
 
-  const getSelectedColorInfo = (): ColorInfo | null => {
+  const colorInfo = useMemo((): ColorInfo | null => {
     if (selectedColorIndex === null || !processedColors[selectedColorIndex]) {
       return null;
     }
@@ -138,9 +140,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     const rgb = hexToRgb(hex);
     const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
     return { hex, rgb, hsl };
-  };
-
-  const colorInfo = getSelectedColorInfo();
+  }, [processedColors, selectedColorIndex]);
 
   // ============================================
   // HAPTIC FEEDBACK
@@ -602,7 +602,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <TouchableOpacity
                 style={[
                   styles.algorithmOption,
-                  { backgroundColor: extractionMethod === 'histogram' ? '#6366f1' : theme.backgroundTertiary },
+                  { backgroundColor: extractionMethod === 'histogram' ? theme.accent : theme.backgroundTertiary },
                 ]}
                 onPress={() => {
                   hapticLight();
@@ -616,7 +616,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <TouchableOpacity
                 style={[
                   styles.algorithmOption,
-                  { backgroundColor: extractionMethod === 'kmeans' ? '#6366f1' : theme.backgroundTertiary },
+                  { backgroundColor: extractionMethod === 'kmeans' ? theme.accent : theme.backgroundTertiary },
                 ]}
                 onPress={() => {
                   hapticLight();
@@ -1677,16 +1677,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    color: '#4a4a6a',
-    marginTop: 12,
-    fontSize: 14,
-  },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -1802,17 +1792,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#24242e',
   },
-  styleFilterButtonActive: {
-    backgroundColor: '#6366f1',
-  },
   styleFilterText: {
     fontSize: 11,
     color: '#a0a0b0',
     fontWeight: '700',
     letterSpacing: 0.2,
-  },
-  styleFilterTextActive: {
-    color: '#fff',
   },
 
   // Color Cards
@@ -2018,25 +2002,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Re-extract Button - Compact
-  reExtractButton: {
-    flexDirection: 'row',
-    backgroundColor: '#6366f1',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  reExtractButtonDisabled: {
-    backgroundColor: '#2d2d38',
-  },
-  reExtractButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
   // Action Bar
   actionBar: {
     flexDirection: 'row',
@@ -2168,13 +2133,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'monospace',
   },
-  channelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-
   // Value Variations
   variationsSection: {
     backgroundColor: '#0c0c12',
@@ -2204,16 +2162,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
   },
-  hueShiftOptionActive: {
-    backgroundColor: '#6366f1',
-  },
   hueShiftOptionText: {
     fontSize: 11,
     fontWeight: '600',
     color: '#9090a0',
-  },
-  hueShiftOptionTextActive: {
-    color: '#fff',
   },
   variationStrip: {
     flexDirection: 'row',
@@ -2279,16 +2231,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#16161e',
     marginRight: 8,
   },
-  harmonyTypeButtonActive: {
-    backgroundColor: '#6366f1',
-  },
   harmonyTypeText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#9090a0',
-  },
-  harmonyTypeTextActive: {
-    color: '#fff',
   },
   harmonyDescription: {
     fontSize: 11,
@@ -2521,16 +2467,10 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 48,
   },
-  snsTypeButtonActive: {
-    backgroundColor: '#6366f1',
-  },
   snsTypeText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#a0a0b0',
-  },
-  snsTypeTextActive: {
-    color: '#fff',
   },
   snsTypeRatio: {
     fontSize: 11,
@@ -2556,16 +2496,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
   },
-  cardOptionButtonActive: {
-    backgroundColor: '#4a4a5a',
-  },
   cardOptionText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#9090a0',
-  },
-  cardOptionTextActive: {
-    color: '#fff',
   },
 
   // SNS Card
@@ -2801,16 +2735,10 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 44,
   },
-  formatOptionActive: {
-    backgroundColor: '#6366f1',
-  },
   formatOptionText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#a0a0b0',
-  },
-  formatOptionTextActive: {
-    color: '#fff',
   },
   exportConfirmButton: {
     flexDirection: 'row',
