@@ -166,6 +166,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     return { hex, rgb, hsl };
   }, [processedColors, selectedColorIndex]);
 
+  const cvdShortLabel = useMemo(() => {
+    switch (colorBlindMode) {
+      case 'protanopia':
+        return 'P';
+      case 'deuteranopia':
+        return 'D';
+      case 'tritanopia':
+        return 'T';
+      default:
+        return '';
+    }
+  }, [colorBlindMode]);
+
   const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {
     switch (format) {
       case 'HEX': return info.hex.toUpperCase();
@@ -497,6 +510,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           theme={theme}
           isExtracting={isExtracting}
           onImagePress={showImageSourceOptions}
+          onToggleGrayscale={() => {
+            hapticLight();
+            setShowGrayscale((prev) => !prev);
+          }}
           onReExtractPress={() => {
             hapticLight();
             handleReExtract();
@@ -532,23 +549,21 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <Ionicons name="color-palette-outline" size={13} color={theme.textSecondary} />
               <Text style={[styles.summaryChipText, { color: theme.textSecondary }]}>{colorCount}</Text>
             </View>
-            <TouchableOpacity
+            <View
               style={[
                 styles.summaryChip,
                 { backgroundColor: showGrayscale ? '#34d399' + '25' : theme.backgroundTertiary },
               ]}
-              onPress={() => {
-                hapticLight();
-                setShowGrayscale(!showGrayscale);
-              }}
             >
               <Ionicons name="contrast-outline" size={13} color={showGrayscale ? '#34d399' : theme.textMuted} />
-              <Text style={[styles.summaryChipText, { color: showGrayscale ? '#34d399' : theme.textMuted }]}>Value</Text>
-            </TouchableOpacity>
+              <Text style={[styles.summaryChipText, { color: showGrayscale ? '#34d399' : theme.textMuted }]}>
+                {showGrayscale ? 'Value On' : 'Value Off'}
+              </Text>
+            </View>
             {colorBlindMode !== 'none' && (
               <View style={[styles.summaryChip, { backgroundColor: '#f59e0b' + '25' }]}>
                 <Ionicons name="eye-outline" size={13} color="#f59e0b" />
-                <Text style={[styles.summaryChipText, { color: '#f59e0b' }]}>CVD</Text>
+                <Text style={[styles.summaryChipText, { color: '#f59e0b' }]}>{cvdShortLabel}</Text>
               </View>
             )}
           </ScrollView>
