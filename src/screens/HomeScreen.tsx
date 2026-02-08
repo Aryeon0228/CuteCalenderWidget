@@ -41,6 +41,9 @@ import {
   generateColorVariations,
   generateColorHarmonies,
   HarmonyType,
+  simulateColorBlindness,
+  ColorBlindnessType,
+  COLOR_BLINDNESS_TYPES,
 } from '../lib/colorUtils';
 import { StyleFilter, STYLE_PRESETS, STYLE_FILTER_KEYS } from '../constants/stylePresets';
 
@@ -82,6 +85,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [showGrayscale, setShowGrayscale] = useState(false);
   const [variationHueShift, setVariationHueShift] = useState(true);
   const [selectedHarmony, setSelectedHarmony] = useState<HarmonyType>('complementary');
+  const [colorBlindMode, setColorBlindMode] = useState<ColorBlindnessType>('none');
 
   // Histogram State
   const [histogram, setHistogram] = useState<LuminosityHistogram | null>(null);
@@ -127,9 +131,13 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         return toGrayscale(hex);
       }
       const preset = STYLE_PRESETS[styleFilter];
-      return adjustColor(hex, preset.saturation, preset.brightness);
+      let color = adjustColor(hex, preset.saturation, preset.brightness);
+      if (colorBlindMode !== 'none') {
+        color = simulateColorBlindness(color, colorBlindMode);
+      }
+      return color;
     }),
-    [currentColors, showGrayscale, styleFilter]
+    [currentColors, showGrayscale, styleFilter, colorBlindMode]
   );
 
   const colorInfo = useMemo((): ColorInfo | null => {
@@ -681,6 +689,49 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
           </View>
         </View>
+
+        {/* ── CVD (Color Vision Deficiency) Simulation ── */}
+        {processedColors.length > 0 && (
+          <View style={[styles.cvdRow, { backgroundColor: theme.backgroundCard }]}>
+            <Ionicons name="accessibility-outline" size={14} color={theme.textMuted} style={{ marginRight: 4 }} />
+            <Text style={[styles.cvdLabel, { color: theme.textMuted }]}>CVD</Text>
+            <View style={styles.cvdToggleGroup}>
+              {COLOR_BLINDNESS_TYPES.map((cvd) => {
+                const isActive = colorBlindMode === cvd.type;
+                return (
+                  <TouchableOpacity
+                    key={cvd.type}
+                    style={[
+                      styles.cvdOption,
+                      {
+                        backgroundColor: isActive
+                          ? (cvd.type === 'none' ? theme.backgroundTertiary : '#f59e0b')
+                          : theme.backgroundTertiary,
+                      },
+                    ]}
+                    onPress={() => {
+                      hapticLight();
+                      setColorBlindMode(cvd.type);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.cvdOptionText,
+                        {
+                          color: isActive
+                            ? (cvd.type === 'none' ? theme.textPrimary : '#fff')
+                            : theme.textMuted,
+                        },
+                      ]}
+                    >
+                      {cvd.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Color Cards - Palette Swatches */}
         {processedColors.length > 0 ? (
@@ -1784,6 +1835,41 @@ const styles = StyleSheet.create({
     color: '#a0a0b0',
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+
+  // CVD Simulation Row
+  cvdRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  cvdLabel: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    marginRight: 6,
+  },
+  cvdToggleGroup: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    gap: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 10,
+    padding: 3,
+  },
+  cvdOption: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center' as const,
+  },
+  cvdOptionText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
   },
 
   // Color Cards
