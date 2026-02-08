@@ -184,6 +184,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     RGB: '#3b82f6',
     HSL: '#22c55e',
   };
+  const variationToggleColors = {
+    lightness: '#38bdf8',
+    hueShift: '#f97316',
+  };
 
   const styleChipColor = STYLE_PRESETS[styleFilter].color;
   const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : '#fb923c';
@@ -766,7 +770,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <TouchableOpacity
                     style={[
                       styles.hueShiftOption,
-                      !variationHueShift && { backgroundColor: theme.accent },
+                      !variationHueShift && { backgroundColor: variationToggleColors.lightness },
                     ]}
                     onPress={() => setVariationHueShift(false)}
                   >
@@ -782,7 +786,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <TouchableOpacity
                     style={[
                       styles.hueShiftOption,
-                      variationHueShift && { backgroundColor: theme.accent },
+                      variationHueShift && { backgroundColor: variationToggleColors.hueShift },
                     ]}
                     onPress={() => setVariationHueShift(true)}
                   >

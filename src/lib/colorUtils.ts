@@ -289,7 +289,8 @@ export interface ColorVariation {
 
 /**
  * Generate shadow/highlight variations of a color
- * Optionally shifts hue toward blue for shadows and yellow for highlights
+ * Optionally shifts hue for stylistic shadows/highlights
+ * Warm yellow hues bias shadows toward magenta/purple to avoid green casts
  */
 export function generateColorVariations(
   hex: string,
@@ -302,15 +303,24 @@ export function generateColorVariations(
   const saturationFactor = Math.min(s / 100, 1);
   const baseHueShift = useHueShift ? Math.round(15 * saturationFactor) : 0;
 
-  // Get shortest direction to Blue (240) for shadows, Yellow (60) for highlights
-  const getDirection = (fromH: number, toH: number) => {
+  // Get shortest hue direction (+1 or -1), with optional tie-break preference.
+  const getDirection = (
+    fromH: number,
+    toH: number,
+    preferNegativeOnTie: boolean = false
+  ) => {
     let diff = toH - fromH;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
+    if (Math.abs(diff) === 180) {
+      return preferNegativeOnTie ? -1 : 1;
+    }
     return diff >= 0 ? 1 : -1;
   };
 
-  const shadowDir = getDirection(h, 240);
+  const isWarmYellowHue = h >= 35 && h <= 100;
+  const shadowTargetHue = isWarmYellowHue ? 300 : 240;
+  const shadowDir = getDirection(h, shadowTargetHue, isWarmYellowHue);
   const highlightDir = getDirection(h, 60);
 
   // Create variation with proportional lightness distribution
@@ -337,9 +347,15 @@ export function generateColorVariations(
     }
     newL = Math.min(Math.max(newL, MIN_L), MAX_L);
 
-    const newH = (h + hueOffset + 360) % 360;
+    let newH = (h + hueOffset + 360) % 360;
+    // Guardrail: prevent warm yellow shadows from drifting into muddy green.
+    if (isWarmYellowHue && lightnessOffset < 0 && newH > 90 && newH < 165) {
+      newH = 90;
+    }
     let newS = s;
-    if (lightnessOffset < 0) newS = Math.min(s * 1.1, 100);
+    if (lightnessOffset < 0) {
+      newS = Math.min(s * (isWarmYellowHue ? 1.02 : 1.1), 100);
+    }
     else if (lightnessOffset > 0) newS = s * 0.9;
 
     const newRgb = hslToRgb(newH, newS, newL);
