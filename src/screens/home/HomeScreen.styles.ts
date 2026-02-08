@@ -1188,10 +1188,17 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
+  twitterUnifiedImageDense: {
+    flex: 1.4,
+  },
   twitterUnifiedPalette: {
     flex: 3,
     flexDirection: 'row',
     gap: 3,
+  },
+  twitterUnifiedPaletteDense: {
+    flex: 3.6,
+    gap: 2,
   },
   twitterUnifiedColorItem: {
     flex: 1,
@@ -1215,6 +1222,14 @@ export const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
+  },
+  twitterUnifiedColorHexDense: {
+    fontSize: 6,
+    lineHeight: 8,
+    minHeight: 8,
+    letterSpacing: -0.15,
+    textShadowColor: 'transparent',
+    textShadowRadius: 0,
   },
   twitterUnifiedAnalysis: {
     flexDirection: 'row',
@@ -1270,6 +1285,9 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  snsCardPaletteDense: {
+    gap: 4,
+  },
   snsCardColorItem: {
     flex: 1,
     alignItems: 'center',
@@ -1292,6 +1310,12 @@ export const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
+  },
+  snsCardColorHexDense: {
+    fontSize: 8,
+    lineHeight: 10,
+    minHeight: 10,
+    letterSpacing: -0.1,
   },
   snsCardHistogram: {
     backgroundColor: 'rgba(0, 0, 0, 0.3)',

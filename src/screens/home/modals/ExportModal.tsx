@@ -138,6 +138,7 @@ export default function ExportModal({
     () => histogram ?? buildHistogramFromPalette(processedColors),
     [histogram, processedColors]
   );
+  const isDensePalette = processedColors.length >= 7;
 
   return (
     <Modal
@@ -284,21 +285,21 @@ export default function ExportModal({
                   {/* Top: Image + Palette side by side */}
                   <View style={styles.twitterUnifiedRow}>
                     {currentImageUri && (
-                      <View style={styles.twitterUnifiedImage}>
+                      <View style={[styles.twitterUnifiedImage, isDensePalette && styles.twitterUnifiedImageDense]}>
                         <Image source={{ uri: currentImageUri }} style={styles.snsCardImage} contentFit="cover" />
                       </View>
                     )}
-                    <View style={styles.twitterUnifiedPalette}>
+                    <View style={[styles.twitterUnifiedPalette, isDensePalette && styles.twitterUnifiedPaletteDense]}>
                       {processedColors.map((color, index) => (
                         <View key={index} style={styles.twitterUnifiedColorItem}>
                           <View style={[styles.twitterUnifiedColorBar, { backgroundColor: color }]} />
                           {cardShowHex && (
                             <Text
-                              style={styles.twitterUnifiedColorHex}
+                              style={[styles.twitterUnifiedColorHex, isDensePalette && styles.twitterUnifiedColorHexDense]}
                               allowFontScaling={false}
                               numberOfLines={1}
                               adjustsFontSizeToFit
-                              minimumFontScale={0.72}
+                              minimumFontScale={isDensePalette ? 0.62 : 0.72}
                               ellipsizeMode="clip"
                             >
                               {normalizeHexLabel(color)}
@@ -377,17 +378,17 @@ export default function ExportModal({
                       <Image source={{ uri: currentImageUri }} style={styles.snsCardImage} contentFit="cover" />
                     </View>
                   )}
-                  <View style={styles.snsCardPalette}>
+                  <View style={[styles.snsCardPalette, isDensePalette && styles.snsCardPaletteDense]}>
                     {processedColors.map((color, index) => (
                       <View key={index} style={styles.snsCardColorItem}>
                         <View style={[styles.snsCardColorSwatch, { backgroundColor: color }]} />
                         {cardShowHex && (
                           <Text
-                            style={styles.snsCardColorHex}
+                            style={[styles.snsCardColorHex, isDensePalette && styles.snsCardColorHexDense]}
                             allowFontScaling={false}
                             numberOfLines={1}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.72}
+                            minimumFontScale={isDensePalette ? 0.62 : 0.72}
                             ellipsizeMode="clip"
                           >
                             {normalizeHexLabel(color)}
