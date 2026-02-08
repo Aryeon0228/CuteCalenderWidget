@@ -319,6 +319,9 @@ export function generateColorVariations(
   };
 
   const isWarmYellowHue = h >= 35 && h <= 100;
+  const isYellowFamilyHue = h >= 25 && h <= 75;
+  const YELLOW_HUE_MAX = 60;
+  const YELLOW_HUE_MIN = 42;
   const shadowTargetHue = isWarmYellowHue ? 300 : 240;
   const shadowDir = getDirection(h, shadowTargetHue, isWarmYellowHue);
   const highlightDir = getDirection(h, 60);
@@ -351,6 +354,14 @@ export function generateColorVariations(
     // Guardrail: prevent warm yellow shadows from drifting into muddy green.
     if (isWarmYellowHue && lightnessOffset < 0 && newH > 90 && newH < 165) {
       newH = 90;
+    }
+    // Guardrail: when yellow-family colors are brightened, keep highlight hue in yellow range.
+    if (isYellowFamilyHue && lightnessOffset > 0 && useHueShift) {
+      if (highlightDir >= 0) {
+        newH = Math.min(newH, YELLOW_HUE_MAX);
+      } else {
+        newH = Math.max(newH, YELLOW_HUE_MIN);
+      }
     }
     let newS = s;
     if (lightnessOffset < 0) {
