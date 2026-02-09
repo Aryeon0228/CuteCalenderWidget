@@ -18,10 +18,15 @@ export default function ActionBar({
   onSave,
   onExport,
 }: ActionBarProps) {
+  const neutralButtonStyle = {
+    backgroundColor: theme.backgroundTertiary,
+    borderColor: theme.borderLight,
+  };
+
   return (
     <View style={[styles.actionBar, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.border }]}
     >
-      <TouchableOpacity style={styles.actionButton} onPress={onNavigateToLibrary}>
+      <TouchableOpacity style={[styles.actionButton, neutralButtonStyle]} onPress={onNavigateToLibrary}>
         <Ionicons name="library-outline" size={22} color={theme.textSecondary} />
         <Text style={[styles.actionButtonText, { color: theme.textSecondary }]}>Library</Text>
       </TouchableOpacity>
@@ -31,9 +36,9 @@ export default function ActionBar({
         <Text style={styles.saveButtonText}>Save</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.exportButton} onPress={onExport}>
-        <Ionicons name="share-outline" size={22} color="#fff" />
-        <Text style={styles.exportButtonText}>Export</Text>
+      <TouchableOpacity style={[styles.exportButton, neutralButtonStyle]} onPress={onExport}>
+        <Ionicons name="share-outline" size={22} color={theme.accent} />
+        <Text style={[styles.exportButtonText, { color: theme.accent }]}>Export</Text>
       </TouchableOpacity>
     </View>
   );

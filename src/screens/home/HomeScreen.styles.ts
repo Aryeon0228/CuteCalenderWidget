@@ -25,8 +25,8 @@ export const styles = StyleSheet.create({
     height: 38,
     borderRadius: 11,
     backgroundColor: '#6366f1',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
     shadowColor: '#6366f1',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -34,8 +34,8 @@ export const styles = StyleSheet.create({
     elevation: 4,
   },
   headerLogoImage: {
-    width: 21,
-    height: 21,
+    width: 44,
+    height: 44,
   },
   headerSubtitleRow: {
     flexDirection: 'row',
@@ -43,15 +43,15 @@ export const styles = StyleSheet.create({
     gap: 6,
     marginTop: 2,
   },
-  headerAccentLine: {
-    width: 12,
-    height: 2,
-    borderRadius: 1,
-  },
   headerSubtitle: {
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: 0.3,
+  },
+  headerSubtitlePaw: {
+    fontSize: 12,
+    lineHeight: 14,
+    transform: [{ translateX: -4 }, { translateY: 1 }],
   },
   headerRight: {
     flexDirection: 'row',
