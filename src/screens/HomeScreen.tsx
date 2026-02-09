@@ -166,6 +166,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     return { hex, rgb, hsl };
   }, [processedColors, selectedColorIndex]);
 
+  const colorHarmonies = useMemo(
+    () => (colorInfo ? generateColorHarmonies(colorInfo.hex) : []),
+    [colorInfo]
+  );
+
+  const currentHarmony = useMemo(
+    () =>
+      colorHarmonies.find((harmony) => harmony.type === selectedHarmony) ??
+      colorHarmonies[0] ??
+      null,
+    [colorHarmonies, selectedHarmony]
+  );
+
   const cvdShortLabel = useMemo(() => {
     switch (colorBlindMode) {
       case 'protanopia':
@@ -820,6 +833,84 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 )}
               </View>
             </View>
+
+            {/* Inline Harmony */}
+            {currentHarmony && (
+              <View
+                style={[
+                  styles.harmonySection,
+                  {
+                    backgroundColor: theme.backgroundTertiary,
+                    marginTop: 10,
+                    marginBottom: 0,
+                    padding: 12,
+                  },
+                ]}
+              >
+                <Text style={[styles.harmonySectionTitle, { color: theme.textPrimary }]}>Harmony</Text>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.harmonyTypesScroll}
+                >
+                  {colorHarmonies.map((harmony) => (
+                    <TouchableOpacity
+                      key={harmony.type}
+                      style={[
+                        styles.harmonyTypeButton,
+                        {
+                          backgroundColor:
+                            selectedHarmony === harmony.type
+                              ? theme.accent
+                              : theme.backgroundSecondary,
+                        },
+                      ]}
+                      onPress={() => {
+                        hapticLight();
+                        setSelectedHarmony(harmony.type);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.harmonyTypeText,
+                          { color: selectedHarmony === harmony.type ? '#fff' : theme.textMuted },
+                        ]}
+                      >
+                        {harmony.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={[styles.harmonyDesc, { color: theme.textMuted }]}>
+                  {currentHarmony.description}
+                  {currentHarmony.colors.length > 1 &&
+                    ` (${currentHarmony.colors.map((color) => color.angle + '°').join(', ')})`}
+                </Text>
+
+                <View style={styles.harmonyColorsRow}>
+                  {currentHarmony.colors.map((harmonyColor, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.harmonyColorItem}
+                      onPress={() => copyColor(harmonyColor.hex.toUpperCase(), harmonyColor.name)}
+                    >
+                      <View
+                        style={[
+                          styles.harmonyColorSwatch,
+                          { backgroundColor: harmonyColor.hex },
+                          harmonyColor.name === 'Base' && styles.harmonyColorSwatchBase,
+                        ]}
+                      />
+                      <Text style={[styles.harmonyColorHex, { color: theme.textMuted }]}>
+                        {harmonyColor.hex.toUpperCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
 
