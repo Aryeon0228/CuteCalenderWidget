@@ -1638,6 +1638,10 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  infoModalIconImage: {
+    width: 34,
+    height: 34,
+  },
   infoModalTitle: {
     fontSize: 24,
     fontWeight: '700',
