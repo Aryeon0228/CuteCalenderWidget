@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Linking, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { styles } from '../HomeScreen.styles';
@@ -23,7 +23,11 @@ export default function InfoModal({ visible, theme, onClose }: InfoModalProps) {
         <View style={[styles.infoModalContent, { backgroundColor: theme.backgroundSecondary }]}>
           <View style={styles.infoModalHeader}>
             <View style={[styles.infoModalIcon, { backgroundColor: theme.accent }]}>
-              <Ionicons name="color-palette" size={28} color="#fff" />
+              <Image
+                source={require('../../../../assets/pow-header.png')}
+                style={styles.infoModalIconImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={[styles.infoModalTitle, { color: theme.textPrimary }]}>Pixel Paw</Text>
             <Text style={[styles.infoModalVersion, { color: theme.textMuted }]}>Game Art Color Extractor</Text>
