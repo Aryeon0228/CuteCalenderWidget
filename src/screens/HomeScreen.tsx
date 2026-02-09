@@ -43,6 +43,11 @@ import {
   type ColorInfo,
 } from '../lib/colorUtils';
 import { StyleFilter, STYLE_PRESETS } from '../constants/stylePresets';
+import {
+  FORMAT_ACCENT_COLORS,
+  VARIATION_TOGGLE_COLORS,
+  UNIFIED_EMPHASIS,
+} from '../constants/uiEmphasis';
 import { styles } from './home/HomeScreen.styles';
 import HomeHeader from './home/HomeHeader';
 import ImageCard from './home/ImageCard';
@@ -114,7 +119,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Theme & Store
-  const { mode, colors: theme, toggleTheme } = useThemeStore();
+  const { colors: theme } = useThemeStore();
   const {
     currentColors,
     currentImageUri,
@@ -191,16 +196,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         return '';
     }
   }, [colorBlindMode]);
-
-  const formatAccentColors: Record<'HEX' | 'RGB' | 'HSL', string> = {
-    HEX: '#64748b',
-    RGB: '#3b82f6',
-    HSL: '#22c55e',
-  };
-  const variationToggleColors = {
-    lightness: '#38bdf8',
-    hueShift: '#f97316',
-  };
 
   const styleChipColor = STYLE_PRESETS[styleFilter].color;
   const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : '#fb923c';
@@ -521,8 +516,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <HomeHeader
         theme={theme}
-        mode={mode}
-        onToggleTheme={toggleTheme}
         onShowInfo={() => setShowInfo(true)}
       />
 
@@ -563,33 +556,33 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.summaryChipsScroll}
           >
-            <View style={[styles.summaryChip, { backgroundColor: styleChipColor + '24', borderColor: styleChipColor + '55', borderWidth: 1 }]}>
+            <View style={[styles.summaryChip, { backgroundColor: styleChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: styleChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 }]}>
               <Ionicons name={STYLE_PRESETS[styleFilter].icon as any} size={13} color={styleChipColor} />
               <Text style={[styles.summaryChipText, { color: styleChipColor }]}>{STYLE_PRESETS[styleFilter].name}</Text>
             </View>
-            <View style={[styles.summaryChip, { backgroundColor: methodChipColor + '24', borderColor: methodChipColor + '55', borderWidth: 1 }]}>
+            <View style={[styles.summaryChip, { backgroundColor: methodChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: methodChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 }]}>
               <Ionicons name="flask-outline" size={13} color={methodChipColor} />
               <Text style={[styles.summaryChipText, { color: methodChipColor }]}>
                 {extractionMethod === 'histogram' ? 'Hist' : 'KM'}
               </Text>
             </View>
-            <View style={[styles.summaryChip, { backgroundColor: countChipColor + '24', borderColor: countChipColor + '55', borderWidth: 1 }]}>
+            <View style={[styles.summaryChip, { backgroundColor: countChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: countChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 }]}>
               <Ionicons name="color-palette-outline" size={13} color={countChipColor} />
               <Text style={[styles.summaryChipText, { color: countChipColor }]}>{colorCount}</Text>
             </View>
             <View
               style={[
                 styles.summaryChip,
-                { backgroundColor: valueChipColor + '24', borderColor: valueChipColor + '55', borderWidth: 1 },
+                { backgroundColor: valueChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: valueChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 },
               ]}
             >
               <Ionicons name="contrast-outline" size={13} color={valueChipColor} />
               <Text style={[styles.summaryChipText, { color: valueChipColor }]}>Val</Text>
             </View>
             {colorBlindMode !== 'none' && (
-              <View style={[styles.summaryChip, { backgroundColor: '#f59e0b' + '25', borderColor: '#f59e0b' + '55', borderWidth: 1 }]}>
-                <Ionicons name="eye-outline" size={13} color="#f59e0b" />
-                <Text style={[styles.summaryChipText, { color: '#f59e0b' }]}>{cvdShortLabel}</Text>
+              <View style={[styles.summaryChip, { backgroundColor: UNIFIED_EMPHASIS.cvdBg, borderColor: UNIFIED_EMPHASIS.cvdBorder, borderWidth: 1 }]}>
+                <Ionicons name="eye-outline" size={13} color={UNIFIED_EMPHASIS.cvdText} />
+                <Text style={[styles.summaryChipText, { color: UNIFIED_EMPHASIS.cvdText }]}>{cvdShortLabel}</Text>
               </View>
             )}
           </ScrollView>
@@ -761,7 +754,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   key={fmt}
                   style={[
                     styles.formatSegmentButton,
-                    colorFormat === fmt && { backgroundColor: formatAccentColors[fmt] },
+                    colorFormat === fmt && { backgroundColor: FORMAT_ACCENT_COLORS[fmt] },
                   ]}
                   onPress={() => setColorFormat(fmt)}
                 >
@@ -783,7 +776,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <TouchableOpacity
                     style={[
                       styles.hueShiftOption,
-                      !variationHueShift && { backgroundColor: variationToggleColors.lightness },
+                      !variationHueShift && { backgroundColor: VARIATION_TOGGLE_COLORS.lightness },
                     ]}
                     onPress={() => setVariationHueShift(false)}
                   >
@@ -799,7 +792,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   <TouchableOpacity
                     style={[
                       styles.hueShiftOption,
-                      variationHueShift && { backgroundColor: variationToggleColors.hueShift },
+                      variationHueShift && { backgroundColor: VARIATION_TOGGLE_COLORS.hueShift },
                     ]}
                     onPress={() => setVariationHueShift(true)}
                   >
@@ -862,7 +855,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                         {
                           backgroundColor:
                             selectedHarmony === harmony.type
-                              ? theme.accent
+                              ? UNIFIED_EMPHASIS.activeButtonBg
                               : theme.backgroundSecondary,
                         },
                       ]}
@@ -923,8 +916,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 <Text style={[styles.histogramTitle, { color: theme.textMuted }]}>LUMINOSITY</Text>
               </View>
               <View style={styles.histogramStats}>
-                <Text style={styles.histogramStatText}>{histogram.contrast}%</Text>
-                <Text style={styles.histogramContrastLabel}>contrast</Text>
+                <Text style={[styles.histogramStatText, { color: theme.accent }]}>{histogram.contrast}%</Text>
+                <Text style={[styles.histogramContrastLabel, { color: theme.textMuted }]}>contrast</Text>
               </View>
             </View>
 
@@ -959,21 +952,27 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
 
             <View style={styles.histogramStatsRow}>
-              <View style={styles.histogramStatItem}>
-                <Text style={styles.histogramStatValue}>{histogram.darkPercent}%</Text>
-                <Text style={styles.histogramStatLabel}>Dark</Text>
+              <View style={[styles.histogramStatItem, { backgroundColor: theme.backgroundTertiary, borderColor: theme.borderLight, borderWidth: 1 }]}>
+                <Text style={[styles.histogramStatValue, { color: theme.textPrimary }]}>{histogram.darkPercent}%</Text>
+                <Text style={[styles.histogramStatLabel, { color: theme.textSecondary }]}>Dark</Text>
               </View>
-              <View style={styles.histogramStatItem}>
-                <Text style={styles.histogramStatValue}>{histogram.midPercent}%</Text>
-                <Text style={styles.histogramStatLabel}>Mid</Text>
+              <View style={[styles.histogramStatItem, { backgroundColor: theme.backgroundTertiary, borderColor: theme.borderLight, borderWidth: 1 }]}>
+                <Text style={[styles.histogramStatValue, { color: theme.textPrimary }]}>{histogram.midPercent}%</Text>
+                <Text style={[styles.histogramStatLabel, { color: theme.textSecondary }]}>Mid</Text>
               </View>
-              <View style={styles.histogramStatItem}>
-                <Text style={styles.histogramStatValue}>{histogram.brightPercent}%</Text>
-                <Text style={styles.histogramStatLabel}>Bright</Text>
+              <View style={[styles.histogramStatItem, { backgroundColor: theme.backgroundTertiary, borderColor: theme.borderLight, borderWidth: 1 }]}>
+                <Text style={[styles.histogramStatValue, { color: theme.textPrimary }]}>{histogram.brightPercent}%</Text>
+                <Text style={[styles.histogramStatLabel, { color: theme.textSecondary }]}>Bright</Text>
               </View>
-              <View style={[styles.histogramStatItem, styles.histogramStatItemAvg]}>
-                <Text style={styles.histogramStatValueAvg}>{histogram.average}</Text>
-                <Text style={styles.histogramStatLabel}>Avg</Text>
+              <View
+                style={[
+                  styles.histogramStatItem,
+                  styles.histogramStatItemAvg,
+                  { backgroundColor: theme.accent + '1a', borderColor: theme.accent + '44', borderWidth: 1 },
+                ]}
+              >
+                <Text style={[styles.histogramStatValueAvg, { color: theme.accent }]}>{histogram.average}</Text>
+                <Text style={[styles.histogramStatLabel, { color: theme.textSecondary }]}>Avg</Text>
               </View>
             </View>
           </View>

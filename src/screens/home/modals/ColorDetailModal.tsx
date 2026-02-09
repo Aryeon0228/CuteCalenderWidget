@@ -5,6 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { styles } from '../HomeScreen.styles';
 import { ThemeColors } from '../../../store/themeStore';
 import {
+  FORMAT_ACCENT_COLORS,
+  VARIATION_TOGGLE_COLORS,
+  UNIFIED_EMPHASIS,
+} from '../../../constants/uiEmphasis';
+import {
   generateColorVariations,
   generateColorHarmonies,
   getLuminance,
@@ -43,16 +48,6 @@ export default function ColorDetailModal({
   onHarmonyChange,
   onHapticLight,
 }: ColorDetailModalProps) {
-  const formatAccentColors: Record<'HEX' | 'RGB' | 'HSL', string> = {
-    HEX: '#64748b',
-    RGB: '#3b82f6',
-    HSL: '#22c55e',
-  };
-  const variationToggleColors = {
-    lightness: '#38bdf8',
-    hueShift: '#f97316',
-  };
-
   return (
     <Modal
       visible={visible}
@@ -99,7 +94,7 @@ export default function ColorDetailModal({
                       key={fmt}
                       style={[
                         styles.modalFormatSegmentButton,
-                        colorFormat === fmt && { backgroundColor: formatAccentColors[fmt] },
+                        colorFormat === fmt && { backgroundColor: FORMAT_ACCENT_COLORS[fmt] },
                       ]}
                       onPress={() => onFormatChange(fmt)}
                     >
@@ -124,7 +119,7 @@ export default function ColorDetailModal({
                       <TouchableOpacity
                         style={[
                           styles.hueShiftOption,
-                          !variationHueShift && { backgroundColor: variationToggleColors.lightness },
+                          !variationHueShift && { backgroundColor: VARIATION_TOGGLE_COLORS.lightness },
                         ]}
                         onPress={() => onVariationHueShiftChange(false)}
                       >
@@ -140,7 +135,7 @@ export default function ColorDetailModal({
                       <TouchableOpacity
                         style={[
                           styles.hueShiftOption,
-                          variationHueShift && { backgroundColor: variationToggleColors.hueShift },
+                          variationHueShift && { backgroundColor: VARIATION_TOGGLE_COLORS.hueShift },
                         ]}
                         onPress={() => onVariationHueShiftChange(true)}
                       >
@@ -187,7 +182,12 @@ export default function ColorDetailModal({
                         key={harmony.type}
                         style={[
                           styles.harmonyTypeButton,
-                          { backgroundColor: selectedHarmony === harmony.type ? theme.accent : theme.backgroundSecondary },
+                          {
+                            backgroundColor:
+                              selectedHarmony === harmony.type
+                                ? UNIFIED_EMPHASIS.activeButtonBg
+                                : theme.backgroundSecondary,
+                          },
                         ]}
                         onPress={() => {
                           onHapticLight();

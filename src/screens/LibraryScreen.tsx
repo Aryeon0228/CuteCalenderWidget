@@ -329,7 +329,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="#666" />
+              <Ionicons name="close-circle" size={18} color={theme.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -337,26 +337,28 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
 
       {/* Section header */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>My Palettes</Text>
-        <Text style={styles.sectionCount}>{filteredPalettes.length} items</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>My Palettes</Text>
+        <Text style={[styles.sectionCount, { color: theme.textMuted }]}>
+          {filteredPalettes.length} items
+        </Text>
       </View>
 
       {/* Content */}
       {savedPalettes.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="color-palette-outline" size={48} color="#444" />
+          <View style={[styles.emptyIcon, { backgroundColor: theme.backgroundSecondary }]}>
+            <Ionicons name="color-palette-outline" size={48} color={theme.textMuted} />
           </View>
-          <Text style={styles.emptyTitle}>No saved palettes</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No saved palettes</Text>
+          <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
             Extract colors from an image and save them to see them here
           </Text>
         </View>
       ) : filteredPalettes.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="search-outline" size={48} color="#444" />
-          <Text style={styles.emptyTitle}>No results found</Text>
-          <Text style={styles.emptySubtitle}>
+          <Ionicons name="search-outline" size={48} color={theme.textMuted} />
+          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No results found</Text>
+          <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
             Try a different search term
           </Text>
         </View>
@@ -378,12 +380,14 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
         onRequestClose={() => setMenuPalette(null)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}
           activeOpacity={1}
           onPress={() => setMenuPalette(null)}
         >
-          <View style={styles.menuModal}>
-            <Text style={styles.menuTitle}>{menuPalette?.name}</Text>
+          <View style={[styles.menuModal, { backgroundColor: theme.backgroundSecondary }]}>
+            <Text style={[styles.menuTitle, { color: theme.textPrimary, borderBottomColor: theme.border }]}>
+              {menuPalette?.name}
+            </Text>
 
             <TouchableOpacity
               style={styles.menuItem}
@@ -392,8 +396,8 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 setMenuPalette(null);
               }}
             >
-              <Ionicons name="open-outline" size={20} color="#fff" />
-              <Text style={styles.menuItemText}>Open</Text>
+              <Ionicons name="open-outline" size={20} color={theme.textPrimary} />
+              <Text style={[styles.menuItemText, { color: theme.textPrimary }]}>Open</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -403,12 +407,12 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 setMenuPalette(null);
               }}
             >
-              <Ionicons name="share-outline" size={20} color="#fff" />
-              <Text style={styles.menuItemText}>Export</Text>
+              <Ionicons name="share-outline" size={20} color={theme.textPrimary} />
+              <Text style={[styles.menuItemText, { color: theme.textPrimary }]}>Export</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.menuItem, styles.menuItemDanger]}
+              style={[styles.menuItem, styles.menuItemDanger, { borderTopColor: theme.border }]}
               onPress={() => menuPalette && handleDeletePalette(menuPalette)}
             >
               <Ionicons name="trash-outline" size={20} color="#ff4444" />
@@ -428,13 +432,13 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
         onRequestClose={() => setExportPalette(null)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}
           activeOpacity={1}
           onPress={() => setExportPalette(null)}
         >
-          <View style={styles.exportModal}>
-            <View style={styles.exportHandle} />
-            <Text style={styles.exportTitle}>Export Palette</Text>
+          <View style={[styles.exportModal, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={[styles.exportHandle, { backgroundColor: theme.border }]} />
+            <Text style={[styles.exportTitle, { color: theme.textPrimary }]}>Export Palette</Text>
 
             <View style={styles.exportOptions}>
               <TouchableOpacity
@@ -444,7 +448,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 <View style={[styles.exportIcon, { backgroundColor: '#333' }]}>
                   <Text style={styles.exportIconText}>#</Text>
                 </View>
-                <Text style={styles.exportOptionText}>HEX</Text>
+                <Text style={[styles.exportOptionText, { color: theme.textSecondary }]}>HEX</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -454,7 +458,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 <View style={[styles.exportIcon, { backgroundColor: '#2d5a27' }]}>
                   <Ionicons name="code-slash" size={20} color="#fff" />
                 </View>
-                <Text style={styles.exportOptionText}>JSON</Text>
+                <Text style={[styles.exportOptionText, { color: theme.textSecondary }]}>JSON</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -464,7 +468,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 <View style={[styles.exportIcon, { backgroundColor: '#264de4' }]}>
                   <Text style={styles.exportIconText}>CSS</Text>
                 </View>
-                <Text style={styles.exportOptionText}>CSS</Text>
+                <Text style={[styles.exportOptionText, { color: theme.textSecondary }]}>CSS</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -474,7 +478,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 <View style={[styles.exportIcon, { backgroundColor: '#555' }]}>
                   <Ionicons name="share-social" size={20} color="#fff" />
                 </View>
-                <Text style={styles.exportOptionText}>Share</Text>
+                <Text style={[styles.exportOptionText, { color: theme.textSecondary }]}>Share</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -490,7 +494,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 <View style={[styles.exportIcon, { backgroundColor: '#c13584' }]}>
                   <Ionicons name="logo-instagram" size={20} color="#fff" />
                 </View>
-                <Text style={styles.exportOptionText}>Instagram</Text>
+                <Text style={[styles.exportOptionText, { color: theme.textSecondary }]}>Instagram</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -506,7 +510,7 @@ export default function LibraryScreen({ onNavigateBack }: LibraryScreenProps) {
                 <View style={[styles.exportIcon, { backgroundColor: '#1d9bf0' }]}>
                   <Ionicons name="logo-twitter" size={20} color="#fff" />
                 </View>
-                <Text style={styles.exportOptionText}>Twitter</Text>
+                <Text style={[styles.exportOptionText, { color: theme.textSecondary }]}>Twitter</Text>
               </TouchableOpacity>
             </View>
           </View>
