@@ -33,6 +33,10 @@ export const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
+  headerLogoImage: {
+    width: 21,
+    height: 21,
+  },
   headerSubtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',

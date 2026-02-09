@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { styles } from './HomeScreen.styles';
@@ -22,7 +22,11 @@ export default function HomeHeader({
     <View style={styles.header}>
       <View style={styles.headerLeft}>
         <View style={styles.headerLogoMark}>
-          <Ionicons name="paw" size={20} color="#fff" />
+          <Image
+            source={require('../../../assets/pow-header.png')}
+            style={styles.headerLogoImage}
+            resizeMode="contain"
+          />
         </View>
         <View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Pixel Paw</Text>
