@@ -22,16 +22,30 @@ export const COLOR_TOKENS = {
   textPrimary: '#ffffff',
   textSecondary: '#a0a0b0',
   textMuted: '#8888a0',
+  textSubtle: '#9090a0',
+  textFaint: '#9999aa',
+  textDim: '#888888',
+  textDisabled: '#aaaaaa',
+  textGhost: '#444444',
 
   // Backgrounds
   backgroundApp: '#0a0a10',
   backgroundSurface: '#16161e',
   backgroundSurfaceAlt: '#0c0c12',
   backgroundControl: '#24242e',
+  backgroundElevated: '#1e1e2a',
+  backgroundLayer: '#1a1a24',
+  backgroundActionBar: '#101018',
+  backgroundCardAlt: '#1a1a2e',
+  backgroundInput: '#000000',
 
   // Borders
   borderDefault: '#2d2d38',
   borderSoft: '#24242e',
+  borderStrong: '#2a2a3a',
+  borderSubtle: '#2a2a34',
+  borderNeutral: '#3a3a4a',
+  borderHandle: '#3e3e50',
 } as const;
 
 export const SPACING_TOKENS = {
