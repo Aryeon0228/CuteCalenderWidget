@@ -1,7 +1,7 @@
 export const UNIFIED_EMPHASIS = {
   activeButtonBg: '#606b78',
   variationLightnessBg: '#5b6775',
-  variationHueShiftBg: '#6c6256',
+  variationHueShiftBg: '#4f7bb8',
   chipBgAlpha: '14',
   chipBorderAlpha: '2e',
   cvdText: '#f59e0b',
