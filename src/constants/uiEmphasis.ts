@@ -1,12 +1,14 @@
+import { ALPHA_TOKENS, COLOR_TOKENS } from './designTokens';
+
 export const UNIFIED_EMPHASIS = {
-  activeButtonBg: '#606b78',
-  variationLightnessBg: '#5b6775',
-  variationHueShiftBg: '#4f7bb8',
-  chipBgAlpha: '14',
-  chipBorderAlpha: '2e',
-  cvdText: '#f59e0b',
-  cvdBg: '#f59e0b14',
-  cvdBorder: '#f59e0b2e',
+  activeButtonBg: COLOR_TOKENS.accentMuted,
+  variationLightnessBg: COLOR_TOKENS.accentVariationLightness,
+  variationHueShiftBg: COLOR_TOKENS.accentVariationHueShift,
+  chipBgAlpha: ALPHA_TOKENS.chipBg,
+  chipBorderAlpha: ALPHA_TOKENS.chipBorder,
+  cvdText: COLOR_TOKENS.warning,
+  cvdBg: `${COLOR_TOKENS.warning}${ALPHA_TOKENS.chipBg}`,
+  cvdBorder: `${COLOR_TOKENS.warning}${ALPHA_TOKENS.chipBorder}`,
 } as const;
 
 export const FORMAT_ACCENT_COLORS: Record<'HEX' | 'RGB' | 'HSL', string> = {
