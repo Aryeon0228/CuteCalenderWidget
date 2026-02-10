@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { COLOR_TOKENS } from '../constants/designTokens';
 
 export interface ThemeColors {
   // Backgrounds
@@ -26,22 +27,22 @@ export interface ThemeColors {
 }
 
 export const APP_THEME: ThemeColors = {
-  background: '#0a0a10',
-  backgroundSecondary: '#16161e',
-  backgroundTertiary: '#0c0c12',
-  backgroundCard: '#16161e',
+  background: COLOR_TOKENS.backgroundApp,
+  backgroundSecondary: COLOR_TOKENS.backgroundSurface,
+  backgroundTertiary: COLOR_TOKENS.backgroundSurfaceAlt,
+  backgroundCard: COLOR_TOKENS.backgroundSurface,
 
-  textPrimary: '#ffffff',
-  textSecondary: '#a0a0b0',
-  textMuted: '#8888a0',
+  textPrimary: COLOR_TOKENS.textPrimary,
+  textSecondary: COLOR_TOKENS.textSecondary,
+  textMuted: COLOR_TOKENS.textMuted,
 
-  border: '#2d2d38',
-  borderLight: '#24242e',
+  border: COLOR_TOKENS.borderDefault,
+  borderLight: COLOR_TOKENS.borderSoft,
 
-  accent: '#6366f1',
-  accentLight: '#818cf8',
+  accent: COLOR_TOKENS.accentPrimary,
+  accentLight: COLOR_TOKENS.accentLight,
 
-  buttonBg: '#2d2d38',
+  buttonBg: COLOR_TOKENS.borderDefault,
   modalOverlay: 'rgba(0, 0, 0, 0.7)',
 };
 

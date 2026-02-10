@@ -1,11 +1,13 @@
 import { StyleSheet, Dimensions } from 'react-native';
+import { COLOR_TOKENS } from '../../constants/designTokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const C = COLOR_TOKENS;
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a10',
+    backgroundColor: C.backgroundApp,
   },
   header: {
     flexDirection: 'row',
@@ -24,18 +26,18 @@ export const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 11,
-    backgroundColor: '#6366f1',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    shadowColor: '#6366f1',
+    backgroundColor: C.accentPrimary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: C.accentPrimary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
   },
   headerLogoImage: {
-    width: 44,
-    height: 44,
+    width: 22,
+    height: 22,
   },
   headerSubtitleRow: {
     flexDirection: 'row',
@@ -61,12 +63,12 @@ export const styles = StyleSheet.create({
   title: {
     fontSize: 23,
     fontFamily: 'SpaceGrotesk_700Bold',
-    color: '#fff',
+    color: C.textPrimary,
     letterSpacing: -0.45,
   },
   headerButton: {
     padding: 8,
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     borderRadius: 12,
   },
   content: {
@@ -79,7 +81,7 @@ export const styles = StyleSheet.create({
     height: 240,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     borderWidth: 1,
     borderColor: '#2a2a3a',
   },
@@ -97,7 +99,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
   },
   sourceImageText: {
-    color: '#fff',
+    color: C.textPrimary,
     fontSize: 12,
     fontWeight: '500',
   },
@@ -108,7 +110,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#fff',
+    color: C.textPrimary,
     marginTop: 12,
   },
   reExtractIconButton: {
@@ -137,7 +139,7 @@ export const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.28)',
   },
   valueOverlayButtonText: {
-    color: '#fff',
+    color: C.textPrimary,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.35,
@@ -146,7 +148,7 @@ export const styles = StyleSheet.create({
     marginHorizontal: 16,
     height: 260,
     borderRadius: 20,
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -180,7 +182,7 @@ export const styles = StyleSheet.create({
   imageCardEmptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: C.textPrimary,
     marginBottom: 4,
   },
   imageCardEmptySubtitle: {
@@ -213,7 +215,7 @@ export const styles = StyleSheet.create({
   imageSourceButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6366f1',
+    color: C.accentPrimary,
   },
 
   // Style Filters - Icon Grid
@@ -234,11 +236,11 @@ export const styles = StyleSheet.create({
     backgroundColor: '#1a1a24',
     gap: 4,
     borderWidth: 1,
-    borderColor: '#24242e',
+    borderColor: C.backgroundControl,
   },
   styleFilterText: {
     fontSize: 11,
-    color: '#a0a0b0',
+    color: C.textSecondary,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -299,7 +301,7 @@ export const styles = StyleSheet.create({
     height: 52,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#2d2d38',
+    borderColor: C.borderDefault,
   },
   colorSwatchSelected: {
     borderWidth: 2.5,
@@ -424,7 +426,7 @@ export const styles = StyleSheet.create({
   colorCountBadgeText: {
     fontSize: 13,
     fontWeight: '700' as const,
-    color: '#fff',
+    color: C.textPrimary,
   },
 
   // Inline Color Detail
@@ -492,7 +494,7 @@ export const styles = StyleSheet.create({
     gap: 6,
   },
   inlineColorCopyText: {
-    color: '#fff',
+    color: C.textPrimary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -576,7 +578,7 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sliderLabel: {
-    color: '#a0a0b0',
+    color: C.textSecondary,
     fontSize: 12,
     fontWeight: '500',
     marginRight: 10,
@@ -586,14 +588,14 @@ export const styles = StyleSheet.create({
     height: 32,
   },
   countBadge: {
-    backgroundColor: '#6366f1',
+    backgroundColor: C.accentPrimary,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     marginLeft: 8,
   },
   countBadgeText: {
-    color: '#fff',
+    color: C.textPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -618,13 +620,13 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#24242e',
+    borderColor: C.backgroundControl,
   },
   actionButtonText: {
-    color: '#a0a0b0',
+    color: C.textSecondary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -635,16 +637,16 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#6366f1',
+    backgroundColor: C.accentPrimary,
     gap: 6,
-    shadowColor: '#6366f1',
+    shadowColor: C.accentPrimary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   saveButtonText: {
-    color: '#fff',
+    color: C.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -655,13 +657,13 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#24242e',
+    borderColor: C.backgroundControl,
   },
   exportButtonText: {
-    color: '#6366f1',
+    color: C.accentPrimary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -676,7 +678,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   colorDetailContent: {
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -701,7 +703,7 @@ export const styles = StyleSheet.create({
     height: 80,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#2d2d38',
+    borderColor: C.borderDefault,
   },
   colorDetailValues: {
     flex: 1,
@@ -726,7 +728,7 @@ export const styles = StyleSheet.create({
   colorValueCompactText: {
     flex: 1,
     fontSize: 12,
-    color: '#fff',
+    color: C.textPrimary,
     fontFamily: 'monospace',
   },
   // Modal Color Preview
@@ -755,7 +757,7 @@ export const styles = StyleSheet.create({
     gap: 6,
   },
   modalColorCopyText: {
-    color: '#fff',
+    color: C.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -792,11 +794,11 @@ export const styles = StyleSheet.create({
   variationsSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: C.textPrimary,
   },
   hueShiftToggle: {
     flexDirection: 'row',
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     borderRadius: 8,
     padding: 2,
   },
@@ -822,7 +824,7 @@ export const styles = StyleSheet.create({
   },
   variationCellBase: {
     borderWidth: 2,
-    borderColor: '#6366f1',
+    borderColor: C.accentPrimary,
     borderRadius: 4,
   },
   variationColor: {
@@ -831,13 +833,13 @@ export const styles = StyleSheet.create({
   },
   variationHex: {
     fontSize: 8,
-    color: '#a0a0b0',
+    color: C.textSecondary,
     fontFamily: 'monospace',
     marginTop: 4,
   },
   variationLabel: {
     fontSize: 8,
-    color: '#8888a0',
+    color: C.textMuted,
   },
   variationsHint: {
     fontSize: 10,
@@ -856,7 +858,7 @@ export const styles = StyleSheet.create({
   harmonySectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: C.textPrimary,
     marginBottom: 12,
   },
   harmonyTypesScroll: {
@@ -871,7 +873,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     marginRight: 8,
   },
   harmonyTypeText: {
@@ -881,7 +883,7 @@ export const styles = StyleSheet.create({
   },
   harmonyDescription: {
     fontSize: 11,
-    color: '#a0a0b0',
+    color: C.textSecondary,
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -899,15 +901,15 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 6,
     borderWidth: 2,
-    borderColor: '#2d2d38',
+    borderColor: C.borderDefault,
   },
   harmonyColorSwatchBase: {
-    borderColor: '#6366f1',
+    borderColor: C.accentPrimary,
     borderWidth: 2,
   },
   harmonyColorHex: {
     fontSize: 9,
-    color: '#a0a0b0',
+    color: C.textSecondary,
     fontFamily: 'monospace',
   },
 
@@ -919,7 +921,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     borderRadius: 16,
     padding: 24,
     width: '85%',
@@ -928,7 +930,7 @@ export const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: C.textPrimary,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -937,7 +939,7 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#fff',
+    color: C.textPrimary,
     marginBottom: 20,
   },
   modalButtons: {
@@ -948,11 +950,11 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#2d2d38',
+    backgroundColor: C.borderDefault,
     alignItems: 'center',
   },
   modalButtonPrimary: {
-    backgroundColor: '#6366f1',
+    backgroundColor: C.accentPrimary,
   },
   modalButtonText: {
     color: '#aaa',
@@ -960,7 +962,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalButtonTextPrimary: {
-    color: '#fff',
+    color: C.textPrimary,
   },
 
   // Export Modal
@@ -973,7 +975,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   exportModalContent: {
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -997,7 +999,7 @@ export const styles = StyleSheet.create({
   exportModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: C.textPrimary,
   },
   exportPreviewScroll: {
     maxHeight: 500,
@@ -1029,12 +1031,12 @@ export const styles = StyleSheet.create({
   paletteCardName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: C.textPrimary,
     marginBottom: 2,
   },
   paletteCardLabel: {
     fontSize: 11,
-    color: '#8888a0',
+    color: C.textMuted,
     letterSpacing: 1,
     marginBottom: 12,
   },
@@ -1057,12 +1059,12 @@ export const styles = StyleSheet.create({
   paletteCardHex: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#fff',
+    color: C.textPrimary,
     fontFamily: 'monospace',
   },
   paletteCardRgb: {
     fontSize: 11,
-    color: '#a0a0b0',
+    color: C.textSecondary,
     fontFamily: 'monospace',
   },
   paletteCardWatermark: {
@@ -1085,11 +1087,11 @@ export const styles = StyleSheet.create({
   },
   paletteCardHistogramLabel: {
     fontSize: 11,
-    color: '#8888a0',
+    color: C.textMuted,
   },
   paletteCardHistogramValue: {
     fontSize: 11,
-    color: '#a0a0b0',
+    color: C.textSecondary,
     fontFamily: 'monospace',
   },
 
@@ -1106,18 +1108,18 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#24242e',
+    backgroundColor: C.backgroundControl,
     gap: 8,
     minHeight: 48,
   },
   snsTypeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#a0a0b0',
+    color: C.textSecondary,
   },
   snsTypeRatio: {
     fontSize: 11,
-    color: '#8888a0',
+    color: C.textMuted,
     backgroundColor: '#1a1a24',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1135,7 +1137,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 20,
-    backgroundColor: '#24242e',
+    backgroundColor: C.backgroundControl,
     minHeight: 44,
     justifyContent: 'center',
   },
@@ -1274,7 +1276,7 @@ export const styles = StyleSheet.create({
   twitterUnifiedStatValue: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#fff',
+    color: C.textPrimary,
   },
   twitterUnifiedStatLabel: {
     fontSize: 6,
@@ -1369,7 +1371,7 @@ export const styles = StyleSheet.create({
   snsCardStatValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: C.textPrimary,
   },
   snsCardStatLabel: {
     fontSize: 10,
@@ -1414,20 +1416,20 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#24242e',
+    backgroundColor: C.backgroundControl,
     gap: 6,
     minHeight: 44,
   },
   formatOptionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#a0a0b0',
+    color: C.textSecondary,
   },
   exportConfirmButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6366f1',
+    backgroundColor: C.accentPrimary,
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
@@ -1436,7 +1438,7 @@ export const styles = StyleSheet.create({
   exportConfirmButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: C.textPrimary,
   },
   quickCopySection: {
     marginBottom: 8,
@@ -1457,20 +1459,20 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 10,
-    backgroundColor: '#24242e',
+    backgroundColor: C.backgroundControl,
     minHeight: 44,
   },
   quickCopyButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#a0a0b0',
+    color: C.textSecondary,
   },
 
   // Histogram - Compact
   histogramCard: {
     marginHorizontal: 16,
     marginTop: 4,
-    backgroundColor: '#16161e',
+    backgroundColor: C.backgroundSurface,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
@@ -1499,7 +1501,7 @@ export const styles = StyleSheet.create({
   },
   histogramStatText: {
     fontSize: 14,
-    color: '#6366f1',
+    color: C.accentPrimary,
     fontWeight: '700',
   },
   histogramContrastLabel: {
@@ -1530,7 +1532,7 @@ export const styles = StyleSheet.create({
   },
   histogramEmptyText: {
     fontSize: 11,
-    color: '#8888a0',
+    color: C.textMuted,
   },
   histogramScale: {
     marginTop: 6,
@@ -1567,12 +1569,12 @@ export const styles = StyleSheet.create({
   },
   histogramStatValue: {
     fontSize: 13,
-    color: '#fff',
+    color: C.textPrimary,
     fontWeight: '600',
   },
   histogramStatValueAvg: {
     fontSize: 13,
-    color: '#6366f1',
+    color: C.accentPrimary,
     fontWeight: '700',
   },
 
@@ -1610,13 +1612,13 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 4,
-    borderColor: '#fff',
+    borderColor: C.textPrimary,
   },
   captureButtonInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#fff',
+    backgroundColor: C.textPrimary,
   },
 
   // Info Modal
@@ -1683,7 +1685,7 @@ export const styles = StyleSheet.create({
   infoModalCloseButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: C.textPrimary,
   },
 
   // Toast
@@ -1712,7 +1714,7 @@ export const styles = StyleSheet.create({
     elevation: 8,
   },
   toastText: {
-    color: '#fff',
+    color: C.textPrimary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1863,7 +1865,7 @@ export const styles = StyleSheet.create({
   advancedCountText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: C.textPrimary,
   },
   advancedToggleRow: {
     flexDirection: 'row',

@@ -632,7 +632,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         ) : (
           <View style={[styles.colorCardsContainer, styles.colorCardsEmpty]}>
             {Array.from({ length: colorCount }).map((_, index) => {
-              const hintColors = ['#6366f1', '#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#fb923c', '#a78bfa', '#f87171'];
+              const hintColors = ['#4f6d8c', '#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#fb923c', '#a78bfa', '#f87171'];
               const hintColor = hintColors[index % hintColors.length];
               return (
                 <View key={index} style={styles.colorCard}>
