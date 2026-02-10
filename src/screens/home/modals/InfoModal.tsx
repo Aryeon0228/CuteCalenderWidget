@@ -22,10 +22,10 @@ export default function InfoModal({ visible, theme, onClose }: InfoModalProps) {
       <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
         <View style={[styles.infoModalContent, { backgroundColor: theme.backgroundSecondary }]}>
           <View style={styles.infoModalHeader}>
-            <View style={[styles.infoModalIcon, { backgroundColor: theme.accent }]}>
+            <View style={[styles.headerLogoMark, { marginBottom: 16 }]}>
               <Image
                 source={require('../../../../assets/pow-header.png')}
-                style={styles.infoModalIconImage}
+                style={styles.headerLogoImage}
                 resizeMode="contain"
               />
             </View>

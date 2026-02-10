@@ -5,8 +5,8 @@
 
 export const COLOR_TOKENS = {
   // Brand / Accent
-  accentPrimary: '#4f6d8c',
-  accentLight: '#6a87a6',
+  accentPrimary: '#3b426a',
+  accentLight: '#525b88',
   accentInteractive: '#4f7bb8',
   accentMuted: '#606b78',
   accentVariationLightness: '#5b6775',
