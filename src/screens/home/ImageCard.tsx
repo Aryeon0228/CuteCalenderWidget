@@ -6,6 +6,7 @@ import { Grayscale } from 'react-native-color-matrix-image-filters';
 
 import { styles } from './HomeScreen.styles';
 import { ThemeColors } from '../../store/themeStore';
+import { COLOR_TOKENS } from '../../constants/designTokens';
 
 interface ImageCardProps {
   currentImageUri: string | null;
@@ -30,6 +31,8 @@ export default function ImageCard({
   onOpenCamera,
   onPickFromGallery,
 }: ImageCardProps) {
+  const cameraAccent = COLOR_TOKENS.info;
+
   if (currentImageUri) {
     const imageElement = (
       <Image
@@ -114,8 +117,8 @@ export default function ImageCard({
           style={[styles.imageSourceButton, { backgroundColor: theme.backgroundTertiary, borderColor: theme.borderLight }]}
           onPress={onOpenCamera}
         >
-          <View style={[styles.imageSourceIconBg, { backgroundColor: theme.accent + '20' }]}>
-            <Ionicons name="camera" size={22} color={theme.accent} />
+          <View style={[styles.imageSourceIconBg, { backgroundColor: `${cameraAccent}24` }]}>
+            <Ionicons name="camera" size={22} color={cameraAccent} />
           </View>
           <Text style={[styles.imageSourceButtonText, { color: theme.textPrimary }]}>Camera</Text>
         </TouchableOpacity>
