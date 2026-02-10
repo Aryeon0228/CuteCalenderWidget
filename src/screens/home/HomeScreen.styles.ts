@@ -83,7 +83,7 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: C.backgroundSurface,
     borderWidth: 1,
-    borderColor: '#2a2a3a',
+    borderColor: C.borderStrong,
   },
   image: {
     width: '100%',
@@ -153,7 +153,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderWidth: 1,
-    borderColor: '#2a2a3a',
+    borderColor: C.borderStrong,
     overflow: 'hidden',
   },
   emptyDecoContainer: {
@@ -200,10 +200,10 @@ export const styles = StyleSheet.create({
     width: 110,
     height: 80,
     borderRadius: 16,
-    backgroundColor: '#1e1e2a',
+    backgroundColor: C.backgroundElevated,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#2a2a3a',
+    borderColor: C.borderStrong,
   },
   imageSourceIconBg: {
     width: 38,
@@ -233,7 +233,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#1a1a24',
+    backgroundColor: C.backgroundLayer,
     gap: 4,
     borderWidth: 1,
     borderColor: C.backgroundControl,
@@ -336,7 +336,7 @@ export const styles = StyleSheet.create({
     opacity: 0.6,
   },
   colorSwatchEmpty: {
-    backgroundColor: '#1a1a24',
+    backgroundColor: C.backgroundLayer,
     borderStyle: 'dashed',
     borderWidth: 1.5,
     justifyContent: 'center',
@@ -606,12 +606,12 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingBottom: 36,
-    backgroundColor: '#101018',
+    backgroundColor: C.backgroundActionBar,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#1e1e2a',
+    borderTopColor: C.backgroundElevated,
   },
   actionButton: {
     flex: 1,
@@ -688,7 +688,7 @@ export const styles = StyleSheet.create({
   colorDetailHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#3e3e50',
+    backgroundColor: C.borderHandle,
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
@@ -714,7 +714,7 @@ export const styles = StyleSheet.create({
   colorValueCompact: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0c0c12',
+    backgroundColor: C.backgroundSurfaceAlt,
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -722,7 +722,7 @@ export const styles = StyleSheet.create({
   colorValueCompactLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#9090a0',
+    color: C.textSubtle,
     width: 28,
   },
   colorValueCompactText: {
@@ -780,7 +780,7 @@ export const styles = StyleSheet.create({
 
   // Value Variations
   variationsSection: {
-    backgroundColor: '#0c0c12',
+    backgroundColor: C.backgroundSurfaceAlt,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -810,7 +810,7 @@ export const styles = StyleSheet.create({
   hueShiftOptionText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#9090a0',
+    color: C.textSubtle,
   },
   variationStrip: {
     flexDirection: 'row',
@@ -843,14 +843,14 @@ export const styles = StyleSheet.create({
   },
   variationsHint: {
     fontSize: 10,
-    color: '#9090a0',
+    color: C.textSubtle,
     textAlign: 'center',
     marginTop: 4,
   },
 
   // Color Harmony
   harmonySection: {
-    backgroundColor: '#0c0c12',
+    backgroundColor: C.backgroundSurfaceAlt,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -879,7 +879,7 @@ export const styles = StyleSheet.create({
   harmonyTypeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#9090a0',
+    color: C.textSubtle,
   },
   harmonyDescription: {
     fontSize: 11,
@@ -935,7 +935,7 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   modalInput: {
-    backgroundColor: '#000',
+    backgroundColor: C.backgroundInput,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
@@ -957,7 +957,7 @@ export const styles = StyleSheet.create({
     backgroundColor: C.accentPrimary,
   },
   modalButtonText: {
-    color: '#aaa',
+    color: C.textDisabled,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -984,7 +984,7 @@ export const styles = StyleSheet.create({
   exportModalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#3e3e50',
+    backgroundColor: C.borderHandle,
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
@@ -1007,7 +1007,7 @@ export const styles = StyleSheet.create({
 
   // Palette Card for export
   paletteCard: {
-    backgroundColor: '#1a1a24',
+    backgroundColor: C.backgroundLayer,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -1070,14 +1070,14 @@ export const styles = StyleSheet.create({
   paletteCardWatermark: {
     textAlign: 'center',
     fontSize: 10,
-    color: '#444',
+    color: C.textGhost,
     marginTop: 12,
   },
   paletteCardHistogram: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2a2a34',
+    borderTopColor: C.borderSubtle,
   },
   paletteCardHistogramRow: {
     flexDirection: 'row',
@@ -1120,7 +1120,7 @@ export const styles = StyleSheet.create({
   snsTypeRatio: {
     fontSize: 11,
     color: C.textMuted,
-    backgroundColor: '#1a1a24',
+    backgroundColor: C.backgroundLayer,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1144,7 +1144,7 @@ export const styles = StyleSheet.create({
   cardOptionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#9090a0',
+    color: C.textSubtle,
   },
 
   // SNS Card
@@ -1400,7 +1400,7 @@ export const styles = StyleSheet.create({
   },
   formatSectionTitle: {
     fontSize: 12,
-    color: '#888',
+    color: C.textDim,
     fontWeight: '600',
     marginBottom: 10,
     letterSpacing: 0.5,
@@ -1445,7 +1445,7 @@ export const styles = StyleSheet.create({
   },
   quickCopyTitle: {
     fontSize: 12,
-    color: '#888',
+    color: C.textDim,
     fontWeight: '600',
     marginBottom: 10,
   },
@@ -1476,7 +1476,7 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#1e1e2a',
+    borderColor: C.backgroundElevated,
   },
   histogramHeader: {
     flexDirection: 'row',
@@ -1491,7 +1491,7 @@ export const styles = StyleSheet.create({
   histogramTitle: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#9999aa',
+    color: C.textFaint,
     letterSpacing: 0.5,
   },
   histogramStats: {
@@ -1506,7 +1506,7 @@ export const styles = StyleSheet.create({
   },
   histogramContrastLabel: {
     fontSize: 10,
-    color: '#9999aa',
+    color: C.textFaint,
     marginRight: 6,
   },
   histogramBars: {
@@ -1528,7 +1528,7 @@ export const styles = StyleSheet.create({
   },
   histogramBarEmpty: {
     height: 8,
-    backgroundColor: '#3a3a4a',
+    backgroundColor: C.borderNeutral,
   },
   histogramEmptyText: {
     fontSize: 11,
@@ -1553,18 +1553,18 @@ export const styles = StyleSheet.create({
   },
   histogramStatItem: {
     flex: 1,
-    backgroundColor: '#0c0c12',
+    backgroundColor: C.backgroundSurfaceAlt,
     borderRadius: 6,
     paddingVertical: 6,
     paddingHorizontal: 4,
     alignItems: 'center',
   },
   histogramStatItemAvg: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: C.backgroundCardAlt,
   },
   histogramStatLabel: {
     fontSize: 9,
-    color: '#9090a0',
+    color: C.textSubtle,
     marginTop: 2,
   },
   histogramStatValue: {
@@ -1581,7 +1581,7 @@ export const styles = StyleSheet.create({
   // Camera
   cameraContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: C.backgroundInput,
   },
   camera: {
     ...StyleSheet.absoluteFillObject,
@@ -1706,8 +1706,8 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#34d399' + '40',
-    shadowColor: '#000',
+    borderColor: `${C.success}40`,
+    shadowColor: C.backgroundInput,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
