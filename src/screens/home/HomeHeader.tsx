@@ -8,11 +8,13 @@ import { ThemeColors } from '../../store/themeStore';
 interface HomeHeaderProps {
   theme: ThemeColors;
   onShowInfo: () => void;
+  onHapticLight: () => void;
 }
 
 export default function HomeHeader({
   theme,
   onShowInfo,
+  onHapticLight,
 }: HomeHeaderProps) {
   return (
     <View style={styles.header}>
@@ -38,7 +40,10 @@ export default function HomeHeader({
             styles.headerButton,
             { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderLight, borderWidth: 1 },
           ]}
-          onPress={onShowInfo}
+          onPress={() => {
+            onHapticLight();
+            onShowInfo();
+          }}
         >
           <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
         </TouchableOpacity>

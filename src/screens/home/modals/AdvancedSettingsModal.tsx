@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { styles } from '../HomeScreen.styles';
 import { ThemeColors } from '../../../store/themeStore';
 import { ExtractionMethod } from '../../../lib/colorExtractor';
-import { ColorBlindnessType, COLOR_BLINDNESS_TYPES } from '../../../lib/colorUtils';
+import { ColorBlindnessType, COLOR_BLINDNESS_TYPES, type AppLanguage } from '../../../lib/colorUtils';
 import { StyleFilter, STYLE_FILTER_KEYS, STYLE_PRESETS } from '../../../constants/stylePresets';
 
 interface AdvancedSettingsModalProps {
@@ -15,6 +15,8 @@ interface AdvancedSettingsModalProps {
   onStyleFilterChange: (value: StyleFilter) => void;
   extractionMethod: ExtractionMethod;
   onMethodChange: (value: ExtractionMethod) => void;
+  language: AppLanguage;
+  onLanguageChange: (value: AppLanguage) => void;
   colorCount: number;
   onColorCountChange: (value: number) => void;
   colorBlindMode: ColorBlindnessType;
@@ -30,6 +32,8 @@ export default function AdvancedSettingsModal({
   onStyleFilterChange,
   extractionMethod,
   onMethodChange,
+  language,
+  onLanguageChange,
   colorCount,
   onColorCountChange,
   colorBlindMode,
@@ -40,6 +44,10 @@ export default function AdvancedSettingsModal({
   const methodAccentColors: Record<ExtractionMethod, string> = {
     histogram: '#38bdf8',
     kmeans: '#fb923c',
+  };
+  const methodDescriptions: Record<ExtractionMethod, string> = {
+    histogram: language === 'ko' ? '색조 구간 기반 (빠름)' : 'Hue region-based (fast)',
+    kmeans: language === 'ko' ? '픽셀 군집화 (정확)' : 'Pixel clustering (accurate)',
   };
 
   return (
@@ -52,13 +60,21 @@ export default function AdvancedSettingsModal({
       <View style={[styles.advancedOverlay, { backgroundColor: theme.modalOverlay }]}>
         <TouchableOpacity
           style={styles.advancedBackground}
-          onPress={onClose}
+          onPress={() => {
+            onHapticLight();
+            onClose();
+          }}
         />
         <View style={[styles.advancedContent, { backgroundColor: theme.backgroundSecondary }]}>
           <View style={[styles.advancedHandle, { backgroundColor: theme.border }]} />
           <View style={styles.advancedHeader}>
             <Text style={[styles.advancedTitle, { color: theme.textPrimary }]}>Settings</Text>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity
+              onPress={() => {
+                onHapticLight();
+                onClose();
+              }}
+            >
               <Ionicons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -105,7 +121,7 @@ export default function AdvancedSettingsModal({
                   Histogram
                 </Text>
                 <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'histogram' ? 'rgba(255,255,255,0.78)' : theme.textMuted }]}>
-                  Hue region-based (fast)
+                  {methodDescriptions.histogram}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -122,7 +138,44 @@ export default function AdvancedSettingsModal({
                   K-Means
                 </Text>
                 <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'kmeans' ? 'rgba(255,255,255,0.78)' : theme.textMuted }]}>
-                  Pixel clustering (accurate)
+                  {methodDescriptions.kmeans}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Language */}
+            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>Language</Text>
+            <View style={styles.advancedPresetRow}>
+              <TouchableOpacity
+                style={[
+                  styles.advancedPresetButton,
+                  {
+                    backgroundColor: language === 'ko' ? theme.accent : theme.backgroundTertiary,
+                  },
+                ]}
+                onPress={() => {
+                  onHapticLight();
+                  onLanguageChange('ko');
+                }}
+              >
+                <Text style={[styles.advancedPresetText, { color: language === 'ko' ? '#fff' : theme.textSecondary }]}>
+                  Korean
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.advancedPresetButton,
+                  {
+                    backgroundColor: language === 'en' ? theme.accent : theme.backgroundTertiary,
+                  },
+                ]}
+                onPress={() => {
+                  onHapticLight();
+                  onLanguageChange('en');
+                }}
+              >
+                <Text style={[styles.advancedPresetText, { color: language === 'en' ? '#fff' : theme.textSecondary }]}>
+                  English
                 </Text>
               </TouchableOpacity>
             </View>

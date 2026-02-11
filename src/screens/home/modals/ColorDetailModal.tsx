@@ -13,6 +13,7 @@ import {
   generateColorVariations,
   generateColorHarmonies,
   getLuminance,
+  type AppLanguage,
   type ColorInfo,
   type HarmonyType,
 } from '../../../lib/colorUtils';
@@ -30,6 +31,7 @@ interface ColorDetailModalProps {
   onVariationHueShiftChange: (value: boolean) => void;
   selectedHarmony: HarmonyType;
   onHarmonyChange: (value: HarmonyType) => void;
+  language: AppLanguage;
   onHapticLight: () => void;
 }
 
@@ -46,6 +48,7 @@ export default function ColorDetailModal({
   onVariationHueShiftChange,
   selectedHarmony,
   onHarmonyChange,
+  language,
   onHapticLight,
 }: ColorDetailModalProps) {
   return (
@@ -177,7 +180,7 @@ export default function ColorDetailModal({
                     showsHorizontalScrollIndicator={false}
                     style={styles.harmonyTypesScroll}
                   >
-                    {generateColorHarmonies(colorInfo.hex).map((harmony) => (
+                    {generateColorHarmonies(colorInfo.hex, language).map((harmony) => (
                       <TouchableOpacity
                         key={harmony.type}
                         style={[
@@ -207,7 +210,7 @@ export default function ColorDetailModal({
                   </ScrollView>
 
                   {(() => {
-                    const harmonies = generateColorHarmonies(colorInfo.hex);
+                    const harmonies = generateColorHarmonies(colorInfo.hex, language);
                     const currentHarmony = harmonies.find((h) => h.type === selectedHarmony);
                     if (!currentHarmony) return null;
 

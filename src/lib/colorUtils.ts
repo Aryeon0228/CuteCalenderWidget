@@ -426,6 +426,8 @@ export interface ColorHarmony {
   colors: HarmonyColor[];
 }
 
+export type AppLanguage = 'ko' | 'en';
+
 /**
  * Generate color at a specific hue rotation from base color
  */
@@ -538,15 +540,15 @@ export function simulateColorBlindness(hex: string, type: ColorBlindnessType): s
 /**
  * Generate all color harmonies for a given base color
  */
-export function generateColorHarmonies(hex: string): ColorHarmony[] {
-  const rgb = hexToRgb(hex);
-  const { h } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+export function generateColorHarmonies(hex: string, language: AppLanguage = 'ko'): ColorHarmony[] {
+  const complementaryDescription =
+    language === 'ko' ? '보색 - 정반대 색상' : 'Complementary - opposite on wheel';
 
   return [
     {
       type: 'complementary',
       name: 'Complementary',
-      description: '보색 - 정반대 색상',
+      description: complementaryDescription,
       colors: [
         { hex, name: 'Base', angle: 0 },
         { hex: rotateHue(hex, 180), name: 'Complement', angle: 180 },
@@ -555,7 +557,7 @@ export function generateColorHarmonies(hex: string): ColorHarmony[] {
     {
       type: 'analogous',
       name: 'Analogous',
-      description: '유사색 - 인접한 색상',
+      description: 'Analogous - adjacent colors',
       colors: [
         { hex: rotateHue(hex, -30), name: 'Left', angle: -30 },
         { hex, name: 'Base', angle: 0 },
@@ -565,7 +567,7 @@ export function generateColorHarmonies(hex: string): ColorHarmony[] {
     {
       type: 'triadic',
       name: 'Triadic',
-      description: '삼각배색 - 120° 간격',
+      description: 'Triadic - 120° spacing',
       colors: [
         { hex, name: 'Base', angle: 0 },
         { hex: rotateHue(hex, 120), name: 'Second', angle: 120 },
@@ -575,7 +577,7 @@ export function generateColorHarmonies(hex: string): ColorHarmony[] {
     {
       type: 'split-complementary',
       name: 'Split Comp.',
-      description: '분열보색 - 보색 양옆',
+      description: 'Split complementary - around complement',
       colors: [
         { hex, name: 'Base', angle: 0 },
         { hex: rotateHue(hex, 150), name: 'Split 1', angle: 150 },
@@ -585,7 +587,7 @@ export function generateColorHarmonies(hex: string): ColorHarmony[] {
     {
       type: 'tetradic',
       name: 'Tetradic',
-      description: '사각배색 - 90° 간격',
+      description: 'Tetradic - 90° spacing',
       colors: [
         { hex, name: 'Base', angle: 0 },
         { hex: rotateHue(hex, 90), name: 'Second', angle: 90 },

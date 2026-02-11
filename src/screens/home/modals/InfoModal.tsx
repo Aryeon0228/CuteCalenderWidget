@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, Linking, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 
 import { styles } from '../HomeScreen.styles';
 import { ThemeColors } from '../../../store/themeStore';
@@ -9,9 +10,12 @@ interface InfoModalProps {
   visible: boolean;
   theme: ThemeColors;
   onClose: () => void;
+  onHapticLight: () => void;
 }
 
-export default function InfoModal({ visible, theme, onClose }: InfoModalProps) {
+export default function InfoModal({ visible, theme, onClose, onHapticLight }: InfoModalProps) {
+  const appVersion = Constants.expoConfig?.version ?? '1.1.0';
+
   return (
     <Modal
       visible={visible}
@@ -31,12 +35,13 @@ export default function InfoModal({ visible, theme, onClose }: InfoModalProps) {
             </View>
             <Text style={[styles.infoModalTitle, { color: theme.textPrimary }]}>Pixel Paw</Text>
             <Text style={[styles.infoModalVersion, { color: theme.textMuted }]}>Game Art Color Extractor</Text>
-            <Text style={[styles.infoModalVersionNum, { color: theme.textMuted }]}>v1.0.0</Text>
+            <Text style={[styles.infoModalVersionNum, { color: theme.textMuted }]}>v{appVersion}</Text>
           </View>
 
           <TouchableOpacity
             style={[styles.infoModalButton, { backgroundColor: theme.backgroundTertiary }]}
             onPress={() => {
+              onHapticLight();
               Linking.openURL('mailto:studio.aryeon@gmail.com?subject=Pixel Paw Feedback');
             }}
           >
@@ -52,7 +57,10 @@ export default function InfoModal({ visible, theme, onClose }: InfoModalProps) {
 
           <TouchableOpacity
             style={[styles.infoModalCloseButton, { backgroundColor: theme.accent }]}
-            onPress={onClose}
+            onPress={() => {
+              onHapticLight();
+              onClose();
+            }}
           >
             <Text style={styles.infoModalCloseButtonText}>닫기</Text>
           </TouchableOpacity>

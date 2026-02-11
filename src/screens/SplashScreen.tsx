@@ -9,7 +9,7 @@ interface SplashScreenProps {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PRIMARY_RING_SIZE = Math.min(SCREEN_WIDTH * 0.52, 250);
 const SECONDARY_RING_SIZE = PRIMARY_RING_SIZE * 1.24;
-const FINISH_DELAY_MS = 1750;
+const FINISH_DELAY_MS = 2450;
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const coverScaleAnim = useRef(new Animated.Value(1)).current;

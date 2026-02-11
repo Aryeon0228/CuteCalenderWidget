@@ -40,6 +40,7 @@ import {
   HarmonyType,
   simulateColorBlindness,
   ColorBlindnessType,
+  type AppLanguage,
   type ColorInfo,
 } from '../lib/colorUtils';
 import { StyleFilter, STYLE_PRESETS } from '../constants/stylePresets';
@@ -92,6 +93,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [variationHueShift, setVariationHueShift] = useState(true);
   const [selectedHarmony, setSelectedHarmony] = useState<HarmonyType>('complementary');
   const [colorBlindMode, setColorBlindMode] = useState<ColorBlindnessType>('none');
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>('ko');
 
   // Histogram State
   const [histogram, setHistogram] = useState<LuminosityHistogram | null>(null);
@@ -172,8 +174,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   }, [processedColors, selectedColorIndex]);
 
   const colorHarmonies = useMemo(
-    () => (colorInfo ? generateColorHarmonies(colorInfo.hex) : []),
-    [colorInfo]
+    () => (colorInfo ? generateColorHarmonies(colorInfo.hex, appLanguage) : []),
+    [appLanguage, colorInfo]
   );
 
   const currentHarmony = useMemo(
@@ -517,6 +519,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       <HomeHeader
         theme={theme}
         onShowInfo={() => setShowInfo(true)}
+        onHapticLight={hapticLight}
       />
 
       <ScrollView
@@ -588,7 +591,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           </ScrollView>
           <TouchableOpacity
             style={[styles.summaryEditButton, { backgroundColor: theme.backgroundTertiary }]}
-            onPress={() => setShowAdvanced(true)}
+            onPress={() => {
+              hapticLight();
+              setShowAdvanced(true);
+            }}
           >
             <Ionicons name="options-outline" size={16} color={theme.textSecondary} />
           </TouchableOpacity>
@@ -702,8 +708,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     : Math.min(255, lightnessGray + 35);
                   const lightnessHex = rgbToHex(boostedGray, boostedGray, boostedGray);
                   const lightnessBorder = boostedGray >= 180
-                    ? 'rgba(0,0,0,0.6)'
-                    : 'rgba(255,255,255,0.75)';
+                    ? 'rgba(0,0,0,0.32)'
+                    : 'rgba(255,255,255,0.4)';
                   const hslTrackBg = isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
                   const hslChannels: Array<{
                     label: string;
@@ -756,7 +762,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                     styles.formatSegmentButton,
                     colorFormat === fmt && { backgroundColor: FORMAT_ACCENT_COLORS[fmt] },
                   ]}
-                  onPress={() => setColorFormat(fmt)}
+                  onPress={() => {
+                    hapticLight();
+                    setColorFormat(fmt);
+                  }}
                 >
                   <Text style={[
                     styles.formatSegmentText,
@@ -778,7 +787,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       styles.hueShiftOption,
                       !variationHueShift && { backgroundColor: VARIATION_TOGGLE_COLORS.lightness },
                     ]}
-                    onPress={() => setVariationHueShift(false)}
+                    onPress={() => {
+                      hapticLight();
+                      setVariationHueShift(false);
+                    }}
                   >
                     <Text
                       style={[
@@ -794,7 +806,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                       styles.hueShiftOption,
                       variationHueShift && { backgroundColor: VARIATION_TOGGLE_COLORS.hueShift },
                     ]}
-                    onPress={() => setVariationHueShift(true)}
+                    onPress={() => {
+                      hapticLight();
+                      setVariationHueShift(true);
+                    }}
                   >
                     <Text
                       style={[
@@ -986,6 +1001,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         onNavigateToLibrary={onNavigateToLibrary}
         onSave={handleSave}
         onExport={handleExport}
+        onHapticLight={hapticLight}
       />
 
       <ColorDetailModal
@@ -1001,6 +1017,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         onVariationHueShiftChange={setVariationHueShift}
         selectedHarmony={selectedHarmony}
         onHarmonyChange={setSelectedHarmony}
+        language={appLanguage}
         onHapticLight={hapticLight}
       />
 
@@ -1079,6 +1096,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         onStyleFilterChange={setStyleFilter}
         extractionMethod={extractionMethod}
         onMethodChange={handleMethodChange}
+        language={appLanguage}
+        onLanguageChange={setAppLanguage}
         colorCount={colorCount}
         onColorCountChange={(newCount) => {
           setColorCount(newCount);
@@ -1094,6 +1113,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         visible={showInfo}
         theme={theme}
         onClose={() => setShowInfo(false)}
+        onHapticLight={hapticLight}
       />
 
       {/* Inline Toast */}

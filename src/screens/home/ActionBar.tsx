@@ -10,6 +10,7 @@ interface ActionBarProps {
   onNavigateToLibrary: () => void;
   onSave: () => void;
   onExport: () => void;
+  onHapticLight: () => void;
 }
 
 export default function ActionBar({
@@ -17,6 +18,7 @@ export default function ActionBar({
   onNavigateToLibrary,
   onSave,
   onExport,
+  onHapticLight,
 }: ActionBarProps) {
   const neutralButtonStyle = {
     backgroundColor: theme.backgroundTertiary,
@@ -26,17 +28,35 @@ export default function ActionBar({
   return (
     <View style={[styles.actionBar, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.border }]}
     >
-      <TouchableOpacity style={[styles.actionButton, neutralButtonStyle]} onPress={onNavigateToLibrary}>
+      <TouchableOpacity
+        style={[styles.actionButton, neutralButtonStyle]}
+        onPress={() => {
+          onHapticLight();
+          onNavigateToLibrary();
+        }}
+      >
         <Ionicons name="library-outline" size={22} color={theme.textSecondary} />
         <Text style={[styles.actionButtonText, { color: theme.textSecondary }]}>Library</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.saveButton} onPress={onSave}>
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={() => {
+          onHapticLight();
+          onSave();
+        }}
+      >
         <Ionicons name="download-outline" size={20} color="#fff" />
         <Text style={styles.saveButtonText}>Save</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.exportButton, neutralButtonStyle]} onPress={onExport}>
+      <TouchableOpacity
+        style={[styles.exportButton, neutralButtonStyle]}
+        onPress={() => {
+          onHapticLight();
+          onExport();
+        }}
+      >
         <Ionicons name="share-outline" size={22} color={theme.accent} />
         <Text style={[styles.exportButtonText, { color: theme.accent }]}>Export</Text>
       </TouchableOpacity>
