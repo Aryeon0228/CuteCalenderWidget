@@ -10,7 +10,7 @@ export const COLOR_TOKENS = {
   accentInteractive: '#4f7bb8',
   accentMuted: '#606b78',
   accentVariationLightness: '#5b6775',
-  accentVariationHueShift: '#22d3ee',
+  accentVariationHueShift: '#36a9b8',
 
   // Semantic
   warning: '#f59e0b',
