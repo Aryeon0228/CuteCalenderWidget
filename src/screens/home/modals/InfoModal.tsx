@@ -108,7 +108,7 @@ export default function InfoModal({
           </View>
 
           <Text style={[styles.infoModalFooter, { color: theme.textMuted }]}>
-            Made with 🤍 by Studio Aryeon
+            {'Built by Studio Aryeon\nwith Codex and Claude Code'}
           </Text>
 
           <TouchableOpacity

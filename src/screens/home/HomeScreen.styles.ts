@@ -1662,6 +1662,8 @@ export const styles = StyleSheet.create({
   },
   infoModalFooter: {
     fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
     marginBottom: 20,
   },
   infoModalCloseButton: {
