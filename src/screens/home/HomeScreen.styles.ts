@@ -1803,6 +1803,11 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
+  advancedPresetInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   advancedPresetText: {
     fontSize: 11,
     fontWeight: '700',

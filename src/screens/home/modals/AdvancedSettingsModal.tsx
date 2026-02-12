@@ -39,13 +39,19 @@ export default function AdvancedSettingsModal({
   onClose,
   onHapticLight,
 }: AdvancedSettingsModalProps) {
+  const presetIcons: Record<StyleFilter, string> = {
+    original: 'ellipse-outline',
+    hypercasual: 'sparkles-outline',
+    stylized: 'brush-outline',
+    realistic: 'eye-outline',
+  };
   const methodAccentColors: Record<ExtractionMethod, string> = {
     histogram: '#38bdf8',
     kmeans: '#fb923c',
   };
   const methodDescriptions: Record<ExtractionMethod, string> = {
-    histogram: language === 'ko' ? '색조 구간 기반 (빠름)' : 'Hue region-based (fast)',
-    kmeans: language === 'ko' ? '픽셀 군집화 (정확)' : 'Pixel clustering (accurate)',
+    histogram: language === 'ko' ? '색/밝기 분포 기반 대표색 추출 (빠름)' : 'Distribution-based dominant colors (fast)',
+    kmeans: language === 'ko' ? '픽셀 군집화로 대표색 K개 추출 (정확)' : 'Pixel clustering for K dominant colors (accurate)',
   };
   const colorVisionTitle = language === 'ko' ? '색각 시뮬레이션' : 'Color Vision Simulation';
   const cvdOptions = getColorBlindnessTypes(language);
@@ -97,9 +103,16 @@ export default function AdvancedSettingsModal({
                     onStyleFilterChange(filter);
                   }}
                 >
-                  <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color }]}>
-                    {STYLE_PRESETS[filter].name}
-                  </Text>
+                  <View style={styles.advancedPresetInline}>
+                    <Ionicons
+                      name={presetIcons[filter] as any}
+                      size={14}
+                      color={styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color}
+                    />
+                    <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color }]}>
+                      {STYLE_PRESETS[filter].name}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
