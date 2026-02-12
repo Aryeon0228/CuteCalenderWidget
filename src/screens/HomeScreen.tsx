@@ -199,12 +199,12 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const countChipColor = '#a78bfa';
   const methodDescriptions: Record<ExtractionMethod, string> = isKorean
     ? {
-      histogram: '색/밝기 분포 기반 대표색 추출 (빠름)',
-      kmeans: '픽셀 군집화로 대표색 K개 추출 (정확)',
+      histogram: '색/밝기 분포 기반 대표색 추출',
+      kmeans: '대표색 K개 추출',
     }
     : {
-      histogram: 'Distribution-based (fast)',
-      kmeans: 'Pixel clustering (accurate)',
+      histogram: 'Distribution-based dominant colors',
+      kmeans: 'K dominant colors extraction',
     };
 
   const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {

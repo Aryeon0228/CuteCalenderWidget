@@ -50,8 +50,8 @@ export default function AdvancedSettingsModal({
     kmeans: '#f43f5e',
   };
   const methodDescriptions: Record<ExtractionMethod, string> = {
-    histogram: language === 'ko' ? '색/밝기 분포 기반 대표색 추출 (빠름)' : 'Distribution-based dominant colors (fast)',
-    kmeans: language === 'ko' ? '픽셀 군집화로 대표색 K개 추출 (정확)' : 'Pixel clustering for K dominant colors (accurate)',
+    histogram: language === 'ko' ? '색/밝기 분포 기반 대표색 추출' : 'Distribution-based dominant colors',
+    kmeans: language === 'ko' ? '대표색 K개 추출' : 'K dominant colors extraction',
   };
   const colorVisionTitle = language === 'ko' ? '색각 시뮬레이션' : 'Color Vision Simulation';
   const cvdOptions = getColorBlindnessTypes(language);
