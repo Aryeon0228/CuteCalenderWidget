@@ -7,13 +7,14 @@ interface SplashScreenProps {
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const FINISH_DELAY_MS = 2450;
+const FINISH_DELAY_MS = 3150;
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
-  const coverScaleAnim = useRef(new Animated.Value(0.62)).current;
+  const coverScaleAnim = useRef(new Animated.Value(0.5)).current;
   const auroraAnim = useRef(new Animated.Value(0)).current;
   const mistAnim = useRef(new Animated.Value(0)).current;
   const sweepAnim = useRef(new Animated.Value(0)).current;
+  const prismAnim = useRef(new Animated.Value(0)).current;
   const titleOpacityAnim = useRef(new Animated.Value(0)).current;
   const titleTranslateAnim = useRef(new Animated.Value(18)).current;
   const titleScaleAnim = useRef(new Animated.Value(0.92)).current;
@@ -63,35 +64,53 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       })
     );
 
+    const prismLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(prismAnim, {
+          toValue: 1,
+          duration: 1450,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(prismAnim, {
+          toValue: 0,
+          duration: 1450,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
     auroraLoop.start();
     mistLoop.start();
     sweepLoop.start();
+    prismLoop.start();
 
     Animated.timing(coverScaleAnim, {
-      toValue: 0.68,
-      duration: 2100,
+      toValue: 0.55,
+      duration: 2400,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
 
     Animated.sequence([
-      Animated.delay(180),
+      Animated.delay(230),
       Animated.parallel([
         Animated.timing(titleOpacityAnim, {
           toValue: 1,
-          duration: 560,
+          duration: 700,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(titleTranslateAnim, {
           toValue: 0,
-          duration: 560,
+          duration: 700,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(titleScaleAnim, {
           toValue: 1,
-          duration: 560,
+          duration: 700,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
@@ -99,10 +118,10 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     ]).start();
 
     Animated.sequence([
-      Animated.delay(430),
+      Animated.delay(620),
       Animated.timing(subtitleOpacityAnim, {
         toValue: 1,
-        duration: 420,
+        duration: 520,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
@@ -117,12 +136,14 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       auroraLoop.stop();
       mistLoop.stop();
       sweepLoop.stop();
+      prismLoop.stop();
     };
   }, [
     auroraAnim,
     coverScaleAnim,
     mistAnim,
     onFinish,
+    prismAnim,
     subtitleOpacityAnim,
     sweepAnim,
     titleOpacityAnim,
@@ -158,6 +179,41 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const sweepOpacity = sweepAnim.interpolate({
     inputRange: [0, 0.14, 0.55, 1],
     outputRange: [0, 0.24, 0.18, 0],
+  });
+
+  const sweepTranslateXAlt = sweepAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [SCREEN_WIDTH * 1.1, -SCREEN_WIDTH * 1.1],
+  });
+
+  const sweepOpacityAlt = sweepAnim.interpolate({
+    inputRange: [0, 0.2, 0.7, 1],
+    outputRange: [0, 0.14, 0.2, 0],
+  });
+
+  const prismOpacity = prismAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.1, 0.34],
+  });
+
+  const prismScale = prismAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.9, 1.1],
+  });
+
+  const prismLeftTranslateX = prismAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-14, 16],
+  });
+
+  const prismRightTranslateX = prismAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [15, -13],
+  });
+
+  const prismRightTranslateY = prismAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [10, -12],
   });
 
   return (
@@ -205,10 +261,52 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       <Animated.View
         pointerEvents="none"
         style={[
+          styles.prismGlowLeft,
+          {
+            opacity: prismOpacity,
+            transform: [
+              { translateX: prismLeftTranslateX },
+              { scale: prismScale },
+              { rotate: '-11deg' },
+            ],
+          },
+        ]}
+      />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.prismGlowRight,
+          {
+            opacity: prismOpacity,
+            transform: [
+              { translateX: prismRightTranslateX },
+              { translateY: prismRightTranslateY },
+              { scale: prismScale },
+              { rotate: '13deg' },
+            ],
+          },
+        ]}
+      />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
           styles.sweepLight,
           {
             opacity: sweepOpacity,
             transform: [{ translateX: sweepTranslateX }, { rotate: '-14deg' }],
+          },
+        ]}
+      />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.sweepLightAlt,
+          {
+            opacity: sweepOpacityAlt,
+            transform: [{ translateX: sweepTranslateXAlt }, { rotate: '11deg' }],
           },
         ]}
       />
@@ -263,14 +361,14 @@ const styles = StyleSheet.create({
   },
   coverTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 7, 16, 0.18)',
+    backgroundColor: 'rgba(5, 7, 16, 0.12)',
   },
   auroraGlow: {
     position: 'absolute',
     width: SCREEN_WIDTH * 0.95,
     height: SCREEN_WIDTH * 0.95,
     borderRadius: (SCREEN_WIDTH * 0.95) / 2,
-    backgroundColor: 'rgba(185, 200, 255, 0.28)',
+    backgroundColor: 'rgba(157, 175, 255, 0.24)',
     shadowColor: '#d8e1ff',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
@@ -281,33 +379,58 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 1.15,
     height: SCREEN_WIDTH * 0.72,
     borderRadius: (SCREEN_WIDTH * 0.72) / 2,
-    backgroundColor: 'rgba(104, 134, 255, 0.24)',
+    backgroundColor: 'rgba(88, 146, 255, 0.22)',
+  },
+  prismGlowLeft: {
+    position: 'absolute',
+    left: -SCREEN_WIDTH * 0.2,
+    top: '37%',
+    width: SCREEN_WIDTH * 0.62,
+    height: SCREEN_WIDTH * 0.62,
+    borderRadius: (SCREEN_WIDTH * 0.62) / 2,
+    backgroundColor: 'rgba(248, 90, 181, 0.34)',
+  },
+  prismGlowRight: {
+    position: 'absolute',
+    right: -SCREEN_WIDTH * 0.22,
+    top: '44%',
+    width: SCREEN_WIDTH * 0.66,
+    height: SCREEN_WIDTH * 0.66,
+    borderRadius: (SCREEN_WIDTH * 0.66) / 2,
+    backgroundColor: 'rgba(88, 231, 255, 0.28)',
   },
   sweepLight: {
     position: 'absolute',
     width: SCREEN_WIDTH * 0.4,
     height: '130%',
     borderRadius: SCREEN_WIDTH * 0.2,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(188, 239, 255, 0.34)',
+  },
+  sweepLightAlt: {
+    position: 'absolute',
+    width: SCREEN_WIDTH * 0.34,
+    height: '130%',
+    borderRadius: SCREEN_WIDTH * 0.17,
+    backgroundColor: 'rgba(255, 170, 226, 0.24)',
   },
   vignetteTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   vignetteBottom: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.14)',
+    backgroundColor: 'rgba(0, 0, 0, 0.11)',
   },
   brandBlock: {
     position: 'absolute',
-    top: '28%',
+    top: '26%',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
   brandTitle: {
     color: '#f5f7ff',
     fontFamily: 'SpaceGrotesk_700Bold',
-    fontSize: 46,
+    fontSize: 52,
     letterSpacing: -0.7,
     textShadowColor: 'rgba(3, 6, 20, 0.68)',
     textShadowOffset: { width: 0, height: 3 },
@@ -317,7 +440,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: 'rgba(243, 246, 255, 0.92)',
     fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 14,
+    fontSize: 15,
     letterSpacing: 0.5,
   },
 });
