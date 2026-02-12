@@ -469,12 +469,39 @@ export interface ColorBlindnessInfo {
   confusedPair: [string, string];
 }
 
-export const COLOR_BLINDNESS_TYPES: ColorBlindnessInfo[] = [
-  { type: 'none', label: 'Normal', shortLabel: 'Off', description: 'Normal vision', icon: 'eye-outline', confusedPair: ['#34d399', '#60a5fa'] },
-  { type: 'protanopia', label: 'Protan', shortLabel: 'P', description: 'Red-weak', icon: 'eye-off-outline', confusedPair: ['#ef4444', '#22c55e'] },
-  { type: 'deuteranopia', label: 'Deutan', shortLabel: 'D', description: 'Green-weak', icon: 'eye-off-outline', confusedPair: ['#22c55e', '#ef4444'] },
-  { type: 'tritanopia', label: 'Tritan', shortLabel: 'T', description: 'Blue-weak', icon: 'eye-off-outline', confusedPair: ['#3b82f6', '#eab308'] },
+type ColorBlindnessText = Pick<ColorBlindnessInfo, 'label' | 'shortLabel' | 'description'>;
+
+const COLOR_BLINDNESS_BASE: Array<Omit<ColorBlindnessInfo, keyof ColorBlindnessText>> = [
+  { type: 'none', icon: 'eye-outline', confusedPair: ['#34d399', '#60a5fa'] },
+  { type: 'protanopia', icon: 'eye-off-outline', confusedPair: ['#ef4444', '#22c55e'] },
+  { type: 'deuteranopia', icon: 'eye-off-outline', confusedPair: ['#22c55e', '#ef4444'] },
+  { type: 'tritanopia', icon: 'eye-off-outline', confusedPair: ['#3b82f6', '#eab308'] },
 ];
+
+const COLOR_BLINDNESS_LABELS: Record<AppLanguage, Record<ColorBlindnessType, ColorBlindnessText>> = {
+  en: {
+    none: { label: 'Normal', shortLabel: 'Off', description: 'Normal vision' },
+    protanopia: { label: 'Protan', shortLabel: 'P', description: 'Red-weak' },
+    deuteranopia: { label: 'Deutan', shortLabel: 'D', description: 'Green-weak' },
+    tritanopia: { label: 'Tritan', shortLabel: 'T', description: 'Blue-weak' },
+  },
+  ko: {
+    none: { label: '정상', shortLabel: '끔', description: '정상 시야' },
+    protanopia: { label: '적색약', shortLabel: 'P', description: '적색 약화' },
+    deuteranopia: { label: '녹색약', shortLabel: 'D', description: '녹색 약화' },
+    tritanopia: { label: '청색약', shortLabel: 'T', description: '청색 약화' },
+  },
+};
+
+export const getColorBlindnessTypes = (language: AppLanguage = 'ko'): ColorBlindnessInfo[] => {
+  const labels = COLOR_BLINDNESS_LABELS[language] ?? COLOR_BLINDNESS_LABELS.ko;
+  return COLOR_BLINDNESS_BASE.map((base) => ({
+    ...base,
+    ...labels[base.type],
+  }));
+};
+
+export const COLOR_BLINDNESS_TYPES: ColorBlindnessInfo[] = getColorBlindnessTypes('en');
 
 // sRGB gamma correction
 function srgbToLinear(c: number): number {
