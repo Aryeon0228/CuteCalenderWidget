@@ -573,9 +573,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
             <View style={[styles.summaryChip, { backgroundColor: countChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: countChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 }]}>
               <Ionicons name="color-palette-outline" size={13} color={countChipColor} />
-              <Text style={[styles.summaryChipText, { color: countChipColor }]}>
-                {isKorean ? `${colorCount}색` : `${colorCount} Colors`}
-              </Text>
+              <Text style={[styles.summaryChipText, { color: countChipColor }]}>{colorCount}</Text>
             </View>
             <View
               style={[

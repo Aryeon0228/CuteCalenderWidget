@@ -64,47 +64,54 @@ export default function InfoModal({
             </Text>
           </TouchableOpacity>
 
-          <Text
-            style={[
-              styles.advancedSectionLabel,
-              { color: theme.textMuted, width: '100%', marginTop: 0, marginBottom: 10 },
-            ]}
-          >
-            {languageLabel}
-          </Text>
-          <View style={[styles.advancedPresetRow, { width: '100%', marginBottom: 20 }]}>
-            <TouchableOpacity
-              style={[
-                styles.advancedPresetButton,
-                {
-                  backgroundColor: language === 'ko' ? theme.accent : theme.backgroundTertiary,
-                },
-              ]}
-              onPress={() => {
-                onHapticLight();
-                onLanguageChange('ko');
-              }}
-            >
-              <Text style={[styles.advancedPresetText, { color: language === 'ko' ? '#fff' : theme.textSecondary }]}>
-                한국어
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.advancedPresetButton,
-                {
-                  backgroundColor: language === 'en' ? theme.accent : theme.backgroundTertiary,
-                },
-              ]}
-              onPress={() => {
-                onHapticLight();
-                onLanguageChange('en');
-              }}
-            >
-              <Text style={[styles.advancedPresetText, { color: language === 'en' ? '#fff' : theme.textSecondary }]}>
-                English
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.infoModalLanguageSection}>
+            <Text style={[styles.infoModalLanguageLabel, { color: theme.textMuted }]}>
+              {languageLabel}
+            </Text>
+            <View style={styles.infoModalLanguageToggleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.infoModalLanguageButton,
+                  {
+                    backgroundColor: language === 'ko' ? theme.accent : theme.backgroundTertiary,
+                  },
+                ]}
+                onPress={() => {
+                  onHapticLight();
+                  onLanguageChange('ko');
+                }}
+              >
+                <Text
+                  style={[
+                    styles.infoModalLanguageButtonText,
+                    { color: language === 'ko' ? '#fff' : theme.textSecondary },
+                  ]}
+                >
+                  한국어
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.infoModalLanguageButton,
+                  {
+                    backgroundColor: language === 'en' ? theme.accent : theme.backgroundTertiary,
+                  },
+                ]}
+                onPress={() => {
+                  onHapticLight();
+                  onLanguageChange('en');
+                }}
+              >
+                <Text
+                  style={[
+                    styles.infoModalLanguageButtonText,
+                    { color: language === 'en' ? '#fff' : theme.textSecondary },
+                  ]}
+                >
+                  English
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <Text style={[styles.infoModalFooter, { color: theme.textMuted }]}>
