@@ -10,7 +10,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const FINISH_DELAY_MS = 3150;
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
-  const coverScaleAnim = useRef(new Animated.Value(1.03)).current;
+  const coverScaleAnim = useRef(new Animated.Value(0.52)).current;
   const auroraAnim = useRef(new Animated.Value(0)).current;
   const sweepAnim = useRef(new Animated.Value(0)).current;
   const titleOpacityAnim = useRef(new Animated.Value(0)).current;
@@ -49,7 +49,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     sweepLoop.start();
 
     Animated.timing(coverScaleAnim, {
-      toValue: 1,
+      toValue: 0.5,
       duration: 2100,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
