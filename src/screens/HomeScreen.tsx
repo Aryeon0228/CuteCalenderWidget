@@ -1097,7 +1097,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         extractionMethod={extractionMethod}
         onMethodChange={handleMethodChange}
         language={appLanguage}
-        onLanguageChange={setAppLanguage}
         colorCount={colorCount}
         onColorCountChange={(newCount) => {
           setColorCount(newCount);
@@ -1112,6 +1111,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       <InfoModal
         visible={showInfo}
         theme={theme}
+        language={appLanguage}
+        onLanguageChange={setAppLanguage}
         onClose={() => setShowInfo(false)}
         onHapticLight={hapticLight}
       />

@@ -16,7 +16,6 @@ interface AdvancedSettingsModalProps {
   extractionMethod: ExtractionMethod;
   onMethodChange: (value: ExtractionMethod) => void;
   language: AppLanguage;
-  onLanguageChange: (value: AppLanguage) => void;
   colorCount: number;
   onColorCountChange: (value: number) => void;
   colorBlindMode: ColorBlindnessType;
@@ -33,7 +32,6 @@ export default function AdvancedSettingsModal({
   extractionMethod,
   onMethodChange,
   language,
-  onLanguageChange,
   colorCount,
   onColorCountChange,
   colorBlindMode,
@@ -141,43 +139,6 @@ export default function AdvancedSettingsModal({
                 </Text>
                 <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'kmeans' ? 'rgba(255,255,255,0.78)' : theme.textMuted }]}>
                   {methodDescriptions.kmeans}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Language */}
-            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>Language</Text>
-            <View style={styles.advancedPresetRow}>
-              <TouchableOpacity
-                style={[
-                  styles.advancedPresetButton,
-                  {
-                    backgroundColor: language === 'ko' ? theme.accent : theme.backgroundTertiary,
-                  },
-                ]}
-                onPress={() => {
-                  onHapticLight();
-                  onLanguageChange('ko');
-                }}
-              >
-                <Text style={[styles.advancedPresetText, { color: language === 'ko' ? '#fff' : theme.textSecondary }]}>
-                  Korean
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.advancedPresetButton,
-                  {
-                    backgroundColor: language === 'en' ? theme.accent : theme.backgroundTertiary,
-                  },
-                ]}
-                onPress={() => {
-                  onHapticLight();
-                  onLanguageChange('en');
-                }}
-              >
-                <Text style={[styles.advancedPresetText, { color: language === 'en' ? '#fff' : theme.textSecondary }]}>
-                  English
                 </Text>
               </TouchableOpacity>
             </View>
