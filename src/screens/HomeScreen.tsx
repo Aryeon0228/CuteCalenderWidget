@@ -188,7 +188,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   );
 
   const isKorean = appLanguage === 'ko';
-  const cvdOptions = useMemo(() => getColorBlindnessTypes(appLanguage), [appLanguage]);
+  const cvdOptions = useMemo(() => getColorBlindnessTypes('en'), []);
   const cvdChipLabel = useMemo(() => {
     if (colorBlindMode === 'none') return '';
     return cvdOptions.find((option) => option.type === colorBlindMode)?.label ?? '';
@@ -196,10 +196,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const styleChipColor = STYLE_PRESETS[styleFilter].color;
   const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : '#fb923c';
   const countChipColor = '#a78bfa';
-  const valueChipColor = showGrayscale ? '#34d399' : '#6b7280';
   const methodDescriptions: Record<ExtractionMethod, string> = {
-    histogram: isKorean ? '밝기 분포 기반 (빠름)' : 'Distribution-based (fast)',
-    kmeans: isKorean ? '픽셀 군집화 기반 (정확)' : 'Pixel clustering (accurate)',
+    histogram: 'Distribution-based (fast)',
+    kmeans: 'Pixel clustering (accurate)',
   };
 
   const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {
@@ -575,17 +574,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <Ionicons name="color-palette-outline" size={13} color={countChipColor} />
               <Text style={[styles.summaryChipText, { color: countChipColor }]}>{colorCount}</Text>
             </View>
-            <View
-              style={[
-                styles.summaryChip,
-                { backgroundColor: valueChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: valueChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 },
-              ]}
-            >
-              <Ionicons name="contrast-outline" size={13} color={valueChipColor} />
-              <Text style={[styles.summaryChipText, { color: valueChipColor }]}>
-                {isKorean ? '명도' : 'Value'}
-              </Text>
-            </View>
             {colorBlindMode !== 'none' && (
               <View style={[styles.summaryChip, { backgroundColor: UNIFIED_EMPHASIS.cvdBg, borderColor: UNIFIED_EMPHASIS.cvdBorder, borderWidth: 1 }]}>
                 <Ionicons name="eye-outline" size={13} color={UNIFIED_EMPHASIS.cvdText} />
@@ -686,12 +674,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <View style={[styles.inlineSettingsPanel, { backgroundColor: theme.backgroundCard, borderColor: theme.border }]}>
             <View style={styles.inlineSettingsHeaderRow}>
               <View>
-                <Text style={[styles.inlineSettingsTitle, { color: theme.textPrimary }]}>
-                  {isKorean ? '빠른 설정' : 'Quick Settings'}
-                </Text>
-                <Text style={[styles.inlineSettingsSubtitle, { color: theme.textMuted }]}>
-                  {isKorean ? '팔레트는 위에서 그대로 확인돼요' : 'Palette stays visible above'}
-                </Text>
+                <Text style={[styles.inlineSettingsTitle, { color: theme.textPrimary }]}>Setting</Text>
               </View>
               <TouchableOpacity
                 style={[styles.inlineSettingsCloseBtn, { backgroundColor: theme.backgroundTertiary }]}
@@ -705,7 +688,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
 
             <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
-              {isKorean ? '스타일' : 'Style Preset'}
+              Style Preset
             </Text>
             <View style={styles.advancedPresetRow}>
               {STYLE_FILTER_KEYS.map((filter) => (
@@ -737,7 +720,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
 
             <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
-              {isKorean ? '추출 방식' : 'Extraction Method'}
+              Extraction Method
             </Text>
             <View style={styles.advancedMethodRow}>
               <TouchableOpacity
@@ -777,7 +760,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
 
             <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
-              {isKorean ? '색상 개수' : 'Color Count'}
+              Color Count
             </Text>
             <View style={[styles.advancedColorCount, { backgroundColor: theme.backgroundTertiary }]}>
               <TouchableOpacity
@@ -808,7 +791,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             </View>
 
             <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
-              {isKorean ? '색각 시뮬레이션' : 'Color Vision'}
+              Color Vision
             </Text>
             <View style={styles.advancedCvdGrid}>
               {cvdOptions.map((cvd) => {
