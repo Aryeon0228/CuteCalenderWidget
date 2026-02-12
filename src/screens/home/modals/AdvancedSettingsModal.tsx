@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { styles } from '../HomeScreen.styles';
 import { ThemeColors } from '../../../store/themeStore';
 import { ExtractionMethod } from '../../../lib/colorExtractor';
-import { ColorBlindnessType, COLOR_BLINDNESS_TYPES, type AppLanguage } from '../../../lib/colorUtils';
+import { ColorBlindnessType, getColorBlindnessTypes, type AppLanguage } from '../../../lib/colorUtils';
 import { StyleFilter, STYLE_FILTER_KEYS, STYLE_PRESETS } from '../../../constants/stylePresets';
 
 interface AdvancedSettingsModalProps {
@@ -49,6 +49,8 @@ export default function AdvancedSettingsModal({
     histogram: language === 'ko' ? '색조 구간 기반 (빠름)' : 'Hue region-based (fast)',
     kmeans: language === 'ko' ? '픽셀 군집화 (정확)' : 'Pixel clustering (accurate)',
   };
+  const colorVisionTitle = language === 'ko' ? '색각 시뮬레이션' : 'Color Vision Simulation';
+  const cvdOptions = getColorBlindnessTypes(language);
 
   return (
     <Modal
@@ -211,9 +213,9 @@ export default function AdvancedSettingsModal({
             </View>
 
             {/* CVD Simulation */}
-            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>Color Vision Simulation</Text>
+            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>{colorVisionTitle}</Text>
             <View style={styles.advancedCvdGrid}>
-              {COLOR_BLINDNESS_TYPES.map((cvd) => {
+              {cvdOptions.map((cvd) => {
                 const isActive = colorBlindMode === cvd.type;
                 return (
                   <TouchableOpacity
