@@ -39,6 +39,12 @@ export default function AdvancedSettingsModal({
   onClose,
   onHapticLight,
 }: AdvancedSettingsModalProps) {
+  const presetIcons: Record<StyleFilter, string> = {
+    original: 'ellipse-outline',
+    hypercasual: 'sparkles-outline',
+    stylized: 'brush-outline',
+    realistic: 'eye-outline',
+  };
   const methodAccentColors: Record<ExtractionMethod, string> = {
     histogram: '#38bdf8',
     kmeans: '#fb923c',
@@ -97,9 +103,16 @@ export default function AdvancedSettingsModal({
                     onStyleFilterChange(filter);
                   }}
                 >
-                  <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color }]}>
-                    {STYLE_PRESETS[filter].name}
-                  </Text>
+                  <View style={styles.advancedPresetInline}>
+                    <Ionicons
+                      name={presetIcons[filter] as any}
+                      size={14}
+                      color={styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color}
+                    />
+                    <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color }]}>
+                      {STYLE_PRESETS[filter].name}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
