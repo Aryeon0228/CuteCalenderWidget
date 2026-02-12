@@ -188,7 +188,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   );
 
   const isKorean = appLanguage === 'ko';
-  const cvdOptions = useMemo(() => getColorBlindnessTypes('en'), []);
+  const cvdOptions = useMemo(() => getColorBlindnessTypes(appLanguage), [appLanguage]);
   const cvdChipLabel = useMemo(() => {
     if (colorBlindMode === 'none') return '';
     return cvdOptions.find((option) => option.type === colorBlindMode)?.label ?? '';
@@ -197,10 +197,15 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const styleChipColor = STYLE_PRESETS[styleFilter].color;
   const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : kmeansAccentColor;
   const countChipColor = '#a78bfa';
-  const methodDescriptions: Record<ExtractionMethod, string> = {
-    histogram: 'Distribution-based (fast)',
-    kmeans: 'Pixel clustering (accurate)',
-  };
+  const methodDescriptions: Record<ExtractionMethod, string> = isKorean
+    ? {
+      histogram: '색/밝기 분포 기반 대표색 추출 (빠름)',
+      kmeans: '픽셀 군집화로 대표색 K개 추출 (정확)',
+    }
+    : {
+      histogram: 'Distribution-based (fast)',
+      kmeans: 'Pixel clustering (accurate)',
+    };
 
   const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {
     switch (format) {
