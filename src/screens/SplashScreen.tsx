@@ -10,7 +10,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const FINISH_DELAY_MS = 2450;
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
-  const coverScaleAnim = useRef(new Animated.Value(1.02)).current;
+  const coverScaleAnim = useRef(new Animated.Value(0.62)).current;
   const auroraAnim = useRef(new Animated.Value(0)).current;
   const mistAnim = useRef(new Animated.Value(0)).current;
   const sweepAnim = useRef(new Animated.Value(0)).current;
@@ -68,7 +68,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     sweepLoop.start();
 
     Animated.timing(coverScaleAnim, {
-      toValue: 1.08,
+      toValue: 0.68,
       duration: 2100,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   brandBlock: {
     position: 'absolute',
-    top: '38%',
+    top: '28%',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
