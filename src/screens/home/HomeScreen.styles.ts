@@ -1731,13 +1731,13 @@ export const styles = StyleSheet.create({
   summaryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 9,
     gap: 5,
   },
   summaryChipText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '600',
   },
   summaryEditButton: {
@@ -1746,6 +1746,100 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  swatchHintCard: {
+    marginHorizontal: 16,
+    marginTop: 2,
+    marginBottom: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  swatchHintIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  swatchHintTextWrap: {
+    flex: 1,
+  },
+  swatchHintTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  swatchHintSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+
+  // Inline settings panel
+  inlineSettingsPanel: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  inlineSettingsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  inlineSettingsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  inlineSettingsSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  inlineSettingsCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Empty workspace guide
+  emptyGuideCard: {
+    marginHorizontal: 16,
+    marginTop: 2,
+    marginBottom: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  emptyGuideTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptyGuideRows: {
+    gap: 8,
+  },
+  emptyGuideRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  emptyGuideText: {
+    flex: 1,
+    fontSize: 11.5,
+    lineHeight: 16,
+    fontWeight: '500',
   },
 
   // Advanced Settings Sheet

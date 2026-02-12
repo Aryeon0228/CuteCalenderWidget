@@ -148,7 +148,7 @@ export default function ColorDetailModal({
                             { color: variationHueShift ? '#fff' : theme.textMuted },
                           ]}
                         >
-                          Hue
+                          Hue Shift
                         </Text>
                       </TouchableOpacity>
                     </View>

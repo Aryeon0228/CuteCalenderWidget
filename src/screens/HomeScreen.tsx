@@ -37,13 +37,14 @@ import {
   adjustColor,
   generateColorVariations,
   generateColorHarmonies,
+  getColorBlindnessTypes,
   HarmonyType,
   simulateColorBlindness,
   ColorBlindnessType,
   type AppLanguage,
   type ColorInfo,
 } from '../lib/colorUtils';
-import { StyleFilter, STYLE_PRESETS } from '../constants/stylePresets';
+import { StyleFilter, STYLE_FILTER_KEYS, STYLE_PRESETS } from '../constants/stylePresets';
 import {
   FORMAT_ACCENT_COLORS,
   VARIATION_TOGGLE_COLORS,
@@ -56,7 +57,6 @@ import ActionBar from './home/ActionBar';
 import ColorDetailModal from './home/modals/ColorDetailModal';
 import SavePaletteModal from './home/modals/SavePaletteModal';
 import ExportModal from './home/modals/ExportModal';
-import AdvancedSettingsModal from './home/modals/AdvancedSettingsModal';
 import InfoModal from './home/modals/InfoModal';
 
 // ============================================
@@ -119,6 +119,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   // Toast State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hasSeenColorTapHint, setHasSeenColorTapHint] = useState(false);
 
   // Theme & Store
   const { colors: theme } = useThemeStore();
@@ -186,23 +187,20 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     [colorHarmonies, selectedHarmony]
   );
 
-  const cvdShortLabel = useMemo(() => {
-    switch (colorBlindMode) {
-      case 'protanopia':
-        return 'P';
-      case 'deuteranopia':
-        return 'D';
-      case 'tritanopia':
-        return 'T';
-      default:
-        return '';
-    }
-  }, [colorBlindMode]);
-
+  const isKorean = appLanguage === 'ko';
+  const cvdOptions = useMemo(() => getColorBlindnessTypes(appLanguage), [appLanguage]);
+  const cvdChipLabel = useMemo(() => {
+    if (colorBlindMode === 'none') return '';
+    return cvdOptions.find((option) => option.type === colorBlindMode)?.label ?? '';
+  }, [colorBlindMode, cvdOptions]);
   const styleChipColor = STYLE_PRESETS[styleFilter].color;
   const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : '#fb923c';
   const countChipColor = '#a78bfa';
   const valueChipColor = showGrayscale ? '#34d399' : '#6b7280';
+  const methodDescriptions: Record<ExtractionMethod, string> = {
+    histogram: isKorean ? '밝기 분포 기반 (빠름)' : 'Distribution-based (fast)',
+    kmeans: isKorean ? '픽셀 군집화 기반 (정확)' : 'Pixel clustering (accurate)',
+  };
 
   const getFormattedColor = (info: ColorInfo, format: 'HEX' | 'RGB' | 'HSL'): string => {
     switch (format) {
@@ -356,6 +354,10 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   const handleColorPress = (index: number) => {
     hapticLight();
+    setHasSeenColorTapHint(true);
+    if (showAdvanced) {
+      setShowAdvanced(false);
+    }
     // Toggle selection - tap same color to deselect
     if (selectedColorIndex === index) {
       setSelectedColorIndex(null);
@@ -566,12 +568,14 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             <View style={[styles.summaryChip, { backgroundColor: methodChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: methodChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 }]}>
               <Ionicons name="flask-outline" size={13} color={methodChipColor} />
               <Text style={[styles.summaryChipText, { color: methodChipColor }]}>
-                {extractionMethod === 'histogram' ? 'Hist' : 'KM'}
+                {extractionMethod === 'histogram' ? 'Histogram' : 'K-Means'}
               </Text>
             </View>
             <View style={[styles.summaryChip, { backgroundColor: countChipColor + UNIFIED_EMPHASIS.chipBgAlpha, borderColor: countChipColor + UNIFIED_EMPHASIS.chipBorderAlpha, borderWidth: 1 }]}>
               <Ionicons name="color-palette-outline" size={13} color={countChipColor} />
-              <Text style={[styles.summaryChipText, { color: countChipColor }]}>{colorCount}</Text>
+              <Text style={[styles.summaryChipText, { color: countChipColor }]}>
+                {isKorean ? `${colorCount}색` : `${colorCount} Colors`}
+              </Text>
             </View>
             <View
               style={[
@@ -580,25 +584,53 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               ]}
             >
               <Ionicons name="contrast-outline" size={13} color={valueChipColor} />
-              <Text style={[styles.summaryChipText, { color: valueChipColor }]}>Val</Text>
+              <Text style={[styles.summaryChipText, { color: valueChipColor }]}>
+                {isKorean ? '명도' : 'Value'}
+              </Text>
             </View>
             {colorBlindMode !== 'none' && (
               <View style={[styles.summaryChip, { backgroundColor: UNIFIED_EMPHASIS.cvdBg, borderColor: UNIFIED_EMPHASIS.cvdBorder, borderWidth: 1 }]}>
                 <Ionicons name="eye-outline" size={13} color={UNIFIED_EMPHASIS.cvdText} />
-                <Text style={[styles.summaryChipText, { color: UNIFIED_EMPHASIS.cvdText }]}>{cvdShortLabel}</Text>
+                <Text style={[styles.summaryChipText, { color: UNIFIED_EMPHASIS.cvdText }]}>{cvdChipLabel}</Text>
               </View>
             )}
           </ScrollView>
           <TouchableOpacity
-            style={[styles.summaryEditButton, { backgroundColor: theme.backgroundTertiary }]}
+            style={[
+              styles.summaryEditButton,
+              { backgroundColor: showAdvanced ? theme.accent + '22' : theme.backgroundTertiary },
+            ]}
             onPress={() => {
               hapticLight();
-              setShowAdvanced(true);
+              setShowAdvanced((prev) => !prev);
             }}
           >
-            <Ionicons name="options-outline" size={16} color={theme.textSecondary} />
+            <Ionicons
+              name={showAdvanced ? 'chevron-up-outline' : 'options-outline'}
+              size={16}
+              color={showAdvanced ? theme.accent : theme.textSecondary}
+            />
           </TouchableOpacity>
         </View>
+
+        {/* Swatch affordance hint */}
+        {processedColors.length > 0 && selectedColorIndex === null && !hasSeenColorTapHint && (
+          <View style={[styles.swatchHintCard, { backgroundColor: theme.backgroundCard, borderColor: theme.borderLight }]}>
+            <View style={[styles.swatchHintIcon, { backgroundColor: theme.accent + '22' }]}>
+              <Ionicons name="hand-left-outline" size={15} color={theme.accent} />
+            </View>
+            <View style={styles.swatchHintTextWrap}>
+              <Text style={[styles.swatchHintTitle, { color: theme.textPrimary }]}>
+                {isKorean ? '팔레트 색상을 탭해보세요' : 'Tap a palette swatch'}
+              </Text>
+              <Text style={[styles.swatchHintSubtitle, { color: theme.textMuted }]}>
+                {isKorean
+                  ? '상세값, Variations, Harmony가 바로 열려요.'
+                  : 'Open details, variations, and harmony instantly.'}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Color Cards - Palette Swatches */}
         {processedColors.length > 0 ? (
@@ -648,6 +680,223 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {/* Inline settings panel (keeps palette visible while editing) */}
+        {showAdvanced && (
+          <View style={[styles.inlineSettingsPanel, { backgroundColor: theme.backgroundCard, borderColor: theme.border }]}>
+            <View style={styles.inlineSettingsHeaderRow}>
+              <View>
+                <Text style={[styles.inlineSettingsTitle, { color: theme.textPrimary }]}>
+                  {isKorean ? '빠른 설정' : 'Quick Settings'}
+                </Text>
+                <Text style={[styles.inlineSettingsSubtitle, { color: theme.textMuted }]}>
+                  {isKorean ? '팔레트는 위에서 그대로 확인돼요' : 'Palette stays visible above'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.inlineSettingsCloseBtn, { backgroundColor: theme.backgroundTertiary }]}
+                onPress={() => {
+                  hapticLight();
+                  setShowAdvanced(false);
+                }}
+              >
+                <Ionicons name="chevron-up" size={18} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
+              {isKorean ? '스타일' : 'Style Preset'}
+            </Text>
+            <View style={styles.advancedPresetRow}>
+              {STYLE_FILTER_KEYS.map((filter) => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[
+                    styles.advancedPresetButton,
+                    {
+                      backgroundColor: styleFilter === filter ? STYLE_PRESETS[filter].color : theme.backgroundTertiary,
+                    },
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    setStyleFilter(filter);
+                  }}
+                >
+                  <View style={styles.advancedPresetInline}>
+                    <Ionicons
+                      name={STYLE_PRESETS[filter].icon as any}
+                      size={14}
+                      color={styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color}
+                    />
+                    <Text style={[styles.advancedPresetText, { color: styleFilter === filter ? '#fff' : STYLE_PRESETS[filter].color }]}>
+                      {STYLE_PRESETS[filter].name}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
+              {isKorean ? '추출 방식' : 'Extraction Method'}
+            </Text>
+            <View style={styles.advancedMethodRow}>
+              <TouchableOpacity
+                style={[
+                  styles.advancedMethodButton,
+                  { backgroundColor: extractionMethod === 'histogram' ? '#38bdf8' : theme.backgroundTertiary },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  handleMethodChange('histogram');
+                }}
+              >
+                <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'histogram' ? '#fff' : theme.textPrimary }]}>
+                  Histogram
+                </Text>
+                <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'histogram' ? 'rgba(255,255,255,0.8)' : theme.textMuted }]}>
+                  {methodDescriptions.histogram}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.advancedMethodButton,
+                  { backgroundColor: extractionMethod === 'kmeans' ? '#fb923c' : theme.backgroundTertiary },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  handleMethodChange('kmeans');
+                }}
+              >
+                <Text style={[styles.advancedMethodTitle, { color: extractionMethod === 'kmeans' ? '#fff' : theme.textPrimary }]}>
+                  K-Means
+                </Text>
+                <Text style={[styles.advancedMethodDesc, { color: extractionMethod === 'kmeans' ? 'rgba(255,255,255,0.8)' : theme.textMuted }]}>
+                  {methodDescriptions.kmeans}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
+              {isKorean ? '색상 개수' : 'Color Count'}
+            </Text>
+            <View style={[styles.advancedColorCount, { backgroundColor: theme.backgroundTertiary }]}>
+              <TouchableOpacity
+                style={[styles.advancedStepperBtn, { backgroundColor: theme.backgroundSecondary }]}
+                onPress={() => {
+                  hapticLight();
+                  const newCount = colorCount <= 3 ? 8 : colorCount - 1;
+                  setColorCount(newCount);
+                  if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+                }}
+              >
+                <Ionicons name="remove" size={18} color={theme.textSecondary} />
+              </TouchableOpacity>
+              <View style={[styles.advancedCountBadge, { backgroundColor: theme.accent }]}>
+                <Text style={styles.advancedCountText}>{colorCount}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.advancedStepperBtn, { backgroundColor: theme.backgroundSecondary }]}
+                onPress={() => {
+                  hapticLight();
+                  const newCount = colorCount >= 8 ? 3 : colorCount + 1;
+                  setColorCount(newCount);
+                  if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
+                }}
+              >
+                <Ionicons name="add" size={18} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.advancedSectionLabel, { color: theme.textMuted }]}>
+              {isKorean ? '색각 시뮬레이션' : 'Color Vision'}
+            </Text>
+            <View style={styles.advancedCvdGrid}>
+              {cvdOptions.map((cvd) => {
+                const isActive = colorBlindMode === cvd.type;
+                return (
+                  <TouchableOpacity
+                    key={cvd.type}
+                    style={[
+                      styles.advancedCvdCard,
+                      {
+                        backgroundColor: isActive
+                          ? (cvd.type === 'none' ? theme.accent + '20' : '#f59e0b' + '20')
+                          : theme.backgroundTertiary,
+                        borderWidth: isActive ? 1.5 : 1,
+                        borderColor: isActive
+                          ? (cvd.type === 'none' ? theme.accent : '#f59e0b')
+                          : theme.backgroundTertiary,
+                      },
+                    ]}
+                    onPress={() => {
+                      hapticLight();
+                      setColorBlindMode(cvd.type);
+                    }}
+                  >
+                    <View style={styles.cvdBarPair}>
+                      <View style={[styles.cvdBar, { backgroundColor: cvd.confusedPair[0] }]} />
+                      <View style={[styles.cvdBarSlash, { backgroundColor: theme.textMuted }]} />
+                      <View style={[styles.cvdBar, { backgroundColor: cvd.confusedPair[1] }]} />
+                    </View>
+                    <Text
+                      style={[
+                        styles.advancedCvdLabel,
+                        {
+                          color: isActive
+                            ? (cvd.type === 'none' ? theme.accent : '#f59e0b')
+                            : theme.textPrimary,
+                          fontWeight: isActive ? '700' : '600',
+                        },
+                      ]}
+                    >
+                      {cvd.label}
+                    </Text>
+                    <Text style={[styles.advancedCvdDesc, { color: theme.textMuted }]}>
+                      {cvd.description}
+                    </Text>
+                    {isActive && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={14}
+                        color={cvd.type === 'none' ? theme.accent : '#f59e0b'}
+                        style={styles.cvdCheck}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* Empty workspace guide */}
+        {!currentImageUri && processedColors.length === 0 && (
+          <View style={[styles.emptyGuideCard, { backgroundColor: theme.backgroundCard, borderColor: theme.borderLight }]}>
+            <Text style={[styles.emptyGuideTitle, { color: theme.textPrimary }]}>
+              {isKorean ? '메인 화면 가이드' : 'Main Screen Guide'}
+            </Text>
+            <View style={styles.emptyGuideRows}>
+              <View style={styles.emptyGuideRow}>
+                <Ionicons name="image-outline" size={14} color={theme.accent} />
+                <Text style={[styles.emptyGuideText, { color: theme.textMuted }]}>
+                  {isKorean ? '카메라/갤러리로 이미지를 추가하세요.' : 'Add artwork from camera or gallery.'}
+                </Text>
+              </View>
+              <View style={styles.emptyGuideRow}>
+                <Ionicons name="options-outline" size={14} color={theme.accent} />
+                <Text style={[styles.emptyGuideText, { color: theme.textMuted }]}>
+                  {isKorean ? '요약 바 우측 버튼으로 설정을 펼칠 수 있어요.' : 'Use the right summary button to expand settings.'}
+                </Text>
+              </View>
+              <View style={styles.emptyGuideRow}>
+                <Ionicons name="hand-left-outline" size={14} color={theme.accent} />
+                <Text style={[styles.emptyGuideText, { color: theme.textMuted }]}>
+                  {isKorean ? '추출된 색상 칩은 탭하면 상세 설명이 열립니다.' : 'Tap extracted swatches to open detailed info.'}
+                </Text>
+              </View>
+            </View>
           </View>
         )}
 
@@ -1086,25 +1335,6 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         onExportConfirm={handleExportConfirm}
         onCopyToClipboard={copyToClipboard}
         onClose={() => setShowExportModal(false)}
-        onHapticLight={hapticLight}
-      />
-
-      <AdvancedSettingsModal
-        visible={showAdvanced}
-        theme={theme}
-        styleFilter={styleFilter}
-        onStyleFilterChange={setStyleFilter}
-        extractionMethod={extractionMethod}
-        onMethodChange={handleMethodChange}
-        language={appLanguage}
-        colorCount={colorCount}
-        onColorCountChange={(newCount) => {
-          setColorCount(newCount);
-          if (currentImageUri) doExtract(currentImageUri, newCount, extractionMethod);
-        }}
-        colorBlindMode={colorBlindMode}
-        onColorBlindModeChange={setColorBlindMode}
-        onClose={() => setShowAdvanced(false)}
         onHapticLight={hapticLight}
       />
 
