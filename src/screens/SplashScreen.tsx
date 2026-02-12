@@ -7,67 +7,70 @@ interface SplashScreenProps {
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PRIMARY_RING_SIZE = Math.min(SCREEN_WIDTH * 0.52, 250);
-const SECONDARY_RING_SIZE = PRIMARY_RING_SIZE * 1.24;
 const FINISH_DELAY_MS = 2450;
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
-  const coverScaleAnim = useRef(new Animated.Value(1)).current;
-  const ringAnim = useRef(new Animated.Value(0)).current;
-  const ring2Anim = useRef(new Animated.Value(0)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const coverScaleAnim = useRef(new Animated.Value(1.02)).current;
+  const auroraAnim = useRef(new Animated.Value(0)).current;
+  const mistAnim = useRef(new Animated.Value(0)).current;
+  const sweepAnim = useRef(new Animated.Value(0)).current;
   const titleOpacityAnim = useRef(new Animated.Value(0)).current;
-  const titleTranslateAnim = useRef(new Animated.Value(12)).current;
-  const titleScaleAnim = useRef(new Animated.Value(0.96)).current;
+  const titleTranslateAnim = useRef(new Animated.Value(18)).current;
+  const titleScaleAnim = useRef(new Animated.Value(0.92)).current;
   const subtitleOpacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const ringLoop = Animated.loop(
-      Animated.timing(ringAnim, {
+    const auroraLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(auroraAnim, {
+          toValue: 1,
+          duration: 1300,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(auroraAnim, {
+          toValue: 0,
+          duration: 1300,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const mistLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(mistAnim, {
+          toValue: 1,
+          duration: 1700,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(mistAnim, {
+          toValue: 0,
+          duration: 1700,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const sweepLoop = Animated.loop(
+      Animated.timing(sweepAnim, {
         toValue: 1,
-        duration: 1400,
-        easing: Easing.out(Easing.cubic),
+        duration: 2200,
+        easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true,
       })
     );
 
-    const ring2Loop = Animated.loop(
-      Animated.sequence([
-        Animated.delay(280),
-        Animated.timing(ring2Anim, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    const glowLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 1200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 1200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    ringLoop.start();
-    ring2Loop.start();
-    glowLoop.start();
+    auroraLoop.start();
+    mistLoop.start();
+    sweepLoop.start();
 
     Animated.timing(coverScaleAnim, {
-      toValue: 1.03,
-      duration: 1300,
-      easing: Easing.out(Easing.quad),
+      toValue: 1.08,
+      duration: 2100,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
 
@@ -111,60 +114,50 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 
     return () => {
       clearTimeout(finishTimer);
-      ringLoop.stop();
-      ring2Loop.stop();
-      glowLoop.stop();
+      auroraLoop.stop();
+      mistLoop.stop();
+      sweepLoop.stop();
     };
   }, [
+    auroraAnim,
     coverScaleAnim,
-    glowAnim,
+    mistAnim,
     onFinish,
-    ring2Anim,
-    ringAnim,
     subtitleOpacityAnim,
+    sweepAnim,
     titleOpacityAnim,
     titleScaleAnim,
     titleTranslateAnim,
   ]);
 
-  const ringScale = ringAnim.interpolate({
+  const auroraOpacity = auroraAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.72, 1.34],
+    outputRange: [0.18, 0.42],
   });
 
-  const ringOpacity = ringAnim.interpolate({
+  const auroraScale = auroraAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.34, 0],
+    outputRange: [0.9, 1.06],
   });
 
-  const ring2Scale = ring2Anim.interpolate({
+  const mistOpacity = mistAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.84, 1.5],
+    outputRange: [0.14, 0.3],
   });
 
-  const ring2Opacity = ring2Anim.interpolate({
+  const mistTranslateY = mistAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.22, 0],
+    outputRange: [10, -14],
   });
 
-  const glowOpacity = glowAnim.interpolate({
+  const sweepTranslateX = sweepAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.22, 0.44],
+    outputRange: [-SCREEN_WIDTH * 1.2, SCREEN_WIDTH * 1.2],
   });
 
-  const glowScale = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.92, 1.08],
-  });
-
-  const glowSecondaryOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.1, 0.24],
-  });
-
-  const glowSecondaryScale = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.98, 1.2],
+  const sweepOpacity = sweepAnim.interpolate({
+    inputRange: [0, 0.14, 0.55, 1],
+    outputRange: [0, 0.24, 0.18, 0],
   });
 
   return (
@@ -190,10 +183,10 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       <Animated.View
         pointerEvents="none"
         style={[
-          styles.atmosphereGlow,
+          styles.auroraGlow,
           {
-            opacity: glowOpacity,
-            transform: [{ scale: glowScale }],
+            opacity: auroraOpacity,
+            transform: [{ scale: auroraScale }],
           },
         ]}
       />
@@ -201,11 +194,10 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       <Animated.View
         pointerEvents="none"
         style={[
-          styles.atmosphereGlow,
-          styles.atmosphereGlowSecondary,
+          styles.mistGlow,
           {
-            opacity: glowSecondaryOpacity,
-            transform: [{ scale: glowSecondaryScale }],
+            opacity: mistOpacity,
+            transform: [{ translateY: mistTranslateY }],
           },
         ]}
       />
@@ -213,13 +205,10 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       <Animated.View
         pointerEvents="none"
         style={[
-          styles.ring,
+          styles.sweepLight,
           {
-            width: PRIMARY_RING_SIZE,
-            height: PRIMARY_RING_SIZE,
-            borderRadius: PRIMARY_RING_SIZE / 2,
-            opacity: ringOpacity,
-            transform: [{ scale: ringScale }],
+            opacity: sweepOpacity,
+            transform: [{ translateX: sweepTranslateX }, { rotate: '-14deg' }],
           },
         ]}
       />
@@ -227,15 +216,14 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       <Animated.View
         pointerEvents="none"
         style={[
-          styles.ring,
-          styles.ringSecondary,
-          {
-            width: SECONDARY_RING_SIZE,
-            height: SECONDARY_RING_SIZE,
-            borderRadius: SECONDARY_RING_SIZE / 2,
-            opacity: ring2Opacity,
-            transform: [{ scale: ring2Scale }],
-          },
+          styles.vignetteTop,
+        ]}
+      />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.vignetteBottom,
         ]}
       />
 
@@ -251,7 +239,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       >
         <Text style={styles.brandTitle}>Pixel Paw</Text>
         <Animated.Text style={[styles.brandSubtitle, { opacity: subtitleOpacityAnim }]}>
-          Color Extractor - Paw Palette
+          Palette Extractor for Game Art
         </Animated.Text>
       </Animated.View>
     </View>
@@ -275,60 +263,61 @@ const styles = StyleSheet.create({
   },
   coverTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(7, 7, 12, 0.16)',
+    backgroundColor: 'rgba(5, 7, 16, 0.18)',
   },
-  atmosphereGlow: {
+  auroraGlow: {
     position: 'absolute',
-    width: SCREEN_WIDTH * 0.72,
+    width: SCREEN_WIDTH * 0.95,
+    height: SCREEN_WIDTH * 0.95,
+    borderRadius: (SCREEN_WIDTH * 0.95) / 2,
+    backgroundColor: 'rgba(185, 200, 255, 0.28)',
+    shadowColor: '#d8e1ff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 36,
+  },
+  mistGlow: {
+    position: 'absolute',
+    width: SCREEN_WIDTH * 1.15,
     height: SCREEN_WIDTH * 0.72,
     borderRadius: (SCREEN_WIDTH * 0.72) / 2,
-    backgroundColor: 'rgba(190, 198, 255, 0.26)',
-    shadowColor: '#cfd5ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.34,
-    shadowRadius: 28,
+    backgroundColor: 'rgba(104, 134, 255, 0.24)',
   },
-  atmosphereGlowSecondary: {
-    width: SCREEN_WIDTH * 0.94,
-    height: SCREEN_WIDTH * 0.94,
-    borderRadius: (SCREEN_WIDTH * 0.94) / 2,
-    backgroundColor: 'rgba(126, 137, 255, 0.18)',
-  },
-  ring: {
+  sweepLight: {
     position: 'absolute',
-    borderWidth: 1.4,
-    borderColor: 'rgba(255, 255, 255, 0.24)',
-    shadowColor: '#ffffff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
+    width: SCREEN_WIDTH * 0.4,
+    height: '130%',
+    borderRadius: SCREEN_WIDTH * 0.2,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
-  ringSecondary: {
-    borderWidth: 1.1,
-    borderColor: 'rgba(255, 255, 255, 0.16)',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
+  vignetteTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  vignetteBottom: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.14)',
   },
   brandBlock: {
     position: 'absolute',
-    bottom: 96,
+    top: '38%',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
   brandTitle: {
     color: '#f5f7ff',
     fontFamily: 'SpaceGrotesk_700Bold',
-    fontSize: 38,
-    letterSpacing: -0.4,
-    textShadowColor: 'rgba(4, 6, 18, 0.45)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    fontSize: 46,
+    letterSpacing: -0.7,
+    textShadowColor: 'rgba(3, 6, 20, 0.68)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 10,
   },
   brandSubtitle: {
-    marginTop: 6,
-    color: 'rgba(239, 242, 255, 0.84)',
+    marginTop: 8,
+    color: 'rgba(243, 246, 255, 0.92)',
     fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 13,
-    letterSpacing: 0.4,
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
 });

@@ -8,8 +8,8 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash-native-1024.png",
-      "resizeMode": "contain",
+      "image": "./assets/splash-cover-1290x2796.png",
+      "resizeMode": "cover",
       "backgroundColor": "#0d0d1a"
     },
     "assetBundlePatterns": [
