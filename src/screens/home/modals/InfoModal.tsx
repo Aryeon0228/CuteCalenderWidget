@@ -5,16 +5,29 @@ import Constants from 'expo-constants';
 
 import { styles } from '../HomeScreen.styles';
 import { ThemeColors } from '../../../store/themeStore';
+import { type AppLanguage } from '../../../lib/colorUtils';
 
 interface InfoModalProps {
   visible: boolean;
   theme: ThemeColors;
+  language: AppLanguage;
+  onLanguageChange: (value: AppLanguage) => void;
   onClose: () => void;
   onHapticLight: () => void;
 }
 
-export default function InfoModal({ visible, theme, onClose, onHapticLight }: InfoModalProps) {
+export default function InfoModal({
+  visible,
+  theme,
+  language,
+  onLanguageChange,
+  onClose,
+  onHapticLight,
+}: InfoModalProps) {
   const appVersion = Constants.expoConfig?.version ?? '1.1.0';
+  const languageLabel = language === 'ko' ? '언어' : 'Language';
+  const closeLabel = language === 'ko' ? '닫기' : 'Close';
+  const feedbackLabel = language === 'ko' ? '피드백 보내기' : 'Send Feedback';
 
   return (
     <Modal
@@ -47,9 +60,52 @@ export default function InfoModal({ visible, theme, onClose, onHapticLight }: In
           >
             <Ionicons name="mail-outline" size={20} color={theme.accent} />
             <Text style={[styles.infoModalButtonText, { color: theme.textPrimary }]}>
-              피드백 보내기
+              {feedbackLabel}
             </Text>
           </TouchableOpacity>
+
+          <Text
+            style={[
+              styles.advancedSectionLabel,
+              { color: theme.textMuted, width: '100%', marginTop: 0, marginBottom: 10 },
+            ]}
+          >
+            {languageLabel}
+          </Text>
+          <View style={[styles.advancedPresetRow, { width: '100%', marginBottom: 20 }]}>
+            <TouchableOpacity
+              style={[
+                styles.advancedPresetButton,
+                {
+                  backgroundColor: language === 'ko' ? theme.accent : theme.backgroundTertiary,
+                },
+              ]}
+              onPress={() => {
+                onHapticLight();
+                onLanguageChange('ko');
+              }}
+            >
+              <Text style={[styles.advancedPresetText, { color: language === 'ko' ? '#fff' : theme.textSecondary }]}>
+                한국어
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.advancedPresetButton,
+                {
+                  backgroundColor: language === 'en' ? theme.accent : theme.backgroundTertiary,
+                },
+              ]}
+              onPress={() => {
+                onHapticLight();
+                onLanguageChange('en');
+              }}
+            >
+              <Text style={[styles.advancedPresetText, { color: language === 'en' ? '#fff' : theme.textSecondary }]}>
+                English
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <Text style={[styles.infoModalFooter, { color: theme.textMuted }]}>
             Made with 🤍 by Studio Aryeon
@@ -62,7 +118,7 @@ export default function InfoModal({ visible, theme, onClose, onHapticLight }: In
               onClose();
             }}
           >
-            <Text style={styles.infoModalCloseButtonText}>닫기</Text>
+            <Text style={styles.infoModalCloseButtonText}>{closeLabel}</Text>
           </TouchableOpacity>
         </View>
       </View>
