@@ -47,7 +47,7 @@ export default function AdvancedSettingsModal({
   };
   const methodAccentColors: Record<ExtractionMethod, string> = {
     histogram: '#38bdf8',
-    kmeans: '#fb923c',
+    kmeans: '#f43f5e',
   };
   const methodDescriptions: Record<ExtractionMethod, string> = {
     histogram: language === 'ko' ? '색/밝기 분포 기반 대표색 추출 (빠름)' : 'Distribution-based dominant colors (fast)',

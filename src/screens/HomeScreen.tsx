@@ -193,8 +193,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     if (colorBlindMode === 'none') return '';
     return cvdOptions.find((option) => option.type === colorBlindMode)?.label ?? '';
   }, [colorBlindMode, cvdOptions]);
+  const kmeansAccentColor = '#f43f5e';
   const styleChipColor = STYLE_PRESETS[styleFilter].color;
-  const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : '#fb923c';
+  const methodChipColor = extractionMethod === 'histogram' ? '#38bdf8' : kmeansAccentColor;
   const countChipColor = '#a78bfa';
   const methodDescriptions: Record<ExtractionMethod, string> = {
     histogram: 'Distribution-based (fast)',
@@ -743,7 +744,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
               <TouchableOpacity
                 style={[
                   styles.advancedMethodButton,
-                  { backgroundColor: extractionMethod === 'kmeans' ? '#fb923c' : theme.backgroundTertiary },
+                  { backgroundColor: extractionMethod === 'kmeans' ? kmeansAccentColor : theme.backgroundTertiary },
                 ]}
                 onPress={() => {
                   hapticLight();

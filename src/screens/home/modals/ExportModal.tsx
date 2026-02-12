@@ -120,7 +120,7 @@ export default function ExportModal({
   onHapticLight,
 }: ExportModalProps) {
   const snsAccentColors: Record<'instagram' | 'twitter', string> = {
-    instagram: '#e1306c',
+    instagram: '#c7587f',
     twitter: '#1d9bf0',
   };
   const cardOptionColors = {
