@@ -198,11 +198,11 @@ export default function AdvancedSettingsModal({
                       onColorBlindModeChange(cvd.type);
                     }}
                   >
-                    {/* Confused color pair dots */}
-                    <View style={styles.cvdDotPair}>
-                      <View style={[styles.cvdDot, { backgroundColor: cvd.confusedPair[0] }]} />
-                      <View style={[styles.cvdDotSlash, { backgroundColor: theme.textMuted }]} />
-                      <View style={[styles.cvdDot, { backgroundColor: cvd.confusedPair[1] }]} />
+                    {/* Confused color pair bars */}
+                    <View style={styles.cvdBarPair}>
+                      <View style={[styles.cvdBar, { backgroundColor: cvd.confusedPair[0] }]} />
+                      <View style={[styles.cvdBarSlash, { backgroundColor: theme.textMuted }]} />
+                      <View style={[styles.cvdBar, { backgroundColor: cvd.confusedPair[1] }]} />
                     </View>
                     <Text
                       style={[

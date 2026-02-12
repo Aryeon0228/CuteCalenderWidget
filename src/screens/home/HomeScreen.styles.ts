@@ -1887,42 +1887,43 @@ export const styles = StyleSheet.create({
   advancedCvdGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: 6,
+    marginBottom: 12,
   },
   advancedCvdCard: {
-    width: '47%' as any,
+    width: '48%' as any,
     flexGrow: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 9,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
     position: 'relative',
   },
-  cvdDotPair: {
+  cvdBarPair: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 5,
     marginBottom: 2,
   },
-  cvdDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+  cvdBar: {
+    width: 20,
+    height: 8,
+    borderRadius: 3,
   },
-  cvdDotSlash: {
+  cvdBarSlash: {
     width: 1,
-    height: 10,
+    height: 8,
     transform: [{ rotate: '20deg' }],
     opacity: 0.3,
   },
   advancedCvdLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   advancedCvdDesc: {
-    fontSize: 10,
+    fontSize: 9,
+    lineHeight: 12,
   },
   cvdCheck: {
     position: 'absolute',
