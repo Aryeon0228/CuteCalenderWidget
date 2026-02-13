@@ -9,8 +9,10 @@ import {
   ActionSheetIOS,
   Platform,
   SafeAreaView,
+  Image as RNImage,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -58,6 +60,7 @@ import ColorDetailModal from './home/modals/ColorDetailModal';
 import SavePaletteModal from './home/modals/SavePaletteModal';
 import ExportModal from './home/modals/ExportModal';
 import InfoModal from './home/modals/InfoModal';
+import ImageCropModal from './home/modals/ImageCropModal';
 
 // ============================================
 // TYPES
@@ -65,6 +68,19 @@ import InfoModal from './home/modals/InfoModal';
 
 interface HomeScreenProps {
   onNavigateToLibrary: () => void;
+}
+
+interface CropSourceAsset {
+  uri: string;
+  width: number;
+  height: number;
+}
+
+interface CropArea {
+  originX: number;
+  originY: number;
+  width: number;
+  height: number;
 }
 
 // ============================================
@@ -78,6 +94,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showColorDetail, setShowColorDetail] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropSourceAsset, setCropSourceAsset] = useState<CropSourceAsset | null>(null);
+  const [isApplyingCrop, setIsApplyingCrop] = useState(false);
   const [paletteName, setPaletteName] = useState('');
 
   // Camera
@@ -264,6 +283,23 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     setShowCamera(true);
   };
 
+  const resolveImageSize = async (
+    uri: string,
+    width?: number,
+    height?: number
+  ): Promise<{ width: number; height: number }> => {
+    if (width && height) {
+      return { width, height };
+    }
+    return new Promise((resolve, reject) => {
+      RNImage.getSize(
+        uri,
+        (resolvedWidth, resolvedHeight) => resolve({ width: resolvedWidth, height: resolvedHeight }),
+        reject
+      );
+    });
+  };
+
   const takePicture = async () => {
     if (cameraRef.current) {
       hapticMedium();
@@ -291,15 +327,55 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      await extractColors(result.assets[0].uri);
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const { width, height } = await resolveImageSize(asset.uri, asset.width, asset.height);
+        setCropSourceAsset({
+          uri: asset.uri,
+          width,
+          height,
+        });
+        setShowCropModal(true);
+      }
+    } catch (error) {
+      console.error('Gallery error:', error);
+      Alert.alert('Error', 'Failed to open photo library.');
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setCropSourceAsset(null);
+  };
+
+  const handleCropConfirm = async (cropArea: CropArea) => {
+    if (!cropSourceAsset) return;
+    setIsApplyingCrop(true);
+    try {
+      const cropped = await ImageManipulator.manipulateAsync(
+        cropSourceAsset.uri,
+        [{ crop: cropArea }],
+        {
+          compress: 0.9,
+          format: ImageManipulator.SaveFormat.JPEG,
+        }
+      );
+      setShowCropModal(false);
+      setCropSourceAsset(null);
+      await extractColors(cropped.uri);
       hapticSuccess();
+    } catch (error) {
+      console.error('Crop error:', error);
+      Alert.alert('Error', 'Failed to crop image.');
+    } finally {
+      setIsApplyingCrop(false);
     }
   };
 
@@ -1254,6 +1330,19 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         selectedHarmony={selectedHarmony}
         onHarmonyChange={setSelectedHarmony}
         language={appLanguage}
+        onHapticLight={hapticLight}
+      />
+
+      <ImageCropModal
+        visible={showCropModal}
+        theme={theme}
+        language={appLanguage}
+        imageUri={cropSourceAsset?.uri ?? null}
+        sourceWidth={cropSourceAsset?.width ?? 0}
+        sourceHeight={cropSourceAsset?.height ?? 0}
+        isApplying={isApplyingCrop}
+        onCancel={handleCropCancel}
+        onConfirm={handleCropConfirm}
         onHapticLight={hapticLight}
       />
 
