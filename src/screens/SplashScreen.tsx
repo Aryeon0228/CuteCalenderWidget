@@ -111,7 +111,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 
   const auroraOpacity = auroraAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.08, 0.2],
+    outputRange: [0.03, 0.08],
   });
 
   const auroraScale = auroraAnim.interpolate({
@@ -126,7 +126,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 
   const sweepOpacity = sweepAnim.interpolate({
     inputRange: [0, 0.14, 0.55, 1],
-    outputRange: [0, 0.12, 0.08, 0],
+    outputRange: [0, 0.05, 0.03, 0],
   });
 
   return (
@@ -207,7 +207,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0d1a',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -221,33 +221,33 @@ const styles = StyleSheet.create({
   },
   coverTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(8, 10, 18, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
   auroraGlow: {
     position: 'absolute',
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72,
     borderRadius: (SCREEN_WIDTH * 0.72) / 2,
-    backgroundColor: 'rgba(152, 170, 246, 0.22)',
-    shadowColor: '#d8e1ff',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#ffffff',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 28,
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
   },
   sweepLight: {
     position: 'absolute',
     width: SCREEN_WIDTH * 0.28,
     height: '130%',
     borderRadius: SCREEN_WIDTH * 0.14,
-    backgroundColor: 'rgba(210, 226, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   vignetteTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    backgroundColor: 'rgba(0, 0, 0, 0)',
   },
   vignetteBottom: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
   },
   brandBlock: {
     position: 'absolute',
