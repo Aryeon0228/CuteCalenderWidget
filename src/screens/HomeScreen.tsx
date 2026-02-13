@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Platform,
   SafeAreaView,
   Image as RNImage,
+  Animated,
+  Easing,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -134,6 +136,9 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
 
   // Advanced Settings Sheet State
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isAdvancedMounted, setIsAdvancedMounted] = useState(false);
+  const advancedPanelAnim = useRef(new Animated.Value(0)).current;
+  const advancedPanelAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   // Toast State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -282,6 +287,56 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
     }
     setShowCamera(true);
   };
+
+  const animateAdvancedPanel = (toValue: 0 | 1, onComplete?: () => void) => {
+    advancedPanelAnimationRef.current?.stop();
+    const animation = Animated.timing(advancedPanelAnim, {
+      toValue,
+      duration: toValue === 1 ? 220 : 170,
+      easing: toValue === 1 ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    });
+    advancedPanelAnimationRef.current = animation;
+    animation.start(({ finished }) => {
+      if (advancedPanelAnimationRef.current === animation) {
+        advancedPanelAnimationRef.current = null;
+      }
+      if (finished && onComplete) {
+        onComplete();
+      }
+    });
+  };
+
+  const openAdvancedPanel = () => {
+    if (showAdvanced && isAdvancedMounted) return;
+    setIsAdvancedMounted(true);
+    setShowAdvanced(true);
+    requestAnimationFrame(() => {
+      animateAdvancedPanel(1);
+    });
+  };
+
+  const closeAdvancedPanel = () => {
+    if (!isAdvancedMounted) return;
+    setShowAdvanced(false);
+    animateAdvancedPanel(0, () => {
+      setIsAdvancedMounted(false);
+    });
+  };
+
+  const toggleAdvancedPanel = () => {
+    if (showAdvanced) {
+      closeAdvancedPanel();
+      return;
+    }
+    openAdvancedPanel();
+  };
+
+  useEffect(() => {
+    return () => {
+      advancedPanelAnimationRef.current?.stop();
+    };
+  }, []);
 
   const resolveImageSize = async (
     uri: string,
@@ -436,8 +491,8 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
   const handleColorPress = (index: number) => {
     hapticLight();
     setHasSeenColorTapHint(true);
-    if (showAdvanced) {
-      setShowAdvanced(false);
+    if (isAdvancedMounted) {
+      closeAdvancedPanel();
     }
     // Toggle selection - tap same color to deselect
     if (selectedColorIndex === index) {
@@ -666,17 +721,17 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
           <TouchableOpacity
             style={[
               styles.summaryEditButton,
-              { backgroundColor: showAdvanced ? theme.accent + '22' : theme.backgroundTertiary },
+              { backgroundColor: isAdvancedMounted ? theme.accent + '22' : theme.backgroundTertiary },
             ]}
             onPress={() => {
               hapticLight();
-              setShowAdvanced((prev) => !prev);
+              toggleAdvancedPanel();
             }}
           >
             <Ionicons
-              name={showAdvanced ? 'chevron-up-outline' : 'options-outline'}
+              name={isAdvancedMounted ? 'chevron-up-outline' : 'options-outline'}
               size={16}
-              color={showAdvanced ? theme.accent : theme.textSecondary}
+              color={isAdvancedMounted ? theme.accent : theme.textSecondary}
             />
           </TouchableOpacity>
         </View>
@@ -752,8 +807,32 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
         )}
 
         {/* Inline settings panel (keeps palette visible while editing) */}
-        {showAdvanced && (
-          <View style={[styles.inlineSettingsPanel, { backgroundColor: theme.backgroundCard, borderColor: theme.border }]}>
+        {isAdvancedMounted && (
+          <Animated.View
+            pointerEvents={showAdvanced ? 'auto' : 'none'}
+            style={[
+              styles.inlineSettingsPanel,
+              {
+                backgroundColor: theme.backgroundCard,
+                borderColor: theme.border,
+                opacity: advancedPanelAnim,
+                transform: [
+                  {
+                    translateY: advancedPanelAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-10, 0],
+                    }),
+                  },
+                  {
+                    scaleY: advancedPanelAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.965, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <View style={styles.inlineSettingsHeaderRow}>
               <View>
                 <Text style={[styles.inlineSettingsTitle, { color: theme.textPrimary }]}>Setting</Text>
@@ -762,7 +841,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 style={[styles.inlineSettingsCloseBtn, { backgroundColor: theme.backgroundTertiary }]}
                 onPress={() => {
                   hapticLight();
-                  setShowAdvanced(false);
+                  closeAdvancedPanel();
                 }}
               >
                 <Ionicons name="chevron-up" size={18} color={theme.textSecondary} />
@@ -931,7 +1010,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                 );
               })}
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* Empty workspace guide */}
