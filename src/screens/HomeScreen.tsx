@@ -729,7 +729,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
             }}
           >
             <Ionicons
-              name={isAdvancedMounted ? 'chevron-up-outline' : 'options-outline'}
+              name={isAdvancedMounted ? 'close-outline' : 'options-outline'}
               size={16}
               color={isAdvancedMounted ? theme.accent : theme.textSecondary}
             />
@@ -844,7 +844,7 @@ export default function HomeScreen({ onNavigateToLibrary }: HomeScreenProps) {
                   closeAdvancedPanel();
                 }}
               >
-                <Ionicons name="chevron-up" size={18} color={theme.textSecondary} />
+                <Ionicons name="close-outline" size={18} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 

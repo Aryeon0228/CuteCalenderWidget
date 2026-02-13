@@ -18,7 +18,7 @@ export const STYLE_PRESETS: Record<StyleFilter, StylePreset> = {
     name: 'Original',
     saturation: 1.0,
     brightness: 1.0,
-    icon: 'ellipse-outline',
+    icon: 'paw-outline',
     color: '#a0a0b0',
   },
   hypercasual: {
