@@ -6,8 +6,12 @@ import { useFonts } from 'expo-font';
 import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import LibraryScreen from './src/screens/LibraryScreen';
+import PetPlannerScreen from './src/screens/PetPlannerScreen';
 
 type Screen = 'splash' | 'home' | 'library';
+type AppMode = 'pixel-paw' | 'pet-loop';
+
+const APP_MODE: AppMode = 'pet-loop';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
@@ -18,6 +22,15 @@ export default function App() {
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: '#08080e' }} />;
+  }
+
+  if (APP_MODE === 'pet-loop') {
+    return (
+      <View style={{ flex: 1 }}>
+        <StatusBar style="dark" />
+        <PetPlannerScreen />
+      </View>
+    );
   }
 
   const renderScreen = () => {
