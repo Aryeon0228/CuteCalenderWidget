@@ -9,8 +9,21 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { CareAction, CreatureType, DecorationId, TodoItem } from '../store/petLoopStore';
-import { getRecentDateKeys, toDateKey, usePetLoopStore } from '../store/petLoopStore';
+import type {
+  CareAction,
+  CreatureType,
+  DecorationId,
+  DueDateMode,
+  Quadrant,
+  TodoItem,
+} from '../store/petLoopStore';
+import {
+  getRecentDateKeys,
+  getTodoQuadrant,
+  isValidDateKey,
+  toDateKey,
+  usePetLoopStore,
+} from '../store/petLoopStore';
 
 interface CreatureMeta {
   id: CreatureType;
@@ -25,6 +38,14 @@ interface DecorationItem {
   cost: number;
 }
 
+interface QuadrantMeta {
+  id: Quadrant;
+  title: string;
+  subtitle: string;
+  background: string;
+  border: string;
+}
+
 const CREATURES: CreatureMeta[] = [
   { id: 'chick', emoji: '🐥', title: '병아리' },
   { id: 'sprout', emoji: '🌱', title: '새싹' },
@@ -37,6 +58,50 @@ const DECORATIONS: DecorationItem[] = [
   { id: 'rain-bell', emoji: '🔔', title: '빗방울 벨', cost: 48 },
 ];
 
+const QUADRANT_META: QuadrantMeta[] = [
+  {
+    id: 'do',
+    title: 'Q1 지금 하기',
+    subtitle: '중요 + 긴급',
+    background: '#fff4d8',
+    border: '#eed59a',
+  },
+  {
+    id: 'schedule',
+    title: 'Q2 일정 잡기',
+    subtitle: '중요 + 비긴급',
+    background: '#eaf6dd',
+    border: '#bdd8a5',
+  },
+  {
+    id: 'delegate',
+    title: 'Q3 위임/간단 처리',
+    subtitle: '비중요 + 긴급',
+    background: '#def3f8',
+    border: '#b3d8df',
+  },
+  {
+    id: 'eliminate',
+    title: 'Q4 줄이기',
+    subtitle: '비중요 + 비긴급',
+    background: '#f0ebfb',
+    border: '#d3c8e8',
+  },
+];
+
+const DUE_MODE_META: Array<{ id: DueDateMode; title: string }> = [
+  { id: 'date', title: '날짜 지정' },
+  { id: 'ongoing', title: '계속' },
+  { id: 'unscheduled', title: '미정' },
+];
+
+const QUADRANT_LABEL: Record<Quadrant, string> = {
+  do: 'Q1',
+  schedule: 'Q2',
+  delegate: 'Q3',
+  eliminate: 'Q4',
+};
+
 const dayLabel = (dateKey: string): string => {
   const [year, month, day] = dateKey.split('-').map((part) => Number(part));
   const parsed = new Date(year, month - 1, day);
@@ -47,26 +112,51 @@ const dayLabel = (dateKey: string): string => {
 const percent = (value: number, max: number): `${number}%` =>
   `${Math.min(100, Math.round((value / max) * 100))}%`;
 
+const dateKeyToEpoch = (dateKey: string): number => {
+  const [year, month, day] = dateKey.split('-').map((part) => Number(part));
+  return new Date(year, month - 1, day).getTime();
+};
+
+const isOnOrBefore = (leftDateKey: string, rightDateKey: string): boolean =>
+  dateKeyToEpoch(leftDateKey) <= dateKeyToEpoch(rightDateKey);
+
+const isBefore = (leftDateKey: string, rightDateKey: string): boolean =>
+  dateKeyToEpoch(leftDateKey) < dateKeyToEpoch(rightDateKey);
+
+const getNextQuadrant = (quadrant: Quadrant): Quadrant => {
+  const ordered: Quadrant[] = ['do', 'schedule', 'delegate', 'eliminate'];
+  const index = ordered.indexOf(quadrant);
+  return ordered[(index + 1) % ordered.length];
+};
+
+const getDueLabel = (mode: DueDateMode, dueDate: string | null): string => {
+  if (mode === 'ongoing') return '마감: 계속';
+  if (mode === 'unscheduled') return '마감: 미정';
+  return `마감: ${dueDate ?? '-'}`;
+};
+
+const getTodoScheduleSummary = (todo: TodoItem): string =>
+  `시작: ${todo.startDate} · ${getDueLabel(todo.dueDateMode, todo.dueDate)}`;
+
 const creatureMood = (happiness: number, energy: number): string => {
   if (happiness >= 75 && energy >= 65) return '반짝반짝 최고 컨디션!';
   if (happiness >= 55) return '기분이 좋아요. 오늘도 성장 중!';
   if (energy < 35) return '조금 지친 상태예요. 먹이와 휴식이 필요해요.';
-  return '심심해요. 투두를 완료하고 놀아주세요.';
+  return '심심해요. 할 일을 끝내고 놀아 주세요.';
 };
 
 const rewardPreset = (tier: 'mini' | 'focus'): { coins: number; xp: number } =>
   tier === 'mini' ? { coins: 12, xp: 10 } : { coins: 22, xp: 18 };
 
-const completionSummary = (todos: TodoItem[]): string => {
-  const completed = todos.filter((todo) => todo.done).length;
-  if (todos.length === 0) {
-    return '오늘의 퀘스트를 추가해 주세요.';
-  }
-  if (completed === todos.length) {
-    return '오늘 퀘스트 올클리어! 보상 루프가 완성됐어요.';
-  }
-  return `${completed}/${todos.length} 완료`;
-};
+const sortVisibleTodos = (items: TodoItem[]): TodoItem[] =>
+  [...items].sort((a, b) => {
+    if (a.done !== b.done) {
+      return a.done ? 1 : -1;
+    }
+    const byStart = dateKeyToEpoch(a.startDate) - dateKeyToEpoch(b.startDate);
+    if (byStart !== 0) return byStart;
+    return b.createdAt - a.createdAt;
+  });
 
 export default function PetPlannerScreen() {
   const {
@@ -86,6 +176,8 @@ export default function PetPlannerScreen() {
     addTodo,
     completeTodo,
     removeTodo,
+    setTodoPriority,
+    setTodoQuadrant,
     runDailyTick,
     careCreature,
     changeCreature,
@@ -93,19 +185,60 @@ export default function PetPlannerScreen() {
     seedStarterTodos,
   } = usePetLoopStore((state) => state);
 
-  const [todoDraft, setTodoDraft] = useState('');
-  const [tier, setTier] = useState<'mini' | 'focus'>('mini');
-  const pulse = useRef(new Animated.Value(1)).current;
-  const float = useRef(new Animated.Value(0)).current;
-
   const todayKey = useMemo(() => toDateKey(), []);
   const recentDates = useMemo(() => getRecentDateKeys(7), []);
-  const todayTodos = useMemo(() => todos.filter((todo) => todo.dueDate === todayKey), [todos, todayKey]);
   const selectedCreature = useMemo(
     () => CREATURES.find((entry) => entry.id === creature) ?? CREATURES[0],
     [creature]
   );
-  const loopSummary = completionSummary(todayTodos);
+
+  const [todoDraft, setTodoDraft] = useState('');
+  const [tier, setTier] = useState<'mini' | 'focus'>('mini');
+  const [startDateInput, setStartDateInput] = useState(todayKey);
+  const [dueDateMode, setDueDateMode] = useState<DueDateMode>('date');
+  const [dueDateInput, setDueDateInput] = useState(todayKey);
+  const [isImportant, setIsImportant] = useState(true);
+  const [isUrgent, setIsUrgent] = useState(true);
+
+  const pulse = useRef(new Animated.Value(1)).current;
+  const float = useRef(new Animated.Value(0)).current;
+
+  const openTodos = useMemo(
+    () => todos.filter((todo) => !todo.done && isOnOrBefore(todo.startDate, todayKey)),
+    [todos, todayKey]
+  );
+
+  const visibleTodos = useMemo(() => {
+    const merged = todos.filter((todo) => {
+      if (!todo.done) {
+        return isOnOrBefore(todo.startDate, todayKey);
+      }
+      if (!todo.completedAt) {
+        return false;
+      }
+      return toDateKey(new Date(todo.completedAt)) === todayKey;
+    });
+    return sortVisibleTodos(merged);
+  }, [todos, todayKey]);
+
+  const matrixBuckets = useMemo(() => {
+    const grouped: Record<Quadrant, TodoItem[]> = {
+      do: [],
+      schedule: [],
+      delegate: [],
+      eliminate: [],
+    };
+    openTodos.forEach((todo) => {
+      grouped[getTodoQuadrant(todo)].push(todo);
+    });
+    return grouped;
+  }, [openTodos]);
+
+  const todayDoneCount = completionLog[todayKey] ?? 0;
+  const loopSummary =
+    openTodos.length === 0 && todayDoneCount === 0
+      ? '오늘의 퀘스트를 추가해 주세요.'
+      : `완료 ${todayDoneCount} · 진행중 ${openTodos.length}`;
 
   useEffect(() => {
     runDailyTick();
@@ -153,9 +286,32 @@ export default function PetPlannerScreen() {
       return;
     }
 
+    const safeStartDate = isValidDateKey(startDateInput) ? startDateInput : todayKey;
+    const safeDueDate = isValidDateKey(dueDateInput) ? dueDateInput : safeStartDate;
     const reward = rewardPreset(tier);
-    addTodo(todoDraft, todayKey, reward.coins, reward.xp);
+
+    addTodo({
+      title: todoDraft,
+      startDate: safeStartDate,
+      dueDateMode,
+      dueDate: dueDateMode === 'date' ? safeDueDate : null,
+      rewardCoins: reward.coins,
+      rewardXp: reward.xp,
+      importance: isImportant,
+      urgency: isUrgent,
+    });
+
+    if (!isValidDateKey(startDateInput)) {
+      setStartDateInput(safeStartDate);
+    }
+    if (dueDateMode === 'date' && !isValidDateKey(dueDateInput)) {
+      setDueDateInput(safeDueDate);
+    }
+
     setTodoDraft('');
+    setIsImportant(true);
+    setIsUrgent(true);
+    triggerRewardPulse();
   };
 
   const onCompleteTodo = (todoId: string) => {
@@ -180,7 +336,7 @@ export default function PetPlannerScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <Text style={styles.heroTitle}>Pocket Terrarium Loop</Text>
-          <Text style={styles.heroSubtitle}>할 일 완료 → 씨앗 코인 획득 → 돌봄/꾸미기 → 성장</Text>
+          <Text style={styles.heroSubtitle}>할 일 완료 → 코인/XP → 돌봄/꾸미기 → 성장</Text>
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatLabel}>오늘</Text>
@@ -203,7 +359,7 @@ export default function PetPlannerScreen() {
             <Text style={styles.widgetEmoji}>{selectedCreature.emoji}</Text>
             <View style={styles.widgetCopy}>
               <Text style={styles.widgetMain}>{petName} Lv.{level}</Text>
-              <Text style={styles.widgetSub}>남은 퀘스트 {todayTodos.filter((todo) => !todo.done).length}개</Text>
+              <Text style={styles.widgetSub}>남은 퀘스트 {openTodos.length}개</Text>
             </View>
             <Text style={styles.widgetReward}>🌾 {coins}</Text>
           </View>
@@ -247,11 +403,11 @@ export default function PetPlannerScreen() {
             </View>
             <Text style={styles.barLabel}>행복 {happiness}%</Text>
             <View style={styles.barTrack}>
-              <View style={[styles.barFillWarm, { width: `${happiness}%` }]} />
+              <View style={[styles.barFillWarm, { width: percent(happiness, 100) }]} />
             </View>
             <Text style={styles.barLabel}>에너지 {energy}%</Text>
             <View style={styles.barTrack}>
-              <View style={[styles.barFillCool, { width: `${energy}%` }]} />
+              <View style={[styles.barFillCool, { width: percent(energy, 100) }]} />
             </View>
           </View>
 
@@ -266,19 +422,90 @@ export default function PetPlannerScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>오늘의 투두 퀘스트</Text>
+          <Text style={styles.cardTitle}>할 일 입력</Text>
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
               value={todoDraft}
               onChangeText={setTodoDraft}
-              placeholder="예: 블로그 30분 쓰기"
+              placeholder="예: 보고서 30분 집중 작성"
               placeholderTextColor="#8a8f8b"
               returnKeyType="done"
               onSubmitEditing={onAddTodo}
             />
             <TouchableOpacity style={styles.addButton} onPress={onAddTodo}>
               <Text style={styles.addButtonText}>추가</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.scheduleRow}>
+            <View style={styles.scheduleField}>
+              <Text style={styles.scheduleLabel}>시작일</Text>
+              <TextInput
+                style={styles.scheduleInput}
+                value={startDateInput}
+                onChangeText={setStartDateInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#9da29b"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            <View style={styles.scheduleField}>
+              <Text style={styles.scheduleLabel}>마감일</Text>
+              {dueDateMode === 'date' ? (
+                <TextInput
+                  style={styles.scheduleInput}
+                  value={dueDateInput}
+                  onChangeText={setDueDateInput}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#9da29b"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              ) : (
+                <View style={styles.scheduleGhost}>
+                  <Text style={styles.scheduleGhostText}>
+                    {dueDateMode === 'ongoing' ? '계속 진행' : '미정'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.modeRow}>
+            {DUE_MODE_META.map((mode) => {
+              const selected = mode.id === dueDateMode;
+              return (
+                <TouchableOpacity
+                  key={mode.id}
+                  onPress={() => setDueDateMode(mode.id)}
+                  style={[styles.modeChip, selected && styles.modeChipSelected]}
+                >
+                  <Text style={[styles.modeChipText, selected && styles.modeChipTextSelected]}>
+                    {mode.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.priorityRow}>
+            <TouchableOpacity
+              onPress={() => setIsImportant((prev) => !prev)}
+              style={[styles.priorityChip, isImportant && styles.priorityChipSelected]}
+            >
+              <Text style={[styles.priorityChipText, isImportant && styles.priorityChipTextSelected]}>
+                중요 {isImportant ? 'ON' : 'OFF'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setIsUrgent((prev) => !prev)}
+              style={[styles.priorityChip, isUrgent && styles.priorityChipSelected]}
+            >
+              <Text style={[styles.priorityChipText, isUrgent && styles.priorityChipTextSelected]}>
+                긴급 {isUrgent ? 'ON' : 'OFF'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -300,33 +527,129 @@ export default function PetPlannerScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
 
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>오늘 활성 투두</Text>
           <View style={styles.todoList}>
-            {todayTodos.length === 0 && <Text style={styles.emptyText}>퀘스트를 추가하면 병아리가 반응해요.</Text>}
-            {todayTodos.map((todo) => (
-              <View key={todo.id} style={styles.todoItem}>
-                <TouchableOpacity
-                  disabled={todo.done}
-                  style={[styles.checkButton, todo.done && styles.checkButtonDone]}
-                  onPress={() => onCompleteTodo(todo.id)}
-                >
-                  <Text style={styles.checkButtonText}>{todo.done ? '완료' : '완료하기'}</Text>
-                </TouchableOpacity>
+            {visibleTodos.length === 0 && (
+              <Text style={styles.emptyText}>시작일이 오늘 이전인 투두가 여기에 보여요.</Text>
+            )}
+            {visibleTodos.map((todo) => {
+              const quadrant = getTodoQuadrant(todo);
+              const overdue =
+                !todo.done &&
+                todo.dueDateMode === 'date' &&
+                Boolean(todo.dueDate) &&
+                isBefore(todo.dueDate as string, todayKey);
 
-                <View style={styles.todoContent}>
-                  <Text style={[styles.todoTitle, todo.done && styles.todoTitleDone]}>{todo.title}</Text>
+              return (
+                <View key={todo.id} style={[styles.todoItem, todo.done && styles.todoItemDone]}>
+                  <View style={styles.todoHeaderRow}>
+                    <Text style={[styles.todoTitle, todo.done && styles.todoTitleDone]} numberOfLines={1}>
+                      [{QUADRANT_LABEL[quadrant]}] {todo.title}
+                    </Text>
+                    {overdue && <Text style={styles.overdueBadge}>지남</Text>}
+                  </View>
+
+                  <Text style={styles.todoMeta}>{getTodoScheduleSummary(todo)}</Text>
                   <Text style={styles.todoMeta}>
                     보상 {todo.rewardCoins}코인 · {todo.rewardXp}XP
                   </Text>
-                </View>
 
-                {!todo.done && (
-                  <TouchableOpacity onPress={() => removeTodo(todo.id)} style={styles.removeButton}>
-                    <Text style={styles.removeButtonText}>삭제</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
+                  {!todo.done && (
+                    <View style={styles.todoControlRow}>
+                      <TouchableOpacity style={styles.todoActionButton} onPress={() => onCompleteTodo(todo.id)}>
+                        <Text style={styles.todoActionButtonText}>완료</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.todoMetaButton, todo.importance && styles.todoMetaButtonOn]}
+                        onPress={() =>
+                          setTodoPriority(todo.id, {
+                            importance: !todo.importance,
+                          })
+                        }
+                      >
+                        <Text
+                          style={[styles.todoMetaButtonText, todo.importance && styles.todoMetaButtonTextOn]}
+                        >
+                          중요
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.todoMetaButton, todo.urgency && styles.todoMetaButtonOn]}
+                        onPress={() =>
+                          setTodoPriority(todo.id, {
+                            urgency: !todo.urgency,
+                          })
+                        }
+                      >
+                        <Text style={[styles.todoMetaButtonText, todo.urgency && styles.todoMetaButtonTextOn]}>
+                          긴급
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.todoMetaButton}
+                        onPress={() => setTodoQuadrant(todo.id, getNextQuadrant(quadrant))}
+                      >
+                        <Text style={styles.todoMetaButtonText}>사분면 이동</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.todoDeleteButton} onPress={() => removeTodo(todo.id)}>
+                        <Text style={styles.todoDeleteButtonText}>삭제</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>아이젠하워 매트릭스</Text>
+          <Text style={styles.matrixCaption}>각 칸에서 바로 완료하거나 다음 사분면으로 이동할 수 있어요.</Text>
+          <View style={styles.matrixGrid}>
+            {QUADRANT_META.map((meta) => {
+              const items = matrixBuckets[meta.id];
+              return (
+                <View
+                  key={meta.id}
+                  style={[
+                    styles.matrixCell,
+                    {
+                      backgroundColor: meta.background,
+                      borderColor: meta.border,
+                    },
+                  ]}
+                >
+                  <Text style={styles.matrixTitle}>{meta.title}</Text>
+                  <Text style={styles.matrixSubtitle}>{meta.subtitle}</Text>
+                  <Text style={styles.matrixCount}>{items.length}개</Text>
+                  <View style={styles.matrixTaskList}>
+                    {items.length === 0 && <Text style={styles.matrixEmpty}>없음</Text>}
+                    {items.slice(0, 4).map((todo) => (
+                      <View key={todo.id} style={styles.matrixTaskRow}>
+                        <Text style={styles.matrixTaskText} numberOfLines={1}>
+                          {todo.title}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.matrixTaskAction}
+                          onPress={() => setTodoQuadrant(todo.id, getNextQuadrant(meta.id))}
+                        >
+                          <Text style={styles.matrixTaskActionText}>이동</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.matrixTaskAction, styles.matrixTaskActionDone]}
+                          onPress={() => onCompleteTodo(todo.id)}
+                        >
+                          <Text style={styles.matrixTaskActionText}>완료</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
           </View>
         </View>
 
@@ -430,7 +753,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: 'SpaceGrotesk_700Bold',
     color: '#2a2f24',
-    fontSize: 14,
+    fontSize: 13,
   },
   widgetCard: {
     borderRadius: 18,
@@ -634,6 +957,97 @@ const styles = StyleSheet.create({
     color: '#f4f8f3',
     fontSize: 13,
   },
+  scheduleRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  scheduleField: {
+    flex: 1,
+    gap: 6,
+  },
+  scheduleLabel: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#5f6a5d',
+    fontSize: 12,
+  },
+  scheduleInput: {
+    borderWidth: 1,
+    borderColor: '#d8ddd0',
+    borderRadius: 10,
+    backgroundColor: '#fbfcf8',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#2f3832',
+    fontFamily: 'SpaceGrotesk_500Medium',
+    fontSize: 13,
+  },
+  scheduleGhost: {
+    borderWidth: 1,
+    borderColor: '#d8ddd0',
+    borderRadius: 10,
+    backgroundColor: '#f4f6ef',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+  scheduleGhostText: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#738072',
+    fontSize: 13,
+  },
+  modeRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modeChip: {
+    flex: 1,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d8ddd0',
+    borderRadius: 999,
+    paddingVertical: 8,
+    backgroundColor: '#f7f8f2',
+  },
+  modeChipSelected: {
+    borderColor: '#6d9d62',
+    backgroundColor: '#e8f3df',
+  },
+  modeChipText: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#6d776c',
+    fontSize: 12,
+  },
+  modeChipTextSelected: {
+    color: '#325736',
+  },
+  priorityRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  priorityChip: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d8ddd0',
+    paddingVertical: 9,
+    alignItems: 'center',
+    backgroundColor: '#f7f8f2',
+  },
+  priorityChipSelected: {
+    borderColor: '#4f6f5c',
+    backgroundColor: '#dff0e5',
+  },
+  priorityChipText: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#6b7569',
+    fontSize: 12,
+  },
+  priorityChipTextSelected: {
+    color: '#2f4f39',
+  },
   tierRow: {
     marginTop: 10,
     flexDirection: 'row',
@@ -661,64 +1075,177 @@ const styles = StyleSheet.create({
     color: '#315332',
   },
   todoList: {
-    marginTop: 12,
-    gap: 9,
+    marginTop: 10,
+    gap: 8,
   },
   emptyText: {
     fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#788174',
     fontSize: 13,
-    color: '#728070',
   },
   todoItem: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#eceee5',
+    borderColor: '#e7ebdf',
     backgroundColor: '#fbfcf8',
     padding: 10,
+    gap: 6,
+  },
+  todoItemDone: {
+    opacity: 0.72,
+  },
+  todoHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  checkButton: {
-    borderRadius: 999,
-    backgroundColor: '#2c4a37',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  checkButtonDone: {
-    backgroundColor: '#98af9b',
-  },
-  checkButtonText: {
-    fontFamily: 'SpaceGrotesk_700Bold',
-    color: '#f2f7f2',
-    fontSize: 11,
-  },
-  todoContent: {
-    flex: 1,
+    justifyContent: 'space-between',
+    gap: 8,
   },
   todoTitle: {
+    flex: 1,
     fontFamily: 'SpaceGrotesk_700Bold',
     color: '#2f3530',
     fontSize: 14,
   },
   todoTitleDone: {
-    color: '#8c9589',
     textDecorationLine: 'line-through',
+    color: '#8a9387',
+  },
+  overdueBadge: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#8f3f29',
+    backgroundColor: '#ffddd2',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    fontSize: 11,
   },
   todoMeta: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#647063',
+    fontSize: 12,
+  },
+  todoControlRow: {
+    marginTop: 2,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  todoActionButton: {
+    borderRadius: 999,
+    backgroundColor: '#2f4f38',
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+  },
+  todoActionButtonText: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#f3f7f2',
+    fontSize: 11,
+  },
+  todoMetaButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#cfd6c8',
+    backgroundColor: '#f2f5ec',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  todoMetaButtonOn: {
+    borderColor: '#597f62',
+    backgroundColor: '#dff0e5',
+  },
+  todoMetaButtonText: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#667263',
+    fontSize: 11,
+  },
+  todoMetaButtonTextOn: {
+    color: '#2f5236',
+  },
+  todoDeleteButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#e2d1c8',
+    backgroundColor: '#fff5ef',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  todoDeleteButtonText: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#9e6952',
+    fontSize: 11,
+  },
+  matrixCaption: {
+    marginTop: 4,
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#68756b',
+    fontSize: 12,
+  },
+  matrixGrid: {
+    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  matrixCell: {
+    width: '48.5%',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
+    minHeight: 150,
+  },
+  matrixTitle: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#2f3a2f',
+    fontSize: 13,
+  },
+  matrixSubtitle: {
     marginTop: 2,
     fontFamily: 'SpaceGrotesk_500Medium',
-    color: '#789074',
+    color: '#6b756d',
+    fontSize: 11,
+  },
+  matrixCount: {
+    marginTop: 3,
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#4d5950',
     fontSize: 12,
   },
-  removeButton: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+  matrixTaskList: {
+    marginTop: 6,
+    gap: 6,
   },
-  removeButtonText: {
+  matrixEmpty: {
     fontFamily: 'SpaceGrotesk_500Medium',
-    color: '#a08f83',
+    color: '#7f887f',
     fontSize: 12,
+  },
+  matrixTaskRow: {
+    borderRadius: 9,
+    backgroundColor: '#ffffffc0',
+    borderWidth: 1,
+    borderColor: '#d9ddd3',
+    padding: 6,
+    gap: 4,
+  },
+  matrixTaskText: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#3d483f',
+    fontSize: 12,
+  },
+  matrixTaskAction: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    backgroundColor: '#e8ece2',
+  },
+  matrixTaskActionDone: {
+    backgroundColor: '#cfe7d7',
+  },
+  matrixTaskActionText: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#445046',
+    fontSize: 10,
   },
   calendarRow: {
     marginTop: 12,

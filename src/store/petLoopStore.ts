@@ -5,16 +5,33 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 export type CreatureType = 'chick' | 'sprout' | 'bunny';
 export type DecorationId = 'sun-lamp' | 'moss-rock' | 'rain-bell';
 export type CareAction = 'feed' | 'play';
+export type DueDateMode = 'date' | 'ongoing' | 'unscheduled';
+export type Quadrant = 'do' | 'schedule' | 'delegate' | 'eliminate';
 
 export interface TodoItem {
   id: string;
   title: string;
-  dueDate: string;
+  startDate: string;
+  dueDateMode: DueDateMode;
+  dueDate: string | null;
+  importance: boolean;
+  urgency: boolean;
   done: boolean;
   rewardCoins: number;
   rewardXp: number;
   createdAt: number;
   completedAt?: number;
+}
+
+export interface AddTodoInput {
+  title: string;
+  startDate?: string;
+  dueDateMode?: DueDateMode;
+  dueDate?: string | null;
+  rewardCoins?: number;
+  rewardXp?: number;
+  importance?: boolean;
+  urgency?: boolean;
 }
 
 interface PetLoopState {
@@ -33,15 +50,43 @@ interface PetLoopState {
   completionLog: Record<string, number>;
   lastCompletedDate: string | null;
   lastActiveDate: string;
-  addTodo: (title: string, dueDate?: string, rewardCoins?: number, rewardXp?: number) => void;
+  addTodo: (input: AddTodoInput) => void;
   completeTodo: (id: string) => void;
   removeTodo: (id: string) => void;
+  setTodoPriority: (id: string, priority: Partial<Pick<TodoItem, 'importance' | 'urgency'>>) => void;
+  setTodoQuadrant: (id: string, quadrant: Quadrant) => void;
   runDailyTick: () => void;
   careCreature: (action: CareAction) => void;
   changeCreature: (creature: CreatureType) => void;
   purchaseDecoration: (id: DecorationId, cost: number) => boolean;
   seedStarterTodos: (dateKey?: string) => void;
 }
+
+type PersistedTodo = Partial<TodoItem> & {
+  dueDate?: unknown;
+  dueDateMode?: unknown;
+  startDate?: unknown;
+  importance?: unknown;
+  urgency?: unknown;
+};
+
+type PersistedPetLoopData = Partial<
+  Omit<
+    PetLoopState,
+    | 'addTodo'
+    | 'completeTodo'
+    | 'removeTodo'
+    | 'setTodoPriority'
+    | 'setTodoQuadrant'
+    | 'runDailyTick'
+    | 'careCreature'
+    | 'changeCreature'
+    | 'purchaseDecoration'
+    | 'seedStarterTodos'
+  >
+> & {
+  todos?: PersistedTodo[];
+};
 
 const MAX_STAT = 100;
 const FEED_COST = 20;
@@ -54,6 +99,26 @@ const pad2 = (value: number): string => String(value).padStart(2, '0');
 
 export const toDateKey = (date: Date = new Date()): string =>
   `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+export const isValidDateKey = (dateKey: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    return false;
+  }
+  const [year, month, day] = dateKey.split('-').map((part) => Number(part));
+  const parsed = new Date(year, month - 1, day);
+  return (
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day
+  );
+};
+
+const normalizeDateKey = (value: string | null | undefined, fallback: string): string => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  return isValidDateKey(value) ? value : fallback;
+};
 
 const parseDateKey = (dateKey: string): Date => {
   const [year, month, day] = dateKey.split('-').map((part) => Number(part));
@@ -75,15 +140,115 @@ const dayDifference = (from: string, to: string): number => {
 
 const nextXpGoal = (level: number): number => 60 + (level - 1) * 22;
 
-const makeTodo = (title: string, dueDate: string, rewardCoins: number, rewardXp: number): TodoItem => ({
-  id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-  title,
-  dueDate,
-  done: false,
-  rewardCoins,
-  rewardXp,
-  createdAt: Date.now(),
-});
+const resolveQuadrant = (importance: boolean, urgency: boolean): Quadrant => {
+  if (importance && urgency) return 'do';
+  if (importance && !urgency) return 'schedule';
+  if (!importance && urgency) return 'delegate';
+  return 'eliminate';
+};
+
+const resolveFlagsByQuadrant = (quadrant: Quadrant): { importance: boolean; urgency: boolean } => {
+  if (quadrant === 'do') return { importance: true, urgency: true };
+  if (quadrant === 'schedule') return { importance: true, urgency: false };
+  if (quadrant === 'delegate') return { importance: false, urgency: true };
+  return { importance: false, urgency: false };
+};
+
+const calculateGrowth = (
+  level: number,
+  xp: number,
+  xpGoal: number,
+  earnedXp: number
+): { level: number; xp: number; xpGoal: number; levelUpCoins: number } => {
+  let nextLevel = level;
+  let nextXp = xp + earnedXp;
+  let nextGoal = xpGoal;
+  let levelUpCoins = 0;
+
+  while (nextXp >= nextGoal) {
+    nextXp -= nextGoal;
+    nextLevel += 1;
+    nextGoal = nextXpGoal(nextLevel);
+    levelUpCoins += 20;
+  }
+
+  return {
+    level: nextLevel,
+    xp: nextXp,
+    xpGoal: nextGoal,
+    levelUpCoins,
+  };
+};
+
+const sanitizeDueDate = (
+  dueDateMode: DueDateMode,
+  dueDate: string | null | undefined,
+  startDate: string
+): string | null => {
+  if (dueDateMode !== 'date') {
+    return null;
+  }
+  const normalized = normalizeDateKey(dueDate, startDate);
+  return dayDifference(startDate, normalized) >= 0 ? normalized : startDate;
+};
+
+const makeTodo = (input: AddTodoInput): TodoItem => {
+  const today = toDateKey();
+  const startDate = normalizeDateKey(input.startDate, today);
+  const dueDateMode = input.dueDateMode ?? 'date';
+
+  return {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    title: input.title,
+    startDate,
+    dueDateMode,
+    dueDate: sanitizeDueDate(dueDateMode, input.dueDate, startDate),
+    importance: input.importance ?? true,
+    urgency: input.urgency ?? true,
+    done: false,
+    rewardCoins: input.rewardCoins ?? 18,
+    rewardXp: input.rewardXp ?? 16,
+    createdAt: Date.now(),
+  };
+};
+
+const normalizePersistedTodo = (todo: PersistedTodo, index: number): TodoItem => {
+  const today = toDateKey();
+  const fallbackDue = normalizeDateKey(
+    typeof todo.dueDate === 'string' ? todo.dueDate : null,
+    today
+  );
+  const startDate = normalizeDateKey(
+    typeof todo.startDate === 'string' ? todo.startDate : null,
+    fallbackDue
+  );
+
+  const dueDateMode: DueDateMode =
+    todo.dueDateMode === 'ongoing' ||
+    todo.dueDateMode === 'unscheduled' ||
+    todo.dueDateMode === 'date'
+      ? todo.dueDateMode
+      : 'date';
+
+  return {
+    id: typeof todo.id === 'string' ? todo.id : `legacy-${index}-${Date.now()}`,
+    title: typeof todo.title === 'string' ? todo.title : '이전 할 일',
+    startDate,
+    dueDateMode,
+    dueDate: sanitizeDueDate(
+      dueDateMode,
+      typeof todo.dueDate === 'string' ? todo.dueDate : null,
+      startDate
+    ),
+    importance: typeof todo.importance === 'boolean' ? todo.importance : true,
+    urgency: typeof todo.urgency === 'boolean' ? todo.urgency : true,
+    done: Boolean(todo.done),
+    rewardCoins: typeof todo.rewardCoins === 'number' ? todo.rewardCoins : 18,
+    rewardXp: typeof todo.rewardXp === 'number' ? todo.rewardXp : 16,
+    createdAt: typeof todo.createdAt === 'number' ? todo.createdAt : Date.now(),
+    completedAt: typeof todo.completedAt === 'number' ? todo.completedAt : undefined,
+  };
+};
 
 export const getRecentDateKeys = (days: number): string[] => {
   const today = new Date();
@@ -93,6 +258,9 @@ export const getRecentDateKeys = (days: number): string[] => {
   }
   return result;
 };
+
+export const getTodoQuadrant = (todo: Pick<TodoItem, 'importance' | 'urgency'>): Quadrant =>
+  resolveQuadrant(todo.importance, todo.urgency);
 
 export const usePetLoopStore = create<PetLoopState>()(
   persist(
@@ -113,14 +281,14 @@ export const usePetLoopStore = create<PetLoopState>()(
       lastCompletedDate: null,
       lastActiveDate: toDateKey(),
 
-      addTodo: (title, dueDate = toDateKey(), rewardCoins = 18, rewardXp = 16) => {
-        const trimmed = title.trim();
+      addTodo: (input) => {
+        const trimmed = input.title.trim();
         if (!trimmed) {
           return;
         }
 
         set((state) => ({
-          todos: [makeTodo(trimmed, dueDate, rewardCoins, rewardXp), ...state.todos],
+          todos: [makeTodo({ ...input, title: trimmed }), ...state.todos],
         }));
       },
 
@@ -134,6 +302,7 @@ export const usePetLoopStore = create<PetLoopState>()(
           const now = Date.now();
           const today = toDateKey(new Date());
           const yesterday = toDateKey(createDateWithOffset(new Date(), -1));
+          const growth = calculateGrowth(state.level, state.xp, state.xpGoal, target.rewardXp);
 
           const updatedTodos = state.todos.map((todo) =>
             todo.id === id
@@ -144,18 +313,6 @@ export const usePetLoopStore = create<PetLoopState>()(
                 }
               : todo
           );
-
-          let upgradedLevel = state.level;
-          let upgradedXp = state.xp + target.rewardXp;
-          let upgradedXpGoal = state.xpGoal;
-          let levelUpBonusCoins = 0;
-
-          while (upgradedXp >= upgradedXpGoal) {
-            upgradedXp -= upgradedXpGoal;
-            upgradedLevel += 1;
-            upgradedXpGoal = nextXpGoal(upgradedLevel);
-            levelUpBonusCoins += 20;
-          }
 
           const completedCountToday = (state.completionLog[today] ?? 0) + 1;
           const nextCompletionLog = {
@@ -176,13 +333,13 @@ export const usePetLoopStore = create<PetLoopState>()(
 
           return {
             todos: updatedTodos,
-            level: upgradedLevel,
-            xp: upgradedXp,
-            xpGoal: upgradedXpGoal,
-            coins: state.coins + target.rewardCoins + levelUpBonusCoins,
+            level: growth.level,
+            xp: growth.xp,
+            xpGoal: growth.xpGoal,
+            coins: state.coins + target.rewardCoins + growth.levelUpCoins,
             happiness: clamp(state.happiness + 7, 0, MAX_STAT),
             energy: clamp(state.energy - 4, 0, MAX_STAT),
-            habitatTier: Math.max(state.habitatTier, Math.floor((upgradedLevel + 1) / 3)),
+            habitatTier: Math.max(state.habitatTier, Math.floor((growth.level + 1) / 3)),
             completionLog: nextCompletionLog,
             streak: nextStreak,
             lastCompletedDate: nextCompletedDate,
@@ -194,6 +351,34 @@ export const usePetLoopStore = create<PetLoopState>()(
       removeTodo: (id) => {
         set((state) => ({
           todos: state.todos.filter((todo) => todo.id !== id),
+        }));
+      },
+
+      setTodoPriority: (id, priority) => {
+        set((state) => ({
+          todos: state.todos.map((todo) =>
+            todo.id === id
+              ? {
+                  ...todo,
+                  importance: priority.importance ?? todo.importance,
+                  urgency: priority.urgency ?? todo.urgency,
+                }
+              : todo
+          ),
+        }));
+      },
+
+      setTodoQuadrant: (id, quadrant) => {
+        const flags = resolveFlagsByQuadrant(quadrant);
+        set((state) => ({
+          todos: state.todos.map((todo) =>
+            todo.id === id
+              ? {
+                  ...todo,
+                  ...flags,
+                }
+              : todo
+          ),
         }));
       },
 
@@ -210,7 +395,13 @@ export const usePetLoopStore = create<PetLoopState>()(
             if (todo.done) {
               return true;
             }
-            return dayDifference(todo.dueDate, staleCutoff) <= 0;
+            if (todo.dueDateMode === 'date' && todo.dueDate) {
+              return dayDifference(todo.dueDate, staleCutoff) <= 0;
+            }
+            if (todo.dueDateMode === 'ongoing') {
+              return true;
+            }
+            return dayDifference(todo.startDate, staleCutoff) <= 0;
           });
 
           let nextStreak = state.streak;
@@ -244,10 +435,15 @@ export const usePetLoopStore = create<PetLoopState>()(
             };
           }
 
+          const growth = calculateGrowth(state.level, state.xp, state.xpGoal, 3);
           return {
+            level: growth.level,
+            xp: growth.xp,
+            xpGoal: growth.xpGoal,
+            coins: state.coins + growth.levelUpCoins,
             energy: clamp(state.energy - 7, 0, MAX_STAT),
             happiness: clamp(state.happiness + 16, 0, MAX_STAT),
-            xp: clamp(state.xp + 3, 0, state.xpGoal),
+            habitatTier: Math.max(state.habitatTier, Math.floor((growth.level + 1) / 3)),
           };
         });
       },
@@ -272,14 +468,29 @@ export const usePetLoopStore = create<PetLoopState>()(
 
       seedStarterTodos: (dateKey = toDateKey()) => {
         set((state) => {
-          const hasDateTodos = state.todos.some((todo) => todo.dueDate === dateKey);
-          if (hasDateTodos) {
+          const existingTitleSet = new Set(
+            state.todos
+              .filter((todo) => todo.startDate === dateKey)
+              .map((todo) => todo.title)
+          );
+          const starterTodos = STARTER_TITLES.filter((title) => !existingTitleSet.has(title)).map(
+            (title, index) =>
+              makeTodo({
+                title,
+                startDate: dateKey,
+                dueDateMode: 'date',
+                dueDate: dateKey,
+                rewardCoins: 14 + index * 3,
+                rewardXp: 12 + index * 2,
+                importance: true,
+                urgency: true,
+              })
+          );
+
+          if (starterTodos.length === 0) {
             return state;
           }
 
-          const starterTodos = STARTER_TITLES.map((title, index) =>
-            makeTodo(title, dateKey, 14 + index * 3, 12 + index * 2)
-          );
           return {
             todos: [...starterTodos, ...state.todos],
           };
@@ -288,7 +499,47 @@ export const usePetLoopStore = create<PetLoopState>()(
     }),
     {
       name: 'pet-loop-storage',
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        petName: state.petName,
+        creature: state.creature,
+        level: state.level,
+        xp: state.xp,
+        xpGoal: state.xpGoal,
+        coins: state.coins,
+        happiness: state.happiness,
+        energy: state.energy,
+        habitatTier: state.habitatTier,
+        streak: state.streak,
+        todos: state.todos,
+        purchasedDecorations: state.purchasedDecorations,
+        completionLog: state.completionLog,
+        lastCompletedDate: state.lastCompletedDate,
+        lastActiveDate: state.lastActiveDate,
+      }),
+      migrate: (persistedState: unknown) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return persistedState as never;
+        }
+
+        const state = persistedState as PersistedPetLoopData;
+        const today = toDateKey();
+        return {
+          ...state,
+          todos: Array.isArray(state.todos)
+            ? state.todos.map((todo, index) => normalizePersistedTodo(todo, index))
+            : [],
+          lastActiveDate: normalizeDateKey(
+            typeof state.lastActiveDate === 'string' ? state.lastActiveDate : null,
+            today
+          ),
+          lastCompletedDate:
+            typeof state.lastCompletedDate === 'string' && isValidDateKey(state.lastCompletedDate)
+              ? state.lastCompletedDate
+              : null,
+        } as never;
+      },
       onRehydrateStorage: () => (state) => {
         state?.runDailyTick();
       },
