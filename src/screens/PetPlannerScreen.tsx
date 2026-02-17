@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   SafeAreaView,
   ScrollView,
@@ -24,6 +25,7 @@ import {
   toDateKey,
   usePetLoopStore,
 } from '../store/petLoopStore';
+import { sendLockscreenDigest } from '../lib/lockscreenDigest';
 
 interface CreatureMeta {
   id: CreatureType;
@@ -100,6 +102,13 @@ const QUADRANT_LABEL: Record<Quadrant, string> = {
   schedule: 'Q2',
   delegate: 'Q3',
   eliminate: 'Q4',
+};
+
+const QUADRANT_FLAGS: Record<Quadrant, { importance: boolean; urgency: boolean }> = {
+  do: { importance: true, urgency: true },
+  schedule: { importance: true, urgency: false },
+  delegate: { importance: false, urgency: true },
+  eliminate: { importance: false, urgency: false },
 };
 
 const dayLabel = (dateKey: string): string => {
@@ -199,6 +208,13 @@ export default function PetPlannerScreen() {
   const [dueDateInput, setDueDateInput] = useState(todayKey);
   const [isImportant, setIsImportant] = useState(true);
   const [isUrgent, setIsUrgent] = useState(true);
+  const [quadrantDrafts, setQuadrantDrafts] = useState<Record<Quadrant, string>>({
+    do: '',
+    schedule: '',
+    delegate: '',
+    eliminate: '',
+  });
+  const [lockscreenStatus, setLockscreenStatus] = useState('');
 
   const pulse = useRef(new Animated.Value(1)).current;
   const float = useRef(new Animated.Value(0)).current;
@@ -281,13 +297,18 @@ export default function PetPlannerScreen() {
     ]).start();
   };
 
+  const getSafeSchedule = (): { safeStartDate: string; safeDueDate: string } => {
+    const safeStartDate = isValidDateKey(startDateInput) ? startDateInput : todayKey;
+    const safeDueDate = isValidDateKey(dueDateInput) ? dueDateInput : safeStartDate;
+    return { safeStartDate, safeDueDate };
+  };
+
   const onAddTodo = () => {
     if (!todoDraft.trim()) {
       return;
     }
 
-    const safeStartDate = isValidDateKey(startDateInput) ? startDateInput : todayKey;
-    const safeDueDate = isValidDateKey(dueDateInput) ? dueDateInput : safeStartDate;
+    const { safeStartDate, safeDueDate } = getSafeSchedule();
     const reward = rewardPreset(tier);
 
     addTodo({
@@ -312,6 +333,51 @@ export default function PetPlannerScreen() {
     setIsImportant(true);
     setIsUrgent(true);
     triggerRewardPulse();
+  };
+
+  const onAddTodoToQuadrant = (quadrant: Quadrant) => {
+    const draft = quadrantDrafts[quadrant].trim();
+    if (!draft) {
+      return;
+    }
+
+    const { safeStartDate, safeDueDate } = getSafeSchedule();
+    const reward = rewardPreset(tier);
+    const flags = QUADRANT_FLAGS[quadrant];
+
+    addTodo({
+      title: draft,
+      startDate: safeStartDate,
+      dueDateMode,
+      dueDate: dueDateMode === 'date' ? safeDueDate : null,
+      rewardCoins: reward.coins,
+      rewardXp: reward.xp,
+      importance: flags.importance,
+      urgency: flags.urgency,
+    });
+
+    if (!isValidDateKey(startDateInput)) {
+      setStartDateInput(safeStartDate);
+    }
+    if (dueDateMode === 'date' && !isValidDateKey(dueDateInput)) {
+      setDueDateInput(safeDueDate);
+    }
+
+    setQuadrantDrafts((prev) => ({
+      ...prev,
+      [quadrant]: '',
+    }));
+    triggerRewardPulse();
+  };
+
+  const onSendLockscreenDigest = async () => {
+    const success = await sendLockscreenDigest(openTodos);
+    if (!success) {
+      setLockscreenStatus('알림 권한이 없어 잠금화면 요약을 보낼 수 없어요.');
+      Alert.alert('알림 권한 필요', '설정에서 알림 권한을 허용한 뒤 다시 시도해 주세요.');
+      return;
+    }
+    setLockscreenStatus('잠금화면 알림으로 현재 투두 요약을 보냈어요.');
   };
 
   const onCompleteTodo = (todoId: string) => {
@@ -362,6 +428,136 @@ export default function PetPlannerScreen() {
               <Text style={styles.widgetSub}>남은 퀘스트 {openTodos.length}개</Text>
             </View>
             <Text style={styles.widgetReward}>🌾 {coins}</Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>아이젠하워 매트릭스</Text>
+            <Text style={styles.cardBadge}>우선순위 먼저</Text>
+          </View>
+          <Text style={styles.matrixCaption}>사분면에서 바로 작성하고 즉시 실행해요.</Text>
+
+          <View style={styles.scheduleRow}>
+            <View style={styles.scheduleField}>
+              <Text style={styles.scheduleLabel}>시작일</Text>
+              <TextInput
+                style={styles.scheduleInput}
+                value={startDateInput}
+                onChangeText={setStartDateInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#9da29b"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            <View style={styles.scheduleField}>
+              <Text style={styles.scheduleLabel}>마감일</Text>
+              {dueDateMode === 'date' ? (
+                <TextInput
+                  style={styles.scheduleInput}
+                  value={dueDateInput}
+                  onChangeText={setDueDateInput}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#9da29b"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              ) : (
+                <View style={styles.scheduleGhost}>
+                  <Text style={styles.scheduleGhostText}>
+                    {dueDateMode === 'ongoing' ? '계속 진행' : '미정'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.modeRow}>
+            {DUE_MODE_META.map((mode) => {
+              const selected = mode.id === dueDateMode;
+              return (
+                <TouchableOpacity
+                  key={mode.id}
+                  onPress={() => setDueDateMode(mode.id)}
+                  style={[styles.modeChip, selected && styles.modeChipSelected]}
+                >
+                  <Text style={[styles.modeChipText, selected && styles.modeChipTextSelected]}>
+                    {mode.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.matrixGrid}>
+            {QUADRANT_META.map((meta) => {
+              const items = matrixBuckets[meta.id];
+              return (
+                <View
+                  key={meta.id}
+                  style={[
+                    styles.matrixCell,
+                    {
+                      backgroundColor: meta.background,
+                      borderColor: meta.border,
+                    },
+                  ]}
+                >
+                  <Text style={styles.matrixTitle}>{meta.title}</Text>
+                  <Text style={styles.matrixSubtitle}>{meta.subtitle}</Text>
+                  <Text style={styles.matrixCount}>{items.length}개</Text>
+
+                  <View style={styles.matrixComposerRow}>
+                    <TextInput
+                      style={styles.matrixComposerInput}
+                      value={quadrantDrafts[meta.id]}
+                      onChangeText={(text) =>
+                        setQuadrantDrafts((prev) => ({
+                          ...prev,
+                          [meta.id]: text,
+                        }))
+                      }
+                      placeholder="이 칸 할 일 바로 입력"
+                      placeholderTextColor="#8f9890"
+                      returnKeyType="done"
+                      onSubmitEditing={() => onAddTodoToQuadrant(meta.id)}
+                    />
+                    <TouchableOpacity
+                      style={styles.matrixComposerButton}
+                      onPress={() => onAddTodoToQuadrant(meta.id)}
+                    >
+                      <Text style={styles.matrixComposerButtonText}>추가</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.matrixTaskList}>
+                    {items.length === 0 && <Text style={styles.matrixEmpty}>없음</Text>}
+                    {items.slice(0, 3).map((todo) => (
+                      <View key={todo.id} style={styles.matrixTaskRow}>
+                        <Text style={styles.matrixTaskText} numberOfLines={1}>
+                          {todo.title}
+                        </Text>
+                        <View style={styles.matrixTaskActionRow}>
+                          <TouchableOpacity
+                            style={styles.matrixTaskAction}
+                            onPress={() => setTodoQuadrant(todo.id, getNextQuadrant(meta.id))}
+                          >
+                            <Text style={styles.matrixTaskActionText}>이동</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.matrixTaskAction, styles.matrixTaskActionDone]}
+                            onPress={() => onCompleteTodo(todo.id)}
+                          >
+                            <Text style={styles.matrixTaskActionText}>완료</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
           </View>
         </View>
 
@@ -422,7 +618,7 @@ export default function PetPlannerScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>할 일 입력</Text>
+          <Text style={styles.cardTitle}>세부 입력(옵션)</Text>
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
@@ -436,58 +632,6 @@ export default function PetPlannerScreen() {
             <TouchableOpacity style={styles.addButton} onPress={onAddTodo}>
               <Text style={styles.addButtonText}>추가</Text>
             </TouchableOpacity>
-          </View>
-
-          <View style={styles.scheduleRow}>
-            <View style={styles.scheduleField}>
-              <Text style={styles.scheduleLabel}>시작일</Text>
-              <TextInput
-                style={styles.scheduleInput}
-                value={startDateInput}
-                onChangeText={setStartDateInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#9da29b"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            <View style={styles.scheduleField}>
-              <Text style={styles.scheduleLabel}>마감일</Text>
-              {dueDateMode === 'date' ? (
-                <TextInput
-                  style={styles.scheduleInput}
-                  value={dueDateInput}
-                  onChangeText={setDueDateInput}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#9da29b"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              ) : (
-                <View style={styles.scheduleGhost}>
-                  <Text style={styles.scheduleGhostText}>
-                    {dueDateMode === 'ongoing' ? '계속 진행' : '미정'}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.modeRow}>
-            {DUE_MODE_META.map((mode) => {
-              const selected = mode.id === dueDateMode;
-              return (
-                <TouchableOpacity
-                  key={mode.id}
-                  onPress={() => setDueDateMode(mode.id)}
-                  style={[styles.modeChip, selected && styles.modeChipSelected]}
-                >
-                  <Text style={[styles.modeChipText, selected && styles.modeChipTextSelected]}>
-                    {mode.title}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
           </View>
 
           <View style={styles.priorityRow}>
@@ -605,52 +749,15 @@ export default function PetPlannerScreen() {
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>아이젠하워 매트릭스</Text>
-          <Text style={styles.matrixCaption}>각 칸에서 바로 완료하거나 다음 사분면으로 이동할 수 있어요.</Text>
-          <View style={styles.matrixGrid}>
-            {QUADRANT_META.map((meta) => {
-              const items = matrixBuckets[meta.id];
-              return (
-                <View
-                  key={meta.id}
-                  style={[
-                    styles.matrixCell,
-                    {
-                      backgroundColor: meta.background,
-                      borderColor: meta.border,
-                    },
-                  ]}
-                >
-                  <Text style={styles.matrixTitle}>{meta.title}</Text>
-                  <Text style={styles.matrixSubtitle}>{meta.subtitle}</Text>
-                  <Text style={styles.matrixCount}>{items.length}개</Text>
-                  <View style={styles.matrixTaskList}>
-                    {items.length === 0 && <Text style={styles.matrixEmpty}>없음</Text>}
-                    {items.slice(0, 4).map((todo) => (
-                      <View key={todo.id} style={styles.matrixTaskRow}>
-                        <Text style={styles.matrixTaskText} numberOfLines={1}>
-                          {todo.title}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.matrixTaskAction}
-                          onPress={() => setTodoQuadrant(todo.id, getNextQuadrant(meta.id))}
-                        >
-                          <Text style={styles.matrixTaskActionText}>이동</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.matrixTaskAction, styles.matrixTaskActionDone]}
-                          onPress={() => onCompleteTodo(todo.id)}
-                        >
-                          <Text style={styles.matrixTaskActionText}>완료</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
+        <View style={styles.lockscreenCard}>
+          <Text style={styles.cardTitle}>잠금화면 투두 확인</Text>
+          <Text style={styles.lockscreenDescription}>
+            지금 열려있는 투두를 알림으로 보내서 잠금화면에서 바로 확인할 수 있어요.
+          </Text>
+          <TouchableOpacity style={styles.lockscreenButton} onPress={onSendLockscreenDigest}>
+            <Text style={styles.lockscreenButtonText}>잠금화면 요약 보내기</Text>
+          </TouchableOpacity>
+          {lockscreenStatus ? <Text style={styles.lockscreenStatus}>{lockscreenStatus}</Text> : null}
         </View>
 
         <View style={styles.card}>
@@ -706,7 +813,7 @@ export default function PetPlannerScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f4f6ec',
+    backgroundColor: '#f1f3ea',
   },
   container: {
     paddingHorizontal: 16,
@@ -802,7 +909,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#e8e9de',
+    borderColor: '#e4e8db',
     padding: 14,
   },
   cardHeader: {
@@ -1174,6 +1281,37 @@ const styles = StyleSheet.create({
     color: '#9e6952',
     fontSize: 11,
   },
+  lockscreenCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#dce7ea',
+    backgroundColor: '#eff9fb',
+    padding: 14,
+  },
+  lockscreenDescription: {
+    marginTop: 6,
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#4f6366',
+    fontSize: 12,
+  },
+  lockscreenButton: {
+    marginTop: 10,
+    borderRadius: 12,
+    backgroundColor: '#2e5561',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  lockscreenButtonText: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#f3f7f8',
+    fontSize: 13,
+  },
+  lockscreenStatus: {
+    marginTop: 8,
+    fontFamily: 'SpaceGrotesk_500Medium',
+    color: '#2f5c5e',
+    fontSize: 12,
+  },
   matrixCaption: {
     marginTop: 4,
     fontFamily: 'SpaceGrotesk_500Medium',
@@ -1214,6 +1352,35 @@ const styles = StyleSheet.create({
     marginTop: 6,
     gap: 6,
   },
+  matrixComposerRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  matrixComposerInput: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#cfd7c6',
+    backgroundColor: '#fdfef9',
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    color: '#2f3832',
+    fontFamily: 'SpaceGrotesk_500Medium',
+    fontSize: 12,
+  },
+  matrixComposerButton: {
+    borderRadius: 10,
+    backgroundColor: '#2f4f38',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  matrixComposerButtonText: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    color: '#f3f7f2',
+    fontSize: 11,
+  },
   matrixEmpty: {
     fontFamily: 'SpaceGrotesk_500Medium',
     color: '#7f887f',
@@ -1238,6 +1405,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
     backgroundColor: '#e8ece2',
+  },
+  matrixTaskActionRow: {
+    flexDirection: 'row',
+    gap: 6,
   },
   matrixTaskActionDone: {
     backgroundColor: '#cfe7d7',
